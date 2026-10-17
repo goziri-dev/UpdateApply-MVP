@@ -240,13 +240,18 @@ body {
   background: var(--accent-hover);
 }
 
-.btn-google {
+.oauth-stack {
+  display: grid;
+  gap: calc(var(--space) * 1.25);
+}
+
+.btn-oauth {
   background: var(--surface-soft);
   color: var(--ink);
   border: 1px solid var(--line-soft);
 }
 
-.btn-google:hover:not(:disabled) {
+.btn-oauth:hover:not(:disabled) {
   background: #efefef;
   border-color: #d9d9d9;
 }

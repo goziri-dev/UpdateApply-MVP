@@ -25,7 +25,7 @@ class AuthPlaceholderScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Open prototypes/auth/index.html to review sign-in / sign-up. '
-                'OAuth client wiring is Google-only for v1 (AuthService).',
+                'OAuth: Google, GitHub, Notion (AuthService / AuthRepository).',
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),

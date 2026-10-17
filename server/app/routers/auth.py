@@ -8,8 +8,8 @@ from app.schemas.auth import AuthMeResponse, AuthProviderInfo, AuthProvidersResp
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
-# v1 auth UI exposes Google OAuth only (email/password via Supabase client).
-_PROVIDERS = ("google",)
+# Auth UI OAuth order: Google → GitHub → Notion (email/password via Supabase client).
+_PROVIDERS = ("google", "github", "notion")
 
 
 @router.get("/providers", response_model=AuthProvidersResponse)

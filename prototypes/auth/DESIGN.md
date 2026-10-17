@@ -16,10 +16,17 @@ parchment/card auth prototype fought that pattern, so this pass:
   instead of pure black so UpdateApply still reads without drowning the minimal layout
 - **Links:** blue `#2F6FED` for affordance (Reset / Sign up / Sign in), as in the
   reference
-- **OAuth:** Google only — light grey pill under an “or” divider
+- **OAuth:** Google → GitHub → Notion — stacked light grey pills under an “or”
+  divider (same pill style for all three)
 
 Pure B&W was considered; forest on mark + primary CTA keeps brand identity with
 almost the same calm as the reference.
+
+### Brand mark (provisional)
+
+The forest `u+` mark in the prototype is **provisional / not an official logo**.
+Favour asked whether it will become official; do **not** invent a new logo.
+Leave the mark as-is until Favour decides.
 
 ## Inspiration
 
@@ -27,15 +34,15 @@ almost the same calm as the reference.
 
 **What we borrow:**
 - Centered single column, generous vertical whitespace
-- Brand mark → headline → short sub → labeled fields → primary CTA → mode switch → or → Google → Terms/Privacy
+- Brand mark → headline → short sub → labeled fields → primary CTA → mode switch → or → OAuth stack → Terms/Privacy
 - Pill inputs with labels above; Reset Password? right under password
 - Sign-in ↔ Sign-up via text link (same layout)
 
 **What we adapt / skip:**
-- Refero “p+” mark → UpdateApply `u+` forest mark
+- Refero “p+” mark → UpdateApply provisional `u+` forest mark (see above)
 - Copy adapted for UpdateApply (no Refero branding)
-- GitHub / Notion OAuth removed from UI for v1
-- Email/password kept (as in reference), plus Google
+- OAuth order approved by Favour: Google, then GitHub, then Notion (same grey pill)
+- Email/password kept (as in reference), plus the three OAuth providers
 
 ## Tokens
 
@@ -45,7 +52,7 @@ almost the same calm as the reference.
 - `--muted`: `#6B6B6B`
 - `--label`: `#3A3A3A`
 - `--line`: `#111111` (input border)
-- `--surface-soft`: `#F5F5F5` (Google button)
+- `--surface-soft`: `#F5F5F5` (OAuth buttons)
 - `--link`: `#2F6FED`
 - `--accent`: `#1B4D3E` (mark + primary CTA)
 - `--accent-hover`: `#153D32`
@@ -72,7 +79,7 @@ almost the same calm as the reference.
 
 ## Edge-case checklist
 
-- [x] Loading — primary / Google show spinner + “Signing in…” / “Connecting…”
+- [x] Loading — primary / OAuth show spinner + “Signing in…” / “Connecting…”
 - [x] Error — inline alert above the form
 - [x] Empty — placeholder email when cleared (demo starts filled)
 - [x] Overflow — long error wraps; column capped at 340px

@@ -88,8 +88,8 @@ document.getElementById("auth-form").addEventListener("submit", (e) => {
   simulateAction(document.getElementById("primary-cta"));
 });
 
-document.getElementById("google-btn").addEventListener("click", () => {
-  simulateAction(document.getElementById("google-btn"));
+document.querySelectorAll(".btn-oauth").forEach((btn) => {
+  btn.addEventListener("click", () => simulateAction(btn));
 });
 
 document.getElementById("reset-link").addEventListener("click", (e) => {
