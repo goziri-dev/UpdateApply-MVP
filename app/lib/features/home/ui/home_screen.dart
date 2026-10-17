@@ -37,7 +37,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => context.go('/auth'),
-                child: const Text('Auth placeholder (prototype pending)'),
+                child: const Text('Go to sign in'),
               ),
             ],
           ),

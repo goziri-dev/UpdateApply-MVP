@@ -18,7 +18,7 @@ extension on AuthOAuthProvider {
   }
 }
 
-/// Thin wrapper around supabase_flutter auth. UI screens come after prototype OK.
+/// Thin wrapper around supabase_flutter auth.
 class AuthService {
   AuthService({this._client});
 
@@ -44,7 +44,7 @@ class AuthService {
 
   String? get accessToken => currentSession?.accessToken;
 
-  /// Redirect used after OAuth. Web uses origin unless overridden.
+  /// Redirect used after OAuth / email links. Web uses origin unless overridden.
   String? get oauthRedirectTo {
     if (AppEnv.supabaseAuthRedirectUrl.isNotEmpty) {
       return AppEnv.supabaseAuthRedirectUrl;
@@ -53,6 +53,31 @@ class AuthService {
       return Uri.base.origin;
     }
     return 'io.updateapply.app://login-callback/';
+  }
+
+  Future<AuthResponse> signInWithPassword({
+    required String email,
+    required String password,
+  }) {
+    return client.auth.signInWithPassword(email: email, password: password);
+  }
+
+  Future<AuthResponse> signUp({
+    required String email,
+    required String password,
+  }) {
+    return client.auth.signUp(
+      email: email,
+      password: password,
+      emailRedirectTo: oauthRedirectTo,
+    );
+  }
+
+  Future<void> resetPasswordForEmail(String email) {
+    return client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: oauthRedirectTo,
+    );
   }
 
   Future<bool> signInWithOAuth(AuthOAuthProvider provider) async {

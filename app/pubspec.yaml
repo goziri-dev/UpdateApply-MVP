@@ -11,8 +11,10 @@ dependencies:
   flutter:
     sdk: flutter
   go_router: ^18.1.0
+  google_fonts: ^9.0.0
   scoped_deps: ^0.2.1
   signals: ^7.1.0
+  signals_flutter: ^7.1.0
   supabase_flutter: ^2.18.3
 
 dev_dependencies:
