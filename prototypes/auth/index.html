@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UpdateApply — Auth prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="auth" aria-labelledby="brand">
+        <h1 class="brand" id="brand">UpdateApply</h1>
+
+        <div class="tabs" role="tablist" aria-label="Auth mode">
+          <button class="tab" role="tab" id="tab-signin" aria-selected="true" aria-controls="panel-signin">
+            Sign in
+          </button>
+          <button class="tab" role="tab" id="tab-signup" aria-selected="false" aria-controls="panel-signup">
+            Sign up
+          </button>
+        </div>
+
+        <div
+          class="alert"
+          id="auth-error"
+          role="alert"
+          data-visible="false"
+          data-full="Sign-in didn’t finish after returning from Google. Try again or pick another provider."
+        >
+          Sign-in didn’t finish after returning from Google. Try again or pick another provider.
+        </div>
+
+        <div class="panel" id="panel-signin" role="tabpanel" data-active="true" aria-labelledby="tab-signin">
+          <h2 class="title">Welcome back</h2>
+          <p class="lede">Tailor resumes to each job description — sign in to keep your profile.</p>
+          <div class="providers" data-mode="signin"></div>
+          <p class="helper">Same providers either way — we’ll create an account if you’re new.</p>
+        </div>
+
+        <div class="panel" id="panel-signup" role="tabpanel" data-active="false" aria-labelledby="tab-signup">
+          <h2 class="title">Create your UpdateApply account</h2>
+          <p class="lede">Save your work history once, then re-tailor for every posting.</p>
+          <div class="providers" data-mode="signup"></div>
+          <p class="helper">OAuth only for MVP — no email/password form.</p>
+        </div>
+
+        <div class="linked">
+          <h3>Connected accounts</h3>
+          <p id="linked-empty">No other providers linked yet.</p>
+          <p class="email-sample" id="email-sample" hidden>
+            Signed in as
+            very.long.candidate.name+updateapply-demo@example-university.edu
+          </p>
+        </div>
+
+        <div class="demo-bar" aria-label="Prototype state toggles">
+          <button type="button" data-demo="error">Toggle error</button>
+          <button type="button" data-demo="loading">Simulate loading</button>
+          <button type="button" data-demo="session">Toggle session email</button>
+        </div>
+        <p class="note">
+          Prototype only — Flutter screens await approval. Mobbin MCP blocked (paid plan).
+        </p>
+      </section>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>
