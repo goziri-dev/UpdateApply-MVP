@@ -4,20 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/app_env.dart';
 import 'supabase_bootstrap.dart';
 
-/// OAuth providers enabled for UpdateApply (Dashboard → Authentication → Providers).
-enum AuthOAuthProvider { google, github, notion }
-
-extension on AuthOAuthProvider {
-  OAuthProvider get gotrue {
-    return switch (this) {
-      AuthOAuthProvider.google => OAuthProvider.google,
-      AuthOAuthProvider.github => OAuthProvider.github,
-      AuthOAuthProvider.notion => OAuthProvider.notion,
-    };
-  }
-}
-
 /// Thin wrapper around supabase_flutter auth. UI screens come after prototype OK.
+///
+/// v1 OAuth surface is Google-only (see `prototypes/auth/`).
 class AuthService {
   AuthService({this._client});
 
@@ -54,9 +43,9 @@ class AuthService {
     return 'io.updateapply.app://login-callback/';
   }
 
-  Future<bool> signInWithOAuth(AuthOAuthProvider provider) async {
+  Future<bool> signInWithGoogle() async {
     return client.auth.signInWithOAuth(
-      provider.gotrue,
+      OAuthProvider.google,
       redirectTo: oauthRedirectTo,
       authScreenLaunchMode: kIsWeb
           ? LaunchMode.platformDefault
@@ -64,9 +53,9 @@ class AuthService {
     );
   }
 
-  Future<bool> linkIdentity(AuthOAuthProvider provider) {
+  Future<bool> linkGoogle() {
     return client.auth.linkIdentity(
-      provider.gotrue,
+      OAuthProvider.google,
       redirectTo: oauthRedirectTo,
       authScreenLaunchMode: kIsWeb
           ? LaunchMode.platformDefault

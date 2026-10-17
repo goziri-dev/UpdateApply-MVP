@@ -1,61 +1,78 @@
-# Auth design tokens & Mobbin notes
+# Auth design tokens & direction
 
-## Mobbin inspiration
+## Direction choice (this iteration)
 
-**Queries / flows searched:**
-- iOS: “sign in with Google GitHub social OAuth login providers”
-- iOS: “sign up create account email password or continue with social”
-- Web: “login page with multiple OAuth provider buttons”
+**Refero-style structure + UpdateApply forest accent — not parchment wash.**
 
-**Status:** Mobbin MCP authenticated, but `search_flows` requires a **paid Mobbin plan** (`https://mobbin.com/pricing`). No screen images or app names could be pulled.
+Favour supplied a Refero-style sign-in screenshot (Mobbin waived/blocked). That
+reference is centered, white, high-whitespace, and pill-shaped. The previous
+parchment/card auth prototype fought that pattern, so this pass:
 
-**References (app + screen / pattern):** *blocked — pending paid Mobbin or Favour waiver*
+- **Canvas:** pure white (`#FFFFFF`), no grain / radial wash
+- **Shape language:** full pills for inputs + CTAs (explicit override of “avoid
+  pills” taste rules — Favour chose this pattern)
+- **Brand:** small rounded-square mark (`u` + `+`) in forest `#1B4D3E`, matching
+  the product seed color; primary “Sign in / Sign up” button uses the same forest
+  instead of pure black so UpdateApply still reads without drowning the minimal layout
+- **Links:** blue `#2F6FED` for affordance (Reset / Sign up / Sign in), as in the
+  reference
+- **OAuth:** Google only — light grey pill under an “or” divider
 
-**What we borrow (provisional, from UpdateApply brand + common OAuth patterns):**
-- Single-column auth composition; brand as hero signal
-- Stacked full-width provider buttons (Google / GitHub / Notion)
-- Sign-in ↔ Sign-up toggle without separate marketing chrome
-- Explicit loading + inline error states
+Pure B&W was considered; forest on mark + primary CTA keeps brand identity with
+almost the same calm as the reference.
+
+## Inspiration
+
+**Source:** Favour’s Refero-style screenshot (attached in chat), not Mobbin.
+
+**What we borrow:**
+- Centered single column, generous vertical whitespace
+- Brand mark → headline → short sub → labeled fields → primary CTA → mode switch → or → Google → Terms/Privacy
+- Pill inputs with labels above; Reset Password? right under password
+- Sign-in ↔ Sign-up via text link (same layout)
 
 **What we adapt / skip:**
-- No purple SaaS gradient, cream+terracotta, or dense broadsheet
-- No email/password fields in MVP
-- Forest ink + parchment atmosphere from existing `AppTheme` seed `0xFF1B4D3E`
+- Refero “p+” mark → UpdateApply `u+` forest mark
+- Copy adapted for UpdateApply (no Refero branding)
+- GitHub / Notion OAuth removed from UI for v1
+- Email/password kept (as in reference), plus Google
 
 ## Tokens
 
 **Colors:**
-- `--bg`: `#F3F0E8` parchment wash (atmosphere via grain + soft radial, not flat white)
-- `--ink`: `#14241E` primary text
-- `--muted`: `#5C6B64`
-- `--accent`: `#1B4D3E` UpdateApply forest
+- `--bg`: `#FFFFFF`
+- `--ink`: `#111111`
+- `--muted`: `#6B6B6B`
+- `--label`: `#3A3A3A`
+- `--line`: `#111111` (input border)
+- `--surface-soft`: `#F5F5F5` (Google button)
+- `--link`: `#2F6FED`
+- `--accent`: `#1B4D3E` (mark + primary CTA)
 - `--accent-hover`: `#153D32`
-- `--surface`: `#FFFDF8`
-- `--line`: `#D5D0C4`
-- `--danger`: `#9B2C2C`
-- `--danger-bg`: `#F8E8E8`
-- Provider surfaces: Google white, GitHub `#24292F`, Notion `#191919`
+- `--danger` / `--danger-bg`: `#9B2C2C` / `#F8E8E8`
 
 **Spacing grid:** 8px
 
 **Type scale (≤5):**
-- Display: 40px / 700 (brand)
-- Title: 24px / 600
-- Body: 16px / 400
-- Label: 14px / 500
-- Caption: 12px / 400
+- Headline: 28px / 700
+- Sub: 16px / 500
+- Body / control: 15px / 500–600
+- Label: 13px / 600
+- Caption / legal: 12px / 400
 
-**Fonts:** Fraunces (display/brand) + Source Sans 3 (UI) via Google Fonts
+**Fonts:** Source Sans 3 (UI) via Google Fonts — clean sans to match the reference
+
+**Shape:** `--pill: 999px` on inputs and buttons; mark radius 12px
 
 **Motion:**
-- Panel enter: 280ms ease-out (opacity + 8px rise)
+- Page enter: 280ms ease-out (opacity + 8px rise)
 - Button press: 120ms ease
-- Error slide: 200ms ease-out
-- Tab underline: 180ms ease
+- Error: 200ms ease-out
+- Focus ring: accent at 18% mix
 
 ## Edge-case checklist
 
-- [x] Loading — “Connecting…” overlay on active provider
-- [x] Error — inline alert with retry copy
-- [x] Empty — linked-accounts panel empty state
-- [x] Overflow — long error / long email truncation
+- [x] Loading — primary / Google show spinner + “Signing in…” / “Connecting…”
+- [x] Error — inline alert above the form
+- [x] Empty — placeholder email when cleared (demo starts filled)
+- [x] Overflow — long error wraps; column capped at 340px

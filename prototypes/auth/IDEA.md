@@ -1,28 +1,33 @@
-# Screen / flow: Auth (sign-in / sign-up / link providers)
+# Screen / flow: Auth (sign-in / sign-up)
 
-**Primary action:** Start OAuth with Google, GitHub, or Notion so the user can save a profile and tailor resumes.
+**Primary action:** Sign in with email/password, or Continue with Google, so the
+user can save a profile and tailor resumes.
 
 **Happy path (A → B):**
-1. Land on Sign in (default) — brand + one line of intent.
-2. Tap a provider → Supabase OAuth → redirect back with session.
-3. Optional: switch to Sign up (same providers; first visit creates the account).
-4. Optional later: Connected accounts screen to link another provider.
+1. Land on Sign in — mark + “Hello again” + “Sign in to continue”.
+2. Enter email/password → Sign in, **or** tap Continue with Google (Supabase OAuth).
+3. Optional: “Sign up” toggles matching layout (Create your account).
+4. Optional: Reset Password? (prototype link; flow TBD).
 
 **API / data available:**
-- Supabase Auth session (access JWT) after OAuth.
-- Backend verifies JWT on protected routes; providers configured in Supabase Dashboard.
+- Supabase Auth: email/password + Google OAuth session (access JWT).
+- Backend verifies JWT on protected routes.
 
 **Constraints:**
-- Web-first Flutter; deep link / redirect URLs required for OAuth return.
-- No email/password in MVP (OAuth only).
+- Web-first Flutter; OAuth redirect URLs required for Google return.
+- **v1 OAuth UI: Google only** (GitHub / Notion out of scope for the auth surface).
 - Flutter production screens await prototype approval (ui-design gate).
+- Pill / minimal pattern is intentional (Favour reference).
 
 **UX copy (real words):**
-- Title (sign-in): Welcome back
-- Title (sign-up): Create your UpdateApply account
-- Body: Tailor resumes to each job description — sign in to keep your profile.
-- CTAs: Continue with Google / Continue with GitHub / Continue with Notion
-- Helper: Same providers either way — we’ll create an account if you’re new.
-- Loading: Connecting…
-- Error: Sign-in didn’t finish. Try again or pick another provider.
-- Empty (linked accounts): No other providers linked yet.
+- Sign-in title: Hello again
+- Sign-in sub: Sign in to continue
+- Sign-up title: Create your account
+- Sign-up sub: Sign up to start tailoring
+- CTAs: Sign in / Sign up / Continue with Google
+- Reset: Reset Password?
+- Switch (in): Don’t have an account? Sign up
+- Switch (up): Already have an account? Sign in
+- Loading: Signing in… / Connecting…
+- Error: Sign-in didn’t finish. Check your details or try Google again.
+- Footer: Terms · Privacy
