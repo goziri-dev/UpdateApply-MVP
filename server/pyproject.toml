@@ -1,0 +1,53 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "UpdateApply API — resume tailor backend"
+readme = "README.md"
+authors = [
+    { name = "Goziri", email = "goziri.dev@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.20.0",
+    "fastapi[standard]>=0.143.3",
+    "langchain>=1.4.6",
+    "langchain-openai>=1.7.2",
+    "langchain-openrouter>=0.2.9",
+    "pgvector>=0.5.1",
+    "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.16.0",
+    "python-multipart>=0.0.32",
+    "sqlmodel>=0.0.48",
+]
+
+[project.scripts]
+app = "app.main:main"
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pyrefly>=1.4.0",
+    "ruff>=0.17.1",
+]
+
+[tool.uv.build-backend]
+module-root = ""
+
+[tool.pyrefly]
+# Flat layout: package lives at server/app (see [tool.uv.build-backend] module-root).
+# Pin interpreter + search-path so the IDE/LSP resolves `app.*` to this unit — not the
+# sibling Flutter `app/` folder at the monorepo root — even when the status-bar
+# interpreter is wrong or unset.
+python-interpreter-path = ".venv/bin/python"
+search-path = ["."]
+project-includes = [
+    "app/**/*.py",
+    "alembic/**/*.py",
+]
+project-excludes = [
+    "**/.venv/**",
+    "**/__pycache__/**",
+]
