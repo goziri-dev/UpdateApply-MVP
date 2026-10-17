@@ -10,3 +10,9 @@ class AuthProviderInfo(BaseModel):
 
 class AuthProvidersResponse(BaseModel):
     providers: list[AuthProviderInfo]
+
+
+class AuthMeResponse(BaseModel):
+    id: str
+    email: str | None = None
+    role: str | None = None

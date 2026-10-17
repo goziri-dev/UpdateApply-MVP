@@ -33,9 +33,8 @@ class Settings(BaseSettings):
 
     @property
     def supabase_configured(self) -> bool:
-        return bool(
-            self.supabase_url and self.supabase_anon_key and self.supabase_jwt_secret
-        )
+        """Client credentials present (JWT secret optional when JWKS is enabled)."""
+        return bool(self.supabase_url and self.supabase_anon_key)
 
 
 @lru_cache

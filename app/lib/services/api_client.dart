@@ -1,25 +1,36 @@
 import 'package:dio/dio.dart';
 
-/// Base URL for local API. Prefer reading from env at build time later.
-const String kApiBaseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://localhost:8000',
-);
+import '../core/config/app_env.dart';
+import '../features/auth/services/auth_service.dart';
 
 class ApiClient {
-  ApiClient({Dio? dio})
-    : dio =
+  ApiClient({Dio? dio, AuthService? authService})
+    : _auth = authService ?? AuthService(),
+      dio =
           dio ??
           Dio(
             BaseOptions(
-              baseUrl: kApiBaseUrl,
+              baseUrl: AppEnv.apiBaseUrl,
               connectTimeout: const Duration(seconds: 10),
               receiveTimeout: const Duration(seconds: 30),
               headers: {'Accept': 'application/json'},
             ),
-          );
+          ) {
+    this.dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final token = _auth.accessToken;
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          return handler.next(options);
+        },
+      ),
+    );
+  }
 
   final Dio dio;
+  final AuthService _auth;
 
   Future<Map<String, dynamic>> health() async {
     final response = await dio.get<Map<String, dynamic>>('/health');

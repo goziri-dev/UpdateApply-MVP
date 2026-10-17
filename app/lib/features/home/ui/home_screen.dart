@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:signals/signals_flutter.dart';
 
 import '../state/home_state.dart';
@@ -32,6 +33,11 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'MVP: tailor-first. Profile + tailor screens come next.',
                 style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => context.go('/auth'),
+                child: const Text('Auth placeholder (prototype pending)'),
               ),
             ],
           ),

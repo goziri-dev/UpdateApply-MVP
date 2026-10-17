@@ -3,9 +3,12 @@ import 'package:scoped_deps/scoped_deps.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/services/supabase_bootstrap.dart';
 import 'features/home/state/home_state.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await bootstrapSupabase();
   runScoped(() => runApp(const UpdateApplyApp()), values: {homeMessageRef});
 }
 

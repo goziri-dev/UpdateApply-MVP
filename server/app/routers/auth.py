@@ -1,9 +1,10 @@
-"""Auth stubs — Supabase Auth handles OAuth (Google, GitHub, Notion)."""
+"""Auth routes — OAuth is handled by Supabase on the Flutter client; API verifies JWTs."""
 
 from fastapi import APIRouter
 
+from app.core.auth import CurrentUser
 from app.core.config import get_settings
-from app.schemas.auth import AuthProviderInfo, AuthProvidersResponse
+from app.schemas.auth import AuthMeResponse, AuthProviderInfo, AuthProvidersResponse
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -13,16 +14,16 @@ _PROVIDERS = ("google", "github", "notion")
 @router.get("/providers", response_model=AuthProvidersResponse)
 def list_providers() -> AuthProvidersResponse:
     s = get_settings()
-    configured = s.supabase_configured
+    configured = bool(s.supabase_url and s.supabase_anon_key)
     providers = [
         AuthProviderInfo(
             provider=name,
-            authorize_url=f"/api/v1/auth/{name}/start",
+            authorize_url=None,
             configured=configured,
             detail=(
-                "Stub — enable provider in Supabase Dashboard "
-                "(Authentication → Providers), then wire Flutter "
-                "supabase_flutter sign-in + API JWT verification."
+                "OAuth runs in the Flutter client via supabase_flutter "
+                f"(signInWithOAuth → {name}). Enable the provider in "
+                "Supabase Dashboard → Authentication → Providers."
             ),
         )
         for name in _PROVIDERS
@@ -30,27 +31,7 @@ def list_providers() -> AuthProvidersResponse:
     return AuthProvidersResponse(providers=providers)
 
 
-@router.get("/{provider}/start")
-def oauth_start(provider: str) -> dict[str, str]:
-    return {
-        "provider": provider,
-        "status": "not_implemented",
-        "detail": (
-            f"OAuth for {provider} is handled by Supabase Auth on the client. "
-            "Fill SUPABASE_* in server/.env and app/.env, then implement "
-            "token verification on protected routes."
-        ),
-    }
-
-
-@router.get("/{provider}/callback")
-def oauth_callback(provider: str, code: str | None = None) -> dict[str, str | None]:
-    return {
-        "provider": provider,
-        "status": "not_implemented",
-        "code_received": "yes" if code else "no",
-        "detail": (
-            "Supabase hosts the OAuth callback. This route is unused once "
-            "the Flutter client uses supabase_flutter."
-        ),
-    }
+@router.get("/me", response_model=AuthMeResponse)
+def me(user: CurrentUser) -> AuthMeResponse:
+    """Protected smoke-test: requires a valid Supabase access token."""
+    return AuthMeResponse(id=user.id, email=user.email, role=user.role)
