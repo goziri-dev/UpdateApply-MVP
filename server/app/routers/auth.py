@@ -41,6 +41,7 @@ def me(user: DbUser, auth: CurrentUser) -> AuthMeResponse:
         display_name=user.display_name,
         oauth_provider=user.oauth_provider,
         oauth_subject=user.oauth_subject,
+        onboarding_status=user.onboarding_status,
         role=auth.role,
         created_at=user.created_at,
         updated_at=user.updated_at,

@@ -68,7 +68,8 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'MVP: tailor-first. Profile + tailor screens come next.',
+                'Onboarding complete. Paste a job description to tailor next '
+                '(tailor UI still stubbed).',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),

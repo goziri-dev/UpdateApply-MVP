@@ -23,6 +23,7 @@ class AuthMeResponse(BaseModel):
     display_name: str | None = None
     oauth_provider: str | None = None
     oauth_subject: str
+    onboarding_status: str = "not_started"
     role: str | None = None
     created_at: datetime
     updated_at: datetime

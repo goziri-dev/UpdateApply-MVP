@@ -14,6 +14,8 @@ class User(SQLModel, table=True):
     oauth_provider: str | None = Field(default=None, index=True)
     # Same as str(id); kept for unique lookups / future multi-provider links
     oauth_subject: str = Field(index=True, unique=True)
+    # Hard gate: not_started | in_progress | complete
+    onboarding_status: str = Field(default="not_started", index=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
     )
