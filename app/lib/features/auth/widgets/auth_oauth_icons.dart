@@ -148,7 +148,9 @@ class _NotionIconPainter extends CustomPainter {
     final paint = Paint()..color = color;
     final scale = size.width / 24;
     canvas.scale(scale, scale);
+    // Full Simple Icons / prototypes/auth Notion mark (evenOdd for N cutouts).
     final path = Path()
+      ..fillType = PathFillType.evenOdd
       ..moveTo(4.459, 4.208)
       ..cubicTo(5.205, 4.814, 5.485, 4.768, 6.887, 4.674)
       ..lineTo(20.102, 3.881)
@@ -167,6 +169,42 @@ class _NotionIconPainter extends CustomPainter {
       ..cubicTo(21.924, 5.748, 21.691, 5.421, 21.176, 5.467)
       ..lineTo(5.999, 6.354)
       ..cubicTo(5.439, 6.4, 5.252, 6.681, 5.252, 7.287)
+      ..close()
+      ..moveTo(19.589, 8.173)
+      ..cubicTo(19.682, 8.593, 19.589, 9.013, 19.169, 9.061)
+      ..lineTo(18.469, 9.201)
+      ..lineTo(18.469, 19.465)
+      ..cubicTo(17.861, 19.792, 17.301, 19.979, 16.834, 19.979)
+      ..cubicTo(16.086, 19.979, 15.899, 19.745, 15.339, 19.046)
+      ..lineTo(10.762, 11.86)
+      ..lineTo(10.762, 18.812)
+      ..lineTo(12.212, 19.139)
+      ..cubicTo(12.212, 19.139, 12.212, 19.979, 11.044, 19.979)
+      ..lineTo(7.824, 20.165)
+      ..cubicTo(7.731, 19.979, 7.824, 19.512, 8.151, 19.419)
+      ..lineTo(8.991, 19.186)
+      ..lineTo(8.991, 9.854)
+      ..lineTo(7.822, 9.76)
+      ..cubicTo(7.728, 9.34, 7.962, 8.734, 8.615, 8.687)
+      ..lineTo(12.071, 8.454)
+      ..lineTo(16.835, 15.733)
+      ..lineTo(16.835, 9.293)
+      ..lineTo(15.62, 9.153)
+      ..cubicTo(15.527, 8.639, 15.9, 8.266, 16.367, 8.22)
+      ..close()
+      ..moveTo(1.936, 1.035)
+      ..lineTo(15.246, 0.055)
+      ..cubicTo(16.88, -0.085, 17.301, 0.008, 18.328, 0.755)
+      ..lineTo(22.577, 3.741)
+      ..cubicTo(23.277, 4.254, 23.511, 4.488, 23.511, 4.954)
+      ..lineTo(23.511, 21.332)
+      ..cubicTo(23.511, 22.358, 23.138, 22.966, 21.831, 23.058)
+      ..lineTo(6.373, 23.992)
+      ..cubicTo(5.393, 24.039, 4.925, 23.899, 4.411, 23.245)
+      ..lineTo(1.282, 19.185)
+      ..cubicTo(0.722, 18.438, 0.489, 17.879, 0.489, 17.225)
+      ..lineTo(0.489, 2.667)
+      ..cubicTo(0.489, 1.828, 0.863, 1.127, 1.936, 1.035)
       ..close();
     canvas.drawPath(path, paint);
   }

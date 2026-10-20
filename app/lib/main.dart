@@ -8,6 +8,7 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/services/supabase_bootstrap.dart';
 import 'features/auth/state/auth_state.dart';
 import 'features/home/state/home_state.dart';
+import 'services/api_client.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,7 @@ Future<void> main() async {
       authBusyRef,
       authErrorRef,
       authNoticeRef,
+      apiClientRef,
     },
   );
 }

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UpdateApply — Onboarding prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <header class="topbar">
+        <button type="button" class="back" id="back-btn" aria-label="Go back">
+          <span class="back-arrow" aria-hidden="true">←</span> Back
+        </button>
+        <p class="step-indicator" id="step-indicator" aria-live="polite">1 / 5</p>
+      </header>
+
+      <div class="layout">
+        <main class="pane-left" id="pane-left" aria-live="polite">
+          <!-- steps injected by script -->
+        </main>
+
+        <aside class="pane-right" aria-hidden="true">
+          <div class="illus-frame" id="illus">
+            <div class="illus-card">
+              <div class="illus-head">
+                <div class="illus-avatar"></div>
+                <div class="illus-lines">
+                  <span class="bar bar-lg"></span>
+                  <span class="bar bar-sm"></span>
+                </div>
+              </div>
+              <div class="illus-block">
+                <span class="bar bar-md"></span>
+                <span class="bar bar-lg"></span>
+                <span class="bar bar-sm"></span>
+              </div>
+              <div class="illus-tiles">
+                <span class="tile"></span>
+                <span class="tile"></span>
+                <span class="tile"></span>
+              </div>
+              <div class="illus-block">
+                <span class="bar bar-md"></span>
+                <span class="bar bar-lg"></span>
+                <span class="bar bar-md"></span>
+                <span class="bar bar-sm"></span>
+              </div>
+            </div>
+            <p class="illus-caption" id="illus-caption">Your profile takes shape as you go</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="demo-dock" role="group" aria-label="Prototype demos">
+      <span class="demo-label">Demo</span>
+      <button type="button" data-demo="wrong-type">Wrong file type</button>
+      <button type="button" data-demo="oversize">Oversize</button>
+      <button type="button" data-demo="parse-error">Parse error</button>
+      <button type="button" data-demo="mic-denied">Mic denied</button>
+      <button type="button" data-demo="reset">Reset flow</button>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

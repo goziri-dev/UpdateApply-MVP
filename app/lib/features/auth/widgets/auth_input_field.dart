@@ -24,7 +24,7 @@ class AuthInputField extends StatelessWidget {
   };
 
   String? get _hint => switch (kind) {
-    AuthInputKind.email => 'you@company.com',
+    AuthInputKind.email => 'you@example.com',
     AuthInputKind.password => null,
   };
 

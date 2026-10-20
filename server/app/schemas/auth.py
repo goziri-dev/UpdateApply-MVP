@@ -1,3 +1,6 @@
+from datetime import datetime
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -13,6 +16,13 @@ class AuthProvidersResponse(BaseModel):
 
 
 class AuthMeResponse(BaseModel):
-    id: str
+    """Persisted app ``User`` plus JWT role when available."""
+
+    id: UUID
     email: str | None = None
+    display_name: str | None = None
+    oauth_provider: str | None = None
+    oauth_subject: str
     role: str | None = None
+    created_at: datetime
+    updated_at: datetime

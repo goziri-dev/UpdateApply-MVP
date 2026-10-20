@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.core.auth import CurrentUser
+from app.core.auth import CurrentUser, DbUser
 from app.core.config import get_settings
 from app.schemas.auth import AuthMeResponse, AuthProviderInfo, AuthProvidersResponse
 
@@ -33,6 +33,15 @@ def list_providers() -> AuthProvidersResponse:
 
 
 @router.get("/me", response_model=AuthMeResponse)
-def me(user: CurrentUser) -> AuthMeResponse:
-    """Protected smoke-test: requires a valid Supabase access token."""
-    return AuthMeResponse(id=user.id, email=user.email, role=user.role)
+def me(user: DbUser, auth: CurrentUser) -> AuthMeResponse:
+    """Upsert + return the persisted app ``User`` for the Bearer JWT."""
+    return AuthMeResponse(
+        id=user.id,
+        email=user.email,
+        display_name=user.display_name,
+        oauth_provider=user.oauth_provider,
+        oauth_subject=user.oauth_subject,
+        role=auth.role,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )

@@ -11,19 +11,38 @@ enum AuthBusyTarget { idle, email, google, github, notion, reset }
 
 final authRepositoryRef = create(AuthRepository.new);
 
-AuthRepository get authRepository => read(authRepositoryRef);
-
 final authBusyRef = create(() => signal(AuthBusyTarget.idle));
 
 final authErrorRef = create(() => signal<String?>(null));
 
 final authNoticeRef = create(() => signal<String?>(null));
 
-Signal<AuthBusyTarget> get authBusy => read(authBusyRef);
+// Hot reload recreates ScopedRef keys without re-running main()/runScoped.
+// Fallbacks keep getters working until a full hot restart.
+AuthRepository? _authRepositoryFallback;
+Signal<AuthBusyTarget>? _authBusyFallback;
+Signal<String?>? _authErrorFallback;
+Signal<String?>? _authNoticeFallback;
 
-Signal<String?> get authError => read(authErrorRef);
+AuthRepository get authRepository => read(
+  authRepositoryRef,
+  orElse: () => _authRepositoryFallback ??= AuthRepository(),
+);
 
-Signal<String?> get authNotice => read(authNoticeRef);
+Signal<AuthBusyTarget> get authBusy => read(
+  authBusyRef,
+  orElse: () => _authBusyFallback ??= signal(AuthBusyTarget.idle),
+);
+
+Signal<String?> get authError => read(
+  authErrorRef,
+  orElse: () => _authErrorFallback ??= signal<String?>(null),
+);
+
+Signal<String?> get authNotice => read(
+  authNoticeRef,
+  orElse: () => _authNoticeFallback ??= signal<String?>(null),
+);
 
 bool get isAuthBusy => authBusy.value != AuthBusyTarget.idle;
 

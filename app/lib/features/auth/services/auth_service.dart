@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_env.dart';
 import 'supabase_bootstrap.dart';
@@ -80,13 +81,26 @@ class AuthService {
     );
   }
 
+  /// Web: open IdP in a new tab. supabase_flutter hardcodes `webOnlyWindowName:
+  /// '_self'`, which navigates Flutter's debug Chrome away and breaks Google
+  /// sign-in input (ChromeProxyService / DWDS context loss).
   Future<bool> signInWithOAuth(AuthOAuthProvider provider) async {
+    final redirectTo = oauthRedirectTo;
+    if (kIsWeb) {
+      final res = await client.auth.getOAuthSignInUrl(
+        provider: provider.gotrue,
+        redirectTo: redirectTo,
+      );
+      return launchUrl(
+        Uri.parse(res.url),
+        mode: LaunchMode.platformDefault,
+        webOnlyWindowName: '_blank',
+      );
+    }
     return client.auth.signInWithOAuth(
       provider.gotrue,
-      redirectTo: oauthRedirectTo,
-      authScreenLaunchMode: kIsWeb
-          ? LaunchMode.platformDefault
-          : LaunchMode.externalApplication,
+      redirectTo: redirectTo,
+      authScreenLaunchMode: LaunchMode.externalApplication,
     );
   }
 

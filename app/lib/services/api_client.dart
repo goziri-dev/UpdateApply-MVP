@@ -1,7 +1,15 @@
 import 'package:dio/dio.dart';
+import 'package:scoped_deps/scoped_deps.dart';
 
 import '../core/config/app_env.dart';
 import '../features/auth/services/auth_service.dart';
+
+final apiClientRef = create(ApiClient.new);
+
+ApiClient? _apiClientFallback;
+
+ApiClient get apiClient =>
+    read(apiClientRef, orElse: () => _apiClientFallback ??= ApiClient());
 
 class ApiClient {
   ApiClient({Dio? dio, AuthService? authService})
@@ -34,6 +42,12 @@ class ApiClient {
 
   Future<Map<String, dynamic>> health() async {
     final response = await dio.get<Map<String, dynamic>>('/health');
+    return response.data ?? {};
+  }
+
+  /// Protected smoke-test against the FastAPI JWT verifier.
+  Future<Map<String, dynamic>> authMe() async {
+    final response = await dio.get<Map<String, dynamic>>('/api/v1/auth/me');
     return response.data ?? {};
   }
 }

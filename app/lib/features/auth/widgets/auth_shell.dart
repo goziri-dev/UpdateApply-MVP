@@ -38,34 +38,46 @@ class _AuthShellState extends State<AuthShell>
 
   @override
   Widget build(BuildContext context) {
+    // ScrollView must be full viewport width so the scrollbar sits on the
+    // browser edge; Center only the constrained column inside it.
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.grid * 3,
-              vertical: AppSpacing.grid * 4,
-            ),
-            child: FadeTransition(
-              opacity: _opacity,
-              child: SlideTransition(
-                position: _offset,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: AppSpacing.authColumn,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.grid * 3,
+                    vertical: AppSpacing.grid * 4,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const AuthBrandMark(),
-                      const SizedBox(height: AppSpacing.grid * 3.5),
-                      widget.child,
-                    ],
+                  child: Center(
+                    child: FadeTransition(
+                      opacity: _opacity,
+                      child: SlideTransition(
+                        position: _offset,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: AppSpacing.authColumn,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const AuthBrandMark(),
+                              const SizedBox(height: AppSpacing.grid * 3.5),
+                              widget.child,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
