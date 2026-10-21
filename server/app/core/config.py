@@ -25,7 +25,18 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str = ""
 
     openrouter_api_key: str = ""
-    openrouter_model: str = "openai/gpt-4o-mini"
+    # Legacy / fallback default. Prefer AgentTask defaults + per-task overrides.
+    openrouter_model: str = "google/gemini-2.5-flash"
+    # Optional OpenRouter model overrides (empty → DEFAULT_MODEL_BY_TASK).
+    openrouter_model_resume_extract: str = ""
+    openrouter_model_interview_questions: str = ""
+    openrouter_model_profile_review: str = ""
+    openrouter_model_resume_tailor: str = ""
+
+    # Local resume PDF storage (one file per user). Relative paths resolve from unit root.
+    resume_upload_dir: str = str(_UNIT_ROOT / "data" / "uploads")
+    # Offline click-through only. When false (default), parse never returns demo data.
+    allow_stub_parse: bool = False
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -35,6 +46,10 @@ class Settings(BaseSettings):
     def supabase_configured(self) -> bool:
         """Client credentials present (JWT secret optional when JWKS is enabled)."""
         return bool(self.supabase_url and self.supabase_anon_key)
+
+    @property
+    def openrouter_configured(self) -> bool:
+        return bool(self.openrouter_api_key.strip())
 
 
 @lru_cache

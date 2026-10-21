@@ -11,3 +11,6 @@ __pycache__/
 .ruff_cache/
 .pyrefly/
 *.pyc
+
+# Uploaded resume PDFs (PII) — never commit
+data/uploads/

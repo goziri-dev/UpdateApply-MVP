@@ -23,10 +23,10 @@ class OnboardingUploadResponse(BaseModel):
 
 
 class OnboardingParseResponse(BaseModel):
-    """Structured extract after parse. ``stub=True`` until real LLM/PDF extract ships."""
+    """Structured extract after parse. ``stub=True`` only when ALLOW_STUB_PARSE is on."""
 
     status: OnboardingStatus
-    stub: bool = True
+    stub: bool = False
     detail: str | None = None
     profile: dict[str, Any]
     interview_queue: list[str] = Field(default_factory=list)
@@ -39,9 +39,9 @@ class InterviewTurnRequest(BaseModel):
 
 
 class InterviewTurnResponse(BaseModel):
-    """Next question or advance signal. LLM interviewer is stubbed for MVP."""
+    """Next question or advance signal. ``stub=True`` only on ALLOW_STUB_PARSE path."""
 
-    stub: bool = True
+    stub: bool = False
     item_id: str
     item_kind: InterviewItemKind
     item_label: str
@@ -60,7 +60,7 @@ class InterviewTurnResponse(BaseModel):
 class InterviewStateResponse(BaseModel):
     """Current interview cursor for resuming the Flutter flow."""
 
-    stub: bool = True
+    stub: bool = False
     interview_complete: bool = False
     item_id: str | None = None
     item_kind: InterviewItemKind | None = None

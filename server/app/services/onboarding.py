@@ -1,27 +1,34 @@
-"""Onboarding helpers: profile upsert, stub PDF parse, stub interview turns.
+"""Onboarding helpers: profile upsert, resume parse, interview turns.
 
-TODO(real-parse): replace ``stub_parse_profile`` with PDF text extract + LLM
-structuring (OpenRouter). Keep the same Profile JSON shape.
-TODO(real-interview): replace scripted questions with an LLM interviewer that
-tracks coverage + turn budget.
+Parse: PDF bytes (local storage) → markdown → ``AgentFactory`` RESUME_EXTRACT.
+Interview: LLM scripts via ``AgentTask.INTERVIEW_QUESTIONS`` (stub only when
+``ALLOW_STUB_PARSE`` and OpenRouter is off).
 """
 
 from __future__ import annotations
 
 from copy import deepcopy
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from sqlmodel import Session, select
 
+from app.core.config import Settings, get_settings
 from app.models.profile import Profile
 from app.models.user import User
+from app.services.extract import ExtractError, ResumeExtractService
+from app.services.interview_questions import (
+    InterviewError,
+    InterviewQuestionService,
+)
+from app.services.resume_storage import ResumeStorage
 
 MAX_PDF_BYTES = 10 * 1024 * 1024
 
-# Scripted interviewer keyed by item id — mirrors prototypes/onboarding/script.js.
-INTERVIEW_SCRIPTS: dict[str, dict[str, Any]] = {
+# Offline click-through only (ALLOW_STUB_PARSE + no OpenRouter). Mirrors
+# prototypes/onboarding/script.js for the demo stub profile ids.
+STUB_INTERVIEW_SCRIPTS: dict[str, dict[str, Any]] = {
     "exp-1": {
         "label": "Software Engineer · Northwind Labs",
         "kind": "role",
@@ -48,9 +55,9 @@ INTERVIEW_SCRIPTS: dict[str, dict[str, Any]] = {
 
 
 def stub_parse_profile(*, email: str | None = None) -> dict[str, Any]:
-    """Return a realistic structured extract.
+    """Demo structured extract for offline click-through only.
 
-    Marked stub until PDF/LLM parse is wired. Shape matches resume/profile SSOT.
+    Gated by ``Settings.allow_stub_parse``. Normal parse never calls this.
     """
     return {
         "basics": {
@@ -110,6 +117,51 @@ def stub_parse_profile(*, email: str | None = None) -> dict[str, Any]:
     }
 
 
+def parse_resume_to_profile(
+    *,
+    user_id: UUID,
+    email: str | None = None,
+    filename: str = "resume.pdf",
+    settings: Settings | None = None,
+) -> tuple[dict[str, Any], bool]:
+    """Load stored PDF → LLM extract (or gated stub).
+
+    Returns:
+        ``(profile_dict, stub)`` where ``stub`` is True only for explicit stub path.
+
+    Raises:
+        ExtractError: missing PDF, empty/failed extract, or OpenRouter unavailable
+            when stub is not allowed.
+    """
+    cfg = settings or get_settings()
+    storage = ResumeStorage(cfg)
+    raw = storage.load(user_id)
+
+    if raw is None:
+        if cfg.allow_stub_parse:
+            return stub_parse_profile(email=email), True
+        raise ExtractError(
+            "Upload a PDF resume before parsing.",
+            code="missing_pdf",
+        )
+
+    if cfg.openrouter_configured:
+        extracted = ResumeExtractService(cfg).extract_from_pdf_bytes(
+            raw,
+            filename=filename,
+            email_hint=email,
+        )
+        return extracted, False
+
+    if cfg.allow_stub_parse:
+        return stub_parse_profile(email=email), True
+
+    raise ExtractError(
+        "Resume extract is not configured. Set OPENROUTER_API_KEY on the server.",
+        code="openrouter_unconfigured",
+    )
+
+
 def interview_queue_from_profile(data: dict[str, Any]) -> list[str]:
     """All work roles + projects must be interviewed (skills excluded)."""
     queue: list[str] = []
@@ -122,6 +174,150 @@ def interview_queue_from_profile(data: dict[str, Any]) -> list[str]:
         if isinstance(item_id, str) and item_id:
             queue.append(item_id)
     return queue
+
+
+def find_profile_item(
+    data: dict[str, Any], item_id: str
+) -> tuple[dict[str, Any], Literal["role", "project"]] | None:
+    """Locate an experience/project by id. Skills are never interview targets."""
+    for item in data.get("experience") or []:
+        if isinstance(item, dict) and item.get("id") == item_id:
+            return item, "role"
+    for item in data.get("projects") or []:
+        if isinstance(item, dict) and item.get("id") == item_id:
+            return item, "project"
+    return None
+
+
+def profile_item_label(
+    data: dict[str, Any], item_id: str
+) -> tuple[str, Literal["role", "project"]]:
+    """Human label for queue chips without requiring an LLM script."""
+    found = find_profile_item(data, item_id)
+    if found is None:
+        return item_id, "role"
+    item, kind = found
+    if kind == "project":
+        title = str(item.get("title") or "Project").strip() or "Project"
+        return f"{title} (project)", "project"
+    title = str(item.get("title") or "Role").strip() or "Role"
+    company = str(item.get("company") or "").strip()
+    label = f"{title} · {company}" if company else title
+    return label, "role"
+
+
+def _stub_script_for_item(data: dict[str, Any], item_id: str) -> dict[str, Any]:
+    """Gated offline scripts for demo profile ids; generic fallback otherwise."""
+    if item_id in STUB_INTERVIEW_SCRIPTS:
+        return deepcopy(STUB_INTERVIEW_SCRIPTS[item_id])
+    label, kind = profile_item_label(data, item_id)
+    if kind == "project":
+        return {
+            "label": label,
+            "kind": "project",
+            "coverage": ["Problem", "Approach", "Stack", "Status"],
+            "questions": [
+                f"What problem does {label} solve, and who is it for?",
+                "Walk me through your approach and what you built yourself.",
+                "What is the current status, and what would you do next?",
+                "Anything else about this project before we move on?",
+            ],
+        }
+    return {
+        "label": label,
+        "kind": "role",
+        "coverage": ["Scope", "Stack", "Impact", "Collaboration"],
+        "questions": [
+            "Walk me through what you owned day to day in this role.",
+            "What stack or systems did you touch most?",
+            "What outcome are you most proud of here?",
+            "Anything else about this role I should capture before we move on?",
+        ],
+    }
+
+
+def cached_interview_script(
+    data: dict[str, Any], item_id: str
+) -> dict[str, Any] | None:
+    meta = data.get("_onboarding") if isinstance(data.get("_onboarding"), dict) else {}
+    scripts = meta.get("item_scripts") if isinstance(meta, dict) else None
+    if not isinstance(scripts, dict):
+        return None
+    raw = scripts.get(item_id)
+    if not isinstance(raw, dict):
+        return None
+    questions = raw.get("questions")
+    if not isinstance(questions, list) or not questions:
+        return None
+    return {
+        "label": str(raw.get("label") or item_id),
+        "kind": raw.get("kind") if raw.get("kind") in ("role", "project") else "role",
+        "coverage": [str(c) for c in list(raw.get("coverage") or [])],
+        "questions": [str(q) for q in questions],
+    }
+
+
+def store_interview_script(
+    data: dict[str, Any], item_id: str, script: dict[str, Any]
+) -> dict[str, Any]:
+    out = deepcopy(data)
+    meta = dict(out.get("_onboarding") or {})
+    scripts = dict(meta.get("item_scripts") or {})
+    scripts[item_id] = {
+        "label": script["label"],
+        "kind": script["kind"],
+        "coverage": list(script.get("coverage") or []),
+        "questions": list(script.get("questions") or []),
+    }
+    meta["item_scripts"] = scripts
+    out["_onboarding"] = meta
+    return out
+
+
+def ensure_interview_script(
+    data: dict[str, Any],
+    item_id: str,
+    *,
+    settings: Settings | None = None,
+) -> tuple[dict[str, Any], dict[str, Any], bool]:
+    """Return ``(script, data, stub)``, generating + caching when missing.
+
+    Live path (OpenRouter configured): LLM via ``InterviewQuestionService``.
+    Stub path: only when ``allow_stub_parse`` and OpenRouter is off.
+    """
+    cached = cached_interview_script(data, item_id)
+    if cached is not None:
+        cfg = settings or get_settings()
+        return cached, data, not cfg.openrouter_configured
+
+    cfg = settings or get_settings()
+    found = find_profile_item(data, item_id)
+    if found is None:
+        raise InterviewError(
+            f"Unknown interview item {item_id!r}. Re-parse your resume and try again.",
+            code="unknown_item",
+        )
+    item, kind = found
+    basics = data.get("basics") if isinstance(data.get("basics"), dict) else {}
+
+    if cfg.openrouter_configured:
+        script = InterviewQuestionService(cfg).generate_for_item(
+            item=item,
+            kind=kind,
+            basics=basics,
+        )
+        updated = store_interview_script(data, item_id, script)
+        return script, updated, False
+
+    if cfg.allow_stub_parse:
+        script = _stub_script_for_item(data, item_id)
+        updated = store_interview_script(data, item_id, script)
+        return script, updated, True
+
+    raise InterviewError(
+        "Interview questions are not configured. Set OPENROUTER_API_KEY on the server.",
+        code="openrouter_unconfigured",
+    )
 
 
 def default_onboarding_meta(

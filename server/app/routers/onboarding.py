@@ -1,4 +1,4 @@
-"""Onboarding API: PDF upload, stub parse, interview turns, review, complete."""
+"""Onboarding API: PDF upload, LLM parse, interview turns, review, complete."""
 
 from __future__ import annotations
 
@@ -21,6 +21,9 @@ from app.schemas.onboarding import (
     OnboardingUploadResponse,
 )
 from app.services import onboarding as svc
+from app.services.extract import ExtractError
+from app.services.interview_questions import InterviewError
+from app.services.resume_storage import ResumeStorage
 
 router = APIRouter(prefix="/api/v1/onboarding", tags=["onboarding"])
 
@@ -30,6 +33,44 @@ SessionDep = Annotated[Session, Depends(get_session)]
 def _meta(data: dict[str, Any]) -> dict[str, Any]:
     raw = data.get("_onboarding")
     return raw if isinstance(raw, dict) else {}
+
+
+def _http_for_interview_error(exc: InterviewError) -> HTTPException:
+    code = exc.code
+    if code in {"unknown_item", "empty_interview"}:
+        status_code = status.HTTP_400_BAD_REQUEST
+    elif code == "openrouter_unconfigured":
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        status_code = status.HTTP_502_BAD_GATEWAY
+    return HTTPException(status_code=status_code, detail=exc.message)
+
+
+def _kind(raw: object) -> InterviewItemKind:
+    value = str(raw or "role")
+    return cast(InterviewItemKind, value if value in ("role", "project") else "role")
+
+
+def _queue_meta(
+    data: dict[str, Any], queue: list[str], index: int
+) -> list[dict[str, Any]]:
+    """Queue chips: prefer cached LLM labels, else profile-derived labels."""
+    queue_meta: list[dict[str, Any]] = []
+    for i, qid in enumerate(queue):
+        cached = svc.cached_interview_script(data, qid)
+        if cached is not None:
+            label = str(cached.get("label") or qid)
+            kind = _kind(cached.get("kind"))
+        else:
+            label, kind_raw = svc.profile_item_label(data, qid)
+            kind = _kind(kind_raw)
+        state = "todo"
+        if i < index:
+            state = "done"
+        elif i == index:
+            state = "active"
+        queue_meta.append({"id": qid, "label": label, "kind": kind, "state": state})
+    return queue_meta
 
 
 @router.get("/status", response_model=OnboardingStatusResponse)
@@ -71,9 +112,13 @@ async def upload_resume(
             detail="Empty file. Choose a PDF resume to continue.",
         )
 
-    # TODO(storage): persist PDF bytes (local disk / Supabase Storage). MVP keeps
-    # only metadata so Favour can click through without object storage.
-    _ = raw
+    try:
+        ResumeStorage().save(user.id, raw, filename=filename)
+    except OSError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not store the uploaded resume. Try again.",
+        ) from exc
 
     profile = svc.get_or_create_profile(session, user.id)
     data = dict(profile.data or {})
@@ -93,23 +138,48 @@ async def upload_resume(
     )
 
 
+def _http_for_extract_error(exc: ExtractError) -> HTTPException:
+    code = exc.code
+    if code in {
+        "missing_pdf",
+        "empty_pdf",
+        "empty_text",
+        "empty_extract",
+        "pdf_unreadable",
+    }:
+        status_code = status.HTTP_400_BAD_REQUEST
+    elif code == "openrouter_unconfigured":
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        status_code = status.HTTP_502_BAD_GATEWAY
+    return HTTPException(status_code=status_code, detail=exc.message)
+
+
 @router.post("/parse", response_model=OnboardingParseResponse)
 def parse_resume(user: DbUser, session: SessionDep) -> OnboardingParseResponse:
-    """Stub structured extract. Prefer real PDF+LLM when OpenRouter is ready."""
+    """PDF → markdown → OpenRouter structured Profile (stub only if explicitly allowed)."""
     profile = svc.get_or_create_profile(session, user.id)
     meta = _meta(profile.data or {})
-    filename = meta.get("resume_filename")
-    if not filename:
+    filename = str(meta.get("resume_filename") or "resume.pdf")
+    if not meta.get("resume_filename") and not ResumeStorage().exists(user.id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Upload a PDF resume before parsing.",
         )
 
-    extracted = svc.stub_parse_profile(email=user.email)
+    try:
+        extracted, is_stub = svc.parse_resume_to_profile(
+            user_id=user.id,
+            email=user.email,
+            filename=filename,
+        )
+    except ExtractError as exc:
+        raise _http_for_extract_error(exc) from exc
+
     queue = svc.interview_queue_from_profile(extracted)
     data = svc.merge_onboarding_meta(
         extracted,
-        resume_filename=filename,
+        resume_filename=meta.get("resume_filename") or filename,
         resume_size_bytes=meta.get("resume_size_bytes"),
         step="interview",
         interview_queue=queue,
@@ -120,13 +190,15 @@ def parse_resume(user: DbUser, session: SessionDep) -> OnboardingParseResponse:
     svc.save_profile_data(session, profile, data)
     svc.set_user_onboarding_status(session, user, "in_progress")
 
+    detail = (
+        "STUB PARSE: demo profile (ALLOW_STUB_PARSE). Not used when OpenRouter is configured."
+        if is_stub
+        else "Parsed resume into a structured profile."
+    )
     return OnboardingParseResponse(
         status="in_progress",
-        stub=True,
-        detail=(
-            "STUB PARSE: returned demo structured profile. "
-            "Replace with PDF text extract + LLM when ready."
-        ),
+        stub=is_stub,
+        detail=detail,
         profile=svc.profile_public(data),
         interview_queue=queue,
     )
@@ -135,63 +207,40 @@ def parse_resume(user: DbUser, session: SessionDep) -> OnboardingParseResponse:
 @router.get("/interview", response_model=InterviewStateResponse)
 def interview_state(user: DbUser, session: SessionDep) -> InterviewStateResponse:
     profile = svc.get_or_create_profile(session, user.id)
-    data = profile.data or {}
+    data = dict(profile.data or {})
     meta = _meta(data)
     queue: list[str] = list(meta.get("interview_queue") or [])
     index = int(meta.get("interview_index") or 0)
     q_index = int(meta.get("question_index") or 0)
     coverage_hits_map: dict[str, Any] = dict(meta.get("coverage_hits") or {})
 
-    queue_meta: list[dict[str, Any]] = []
-    for i, item_id in enumerate(queue):
-        script = svc.INTERVIEW_SCRIPTS.get(item_id, {})
-        state = "todo"
-        if i < index:
-            state = "done"
-        elif i == index:
-            state = "active"
-        queue_meta.append(
-            {
-                "id": item_id,
-                "label": script.get("label", item_id),
-                "kind": script.get("kind", "role"),
-                "state": state,
-            }
-        )
-
     if index >= len(queue):
+        queue_meta = _queue_meta(data, queue, index)
         return InterviewStateResponse(
-            stub=True,
+            stub=False,
             interview_complete=True,
             queue=queue_meta,
         )
 
     item_id = queue[index]
-    script = svc.INTERVIEW_SCRIPTS.get(item_id)
-    if script is None:
-        # Fallback questions when parse ids don't match seeded scripts.
-        script = {
-            "label": item_id,
-            "kind": "role",
-            "coverage": ["Scope", "Impact"],
-            "questions": [
-                "Walk me through this item — what did you own and what changed because of you?",
-                "Anything else I should capture before we move on?",
-            ],
-        }
+    had_script = svc.cached_interview_script(data, item_id) is not None
+    try:
+        script, data, is_stub = svc.ensure_interview_script(data, item_id)
+    except InterviewError as exc:
+        raise _http_for_interview_error(exc) from exc
+
+    # Persist newly generated scripts so resume does not re-call the LLM.
+    if not had_script:
+        svc.save_profile_data(session, profile, data)
 
     questions: list[str] = [str(q) for q in list(script["questions"])]
-    raw_kind = str(script.get("kind") or "role")
-    kind: InterviewItemKind = cast(
-        InterviewItemKind,
-        raw_kind if raw_kind in ("role", "project") else "role",
-    )
+    kind = _kind(script.get("kind"))
     label = str(script.get("label") or item_id)
     q_index = min(q_index, max(len(questions) - 1, 0))
     hits = list(coverage_hits_map.get(item_id) or [])
 
     return InterviewStateResponse(
-        stub=True,
+        stub=is_stub,
         interview_complete=False,
         item_id=item_id,
         item_kind=kind,
@@ -201,7 +250,7 @@ def interview_state(user: DbUser, session: SessionDep) -> InterviewStateResponse
         question_total=len(questions),
         coverage=[str(c) for c in list(script.get("coverage") or [])],
         coverage_hits=hits,
-        queue=queue_meta,
+        queue=_queue_meta(data, queue, index),
     )
 
 
@@ -223,7 +272,7 @@ def interview_turn(
 
     if not queue or index >= len(queue):
         return InterviewTurnResponse(
-            stub=True,
+            stub=False,
             item_id=body.item_id,
             item_kind="role",
             item_label="",
@@ -239,20 +288,15 @@ def interview_turn(
             detail=f"Expected item_id {current_id}, got {body.item_id}",
         )
 
-    script = svc.INTERVIEW_SCRIPTS.get(
-        current_id,
-        {
-            "label": current_id,
-            "kind": "role",
-            "coverage": ["Scope", "Impact"],
-            "questions": [
-                "Walk me through this item — what did you own?",
-                "Anything else before we move on?",
-            ],
-        },
-    )
-    questions: list[str] = list(script["questions"])
-    coverage: list[str] = list(script.get("coverage") or [])
+    try:
+        script, data, is_stub = svc.ensure_interview_script(data, current_id)
+    except InterviewError as exc:
+        raise _http_for_interview_error(exc) from exc
+
+    questions: list[str] = [str(q) for q in list(script["questions"])]
+    coverage: list[str] = [str(c) for c in list(script.get("coverage") or [])]
+    kind = _kind(script.get("kind"))
+    label = str(script.get("label") or current_id)
     hits = set(coverage_hits_map.get(current_id) or [])
 
     transcript = body.transcript.strip()
@@ -284,6 +328,22 @@ def interview_turn(
         interview_complete = index >= len(queue)
         next_item = queue[index] if index < len(queue) else None
         step = "review" if interview_complete else "interview"
+
+        next_question: str | None = None
+        next_total = 0
+        next_coverage: list[str] = []
+        if next_item:
+            try:
+                next_script, data, is_stub = svc.ensure_interview_script(
+                    data, next_item
+                )
+            except InterviewError as exc:
+                raise _http_for_interview_error(exc) from exc
+            next_qs = list(next_script.get("questions") or [])
+            next_question = str(next_qs[0]) if next_qs else None
+            next_total = len(next_qs)
+            next_coverage = [str(c) for c in list(next_script.get("coverage") or [])]
+
         data = svc.merge_onboarding_meta(
             data,
             step=step,
@@ -296,24 +356,26 @@ def interview_turn(
         )
         svc.save_profile_data(session, profile, data)
 
-        next_script = svc.INTERVIEW_SCRIPTS.get(next_item or "", {})
+        detail = (
+            "STUB INTERVIEW: offline scripted follow-ups (ALLOW_STUB_PARSE)."
+            if is_stub
+            else "Interview turn saved."
+        )
         return InterviewTurnResponse(
-            stub=True,
+            stub=is_stub,
             item_id=current_id,
-            item_kind=script["kind"],
-            item_label=script["label"],
-            question=None
-            if interview_complete
-            else (next_script.get("questions") or [None])[0],
+            item_kind=kind,
+            item_label=label,
+            question=None if interview_complete else next_question,
             question_index=0,
-            question_total=len(next_script.get("questions") or []),
-            coverage=list(next_script.get("coverage") or []),
+            question_total=next_total,
+            coverage=next_coverage,
             coverage_hits=[],
             item_complete=item_complete,
             interview_complete=interview_complete,
             next_item_id=next_item,
             enriched_summary=transcript or None,
-            detail="STUB INTERVIEW: scripted follow-ups; swap for LLM later.",
+            detail=detail,
         )
 
     q_index += 1
@@ -329,11 +391,16 @@ def interview_turn(
     )
     svc.save_profile_data(session, profile, data)
 
+    detail = (
+        "STUB INTERVIEW: offline scripted follow-ups (ALLOW_STUB_PARSE)."
+        if is_stub
+        else "Interview turn saved."
+    )
     return InterviewTurnResponse(
-        stub=True,
+        stub=is_stub,
         item_id=current_id,
-        item_kind=script["kind"],
-        item_label=script["label"],
+        item_kind=kind,
+        item_label=label,
         question=questions[q_index],
         question_index=q_index,
         question_total=len(questions),
@@ -343,7 +410,7 @@ def interview_turn(
         interview_complete=False,
         next_item_id=current_id,
         enriched_summary=transcript or None,
-        detail="STUB INTERVIEW: scripted follow-ups; swap for LLM later.",
+        detail=detail,
     )
 
 

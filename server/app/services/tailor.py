@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.core.config import Settings, get_settings
+from app.core.llm_tasks import AgentTask
 from app.schemas.resume import (
     ExperienceItem,
     ResumeBasics,
@@ -14,6 +15,7 @@ from app.schemas.resume import (
     TailorRequest,
     TailorResponse,
 )
+from app.services.agents import AgentFactory
 
 
 class TailorService:
@@ -25,10 +27,11 @@ class TailorService:
 
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
+        self.agents = AgentFactory(self.settings)
 
     def tailor(self, request: TailorRequest) -> TailorResponse:
-        if self.settings.openrouter_api_key:
-            # Placeholder for real chain: ChatOpenRouter / langchain-openrouter.
+        if self.agents.configured():
+            # Placeholder for real chain: self.agents.create(AgentTask.RESUME_TAILOR).
             # Keep stub behavior until the Implementation task lands.
             pass
 
@@ -81,10 +84,12 @@ class TailorService:
         return TailorResponse(resume=resume, stub=True, detail=detail)
 
     def _llm_ready(self) -> bool:
-        return bool(self.settings.openrouter_api_key)
+        return self.agents.configured()
 
     def build_llm_notes(self) -> dict[str, Any]:
         return {
-            "model": self.settings.openrouter_model,
+            "model": self.agents.model_for(AgentTask.RESUME_TAILOR),
+            "task": AgentTask.RESUME_TAILOR.name,
+            "models": self.agents.describe_models(),
             "configured": self._llm_ready(),
         }
