@@ -19,6 +19,7 @@ from app.models.profile import Profile
 from app.models.user import User
 from app.services.extract import ExtractError, ResumeExtractService
 from app.services.interview_questions import (
+    INTERVIEW_SCRIPT_VERSION,
     InterviewError,
     InterviewQuestionService,
 )
@@ -32,23 +33,28 @@ STUB_INTERVIEW_SCRIPTS: dict[str, dict[str, Any]] = {
     "exp-1": {
         "label": "Software Engineer · Northwind Labs",
         "kind": "role",
-        "coverage": ["Scope", "Stack", "Impact", "Collaboration"],
+        "coverage": ["Day-to-day", "Tools", "Outcomes", "How you worked"],
         "questions": [
-            "Walk me through what you owned day to day in this role — products, systems, or teams.",
-            "You mentioned fullstack work. Besides the UI, what did you touch on the backend or data side?",
-            "What outcome are you most proud of here — a metric, a launch, or a hard problem you unblocked?",
-            "Anything else about this role I should capture before we move on?",
+            "What did a typical stretch of work look like here — products, systems, or people you spent time with? No pressure if memory is fuzzy.",
+            "You mentioned fullstack work. Besides the UI, what else did you touch — backend, data, or something shared with the team?",
+            "Looking back, what would you want a friend to understand about what you actually did here — a launch, a hard problem, or something quieter?",
+            "Anything else you'd like to add about this role before we move on? No rush if not.",
         ],
     },
     "proj-1": {
         "label": "UpdateApply (project)",
         "kind": "project",
-        "coverage": ["Problem", "Approach", "Stack", "Status"],
+        "coverage": [
+            "Why it exists",
+            "How you approached it",
+            "Tools",
+            "Where it stands",
+        ],
         "questions": [
-            "What problem does UpdateApply solve for you, and who is it for?",
-            "How does the career profile become a tailored resume — what's the core loop?",
-            "What did you build yourself versus what you're still mocking?",
-            "Anything else about this project before we wrap interviews?",
+            "What was UpdateApply trying to make easier for you, and who did you have in mind?",
+            "In your own words, how does the career profile turn into a tailored resume — what's the loop that matters?",
+            "What felt like yours to build versus still rough or mocked — and is it okay if some of that is still fuzzy?",
+            "Anything else you'd like to add about this project before we move on? No rush if not.",
         ],
     },
 }
@@ -215,23 +221,28 @@ def _stub_script_for_item(data: dict[str, Any], item_id: str) -> dict[str, Any]:
         return {
             "label": label,
             "kind": "project",
-            "coverage": ["Problem", "Approach", "Stack", "Status"],
+            "coverage": [
+                "Why it exists",
+                "How you approached it",
+                "Tools",
+                "Where it stands",
+            ],
             "questions": [
-                f"What problem does {label} solve, and who is it for?",
-                "Walk me through your approach and what you built yourself.",
-                "What is the current status, and what would you do next?",
-                "Anything else about this project before we move on?",
+                f"What was {label} trying to make easier, and who did you have in mind?",
+                "How did you approach it, and what felt like yours versus shared or still rough?",
+                "Where does it stand now, and what would you explore next if you had time?",
+                "Anything else you'd like to add about this project before we move on? No rush if not.",
             ],
         }
     return {
         "label": label,
         "kind": "role",
-        "coverage": ["Scope", "Stack", "Impact", "Collaboration"],
+        "coverage": ["Day-to-day", "Tools", "Outcomes", "How you worked"],
         "questions": [
-            "Walk me through what you owned day to day in this role.",
-            "What stack or systems did you touch most?",
-            "What outcome are you most proud of here?",
-            "Anything else about this role I should capture before we move on?",
+            "What did day-to-day work look like in this role? No pressure if memory is fuzzy.",
+            "What tools or systems did you spend the most time with?",
+            "What would you want a friend to understand about what you actually did here?",
+            "Anything else you'd like to add about this role before we move on? No rush if not.",
         ],
     }
 
@@ -245,6 +256,8 @@ def cached_interview_script(
         return None
     raw = scripts.get(item_id)
     if not isinstance(raw, dict):
+        return None
+    if raw.get("script_version") != INTERVIEW_SCRIPT_VERSION:
         return None
     questions = raw.get("questions")
     if not isinstance(questions, list) or not questions:
@@ -268,6 +281,7 @@ def store_interview_script(
         "kind": script["kind"],
         "coverage": list(script.get("coverage") or []),
         "questions": list(script.get("questions") or []),
+        "script_version": INTERVIEW_SCRIPT_VERSION,
     }
     meta["item_scripts"] = scripts
     out["_onboarding"] = meta

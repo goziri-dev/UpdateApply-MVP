@@ -20,21 +20,40 @@ class AuthRouterRefresh extends ChangeNotifier {
 
   StreamSubscription<AuthState>? _subscription;
 
+  static const _unreachableMessage =
+      "Can't reach the server. Check that the API is running, then retry.";
+
+  Future<void> retryGateSync() => _syncGateAndNotify();
+
   Future<void> _syncGateAndNotify() async {
     if (!authRepository.isSignedIn) {
       onboardingGate.value = OnboardingGate.unknown;
+      onboardingGateSyncing.value = false;
+      onboardingGateSyncError.value = null;
       notifyListeners();
       return;
     }
+
+    onboardingGateSyncing.value = true;
+    onboardingGateSyncError.value = null;
+    notifyListeners();
+
     try {
       final me = await apiClient.authMe();
       onboardingGate.value = gateFromStatus(me['onboarding_status'] as String?);
+      onboardingGateSyncError.value = null;
     } on Object {
       try {
-        await refreshOnboardingGate();
+        final status = await onboardingService.status();
+        onboardingGate.value = gateFromStatus(status['status'] as String?);
+        onboardingGateSyncError.value = null;
       } on Object {
-        // Leave unknown; redirect stays conservative.
+        if (onboardingGate.value == OnboardingGate.unknown) {
+          onboardingGateSyncError.value = _unreachableMessage;
+        }
       }
+    } finally {
+      onboardingGateSyncing.value = false;
     }
     notifyListeners();
   }

@@ -15,7 +15,7 @@ const STEP_LABEL = {
 const ILLUS_CAPTION = {
   upload: "Your profile takes shape as you go",
   parsing: "Reading your resume…",
-  interview: "Voice fills in what the PDF missed",
+  interview: "A calm chat to flesh out each item",
   review: "Check anything that looks off",
   ready: "Ready to tailor to a job description",
 };
@@ -51,12 +51,12 @@ const INTERVIEW_SCRIPT = {
   "exp-1": {
     label: "Software Engineer · Northwind Labs",
     kind: "role",
-    coverage: ["Scope", "Stack", "Impact", "Collaboration"],
+    coverage: ["Day-to-day", "Tools", "Outcomes", "How you worked"],
     questions: [
-      "Walk me through what you owned day to day in this role — products, systems, or teams.",
-      "You mentioned fullstack work. Besides the UI, what did you touch on the backend or data side?",
-      "What outcome are you most proud of here — a metric, a launch, or a hard problem you unblocked?",
-      "Anything else about this role I should capture before we move on?",
+      "What did a typical stretch of work look like here — products, systems, or people you spent time with? No pressure if memory is fuzzy.",
+      "You mentioned fullstack work. Besides the UI, what else did you touch — backend, data, or something shared with the team?",
+      "Looking back, what would you want a friend to understand about what you actually did here — a launch, a hard problem, or something quieter?",
+      "Anything else you'd like to add about this role before we move on? No rush if not.",
     ],
     mockTranscripts: [
       "I owned the tailor flow end-to-end — FastAPI endpoints, Postgres profile storage, and the Flutter client screens.",
@@ -68,16 +68,16 @@ const INTERVIEW_SCRIPT = {
   "proj-1": {
     label: "UpdateApply (project)",
     kind: "project",
-    coverage: ["Problem", "Approach", "Stack", "Status"],
+    coverage: ["Why it exists", "How you approached it", "Tools", "Where it stands"],
     questions: [
-      "What problem does UpdateApply solve for you, and who is it for?",
-      "How does the career profile become a tailored resume — what's the core loop?",
-      "What did you build yourself versus what you're still mocking in this prototype?",
-      "Anything else about this project before we wrap interviews?",
+      "What was UpdateApply trying to make easier for you, and who did you have in mind?",
+      "In your own words, how does the career profile turn into a tailored resume — what's the loop that matters?",
+      "What felt like yours to build versus still rough or mocked — and is it okay if some of that is still fuzzy?",
+      "Anything else you'd like to add about this project before we move on? No rush if not.",
     ],
     mockTranscripts: [
       "Job seekers who rewrite resumes from scratch for every JD. I wanted one persisted profile as the source of truth.",
-      "Upload or interview into a structured profile, then tailor against a job description from that SSOT.",
+      "Upload or chat into a structured profile, then tailor against a job description from that SSOT.",
       "Auth and onboarding prototypes are in HTML; Flutter auth ships; tailor and parse APIs are next.",
       "That's all.",
     ],
@@ -182,7 +182,7 @@ function renderUpload() {
 
   pane().innerHTML = `
     <h1 class="headline">Let's build your profile</h1>
-    <p class="helper">Upload any existing resume. We'll extract your basics, history, and projects — then interview each role and project so your profile has real evidence.</p>
+    <p class="helper">Upload any existing resume. We'll extract your basics, history, and projects — then talk through each role and project in a calm chat so your profile reflects what actually happened.</p>
     ${alertHtml()}
     <div class="dropzone" id="dropzone" data-has-file="${hasFile}" tabindex="0" role="button" aria-label="Upload resume PDF">
       <input class="hidden-input" id="file-input" type="file" accept="application/pdf,.pdf" />
@@ -392,14 +392,14 @@ function renderInterview() {
       : "Tap to record your answer";
 
   pane().innerHTML = `
-    <h1 class="headline">${script.kind === "role" ? "Tell us about this role" : "Tell us about this project"}</h1>
-    <p class="helper">Resume bullets are a checklist. Your voice is the evidence. Aim for a couple of minutes — say “that’s all” when you’re done.</p>
+    <h1 class="headline">${script.kind === "role" ? "Let's talk through this role" : "Let's talk through this project"}</h1>
+    <p class="helper">Resumes leave gaps — and sometimes oversell or undersell. Talk freely; fuzzy memory and shared credit are fine. A couple of minutes is enough — say “that’s all” when you’re done.</p>
     <div class="checklist">${chips}</div>
     ${alertHtml()}
     <div class="interview-card">
       <div class="interview-meta">
         <p class="interview-item">${escapeHtml(script.label)}</p>
-        <p class="interview-turn">Follow-up ${turn} of ~${totalQ}</p>
+        <p class="interview-turn">Part ${turn} of ~${totalQ}</p>
       </div>
       <div class="interview-body">
         <p class="ai-bubble"><span class="ai-label">UpdateApply</span>${escapeHtml(q)}</p>
@@ -409,7 +409,7 @@ function renderInterview() {
           </button>
           <div class="record-meta">
             <p class="record-title">${micLabel}</p>
-            <p class="record-hint">Or type below. Coverage checklist helps us know when this item is done.</p>
+            <p class="record-hint">Or type below. Themes below just help us know when this item feels complete.</p>
           </div>
         </div>
         <label class="field" for="transcript">
@@ -497,7 +497,7 @@ function renderReview() {
   const p = state.profile;
   pane().innerHTML = `
     <h1 class="headline">Review your profile</h1>
-    <p class="helper">Correct anything we got wrong. Skills are stored from your resume — we don’t interview them.</p>
+    <p class="helper">Correct anything we got wrong. Skills are stored from your resume — we don’t ask about them in the chat.</p>
     ${alertHtml()}
     <section class="section">
       <div class="section-head"><h2 class="section-title">Basics</h2></div>
@@ -547,7 +547,7 @@ function renderReview() {
       <div class="skill-wrap">
         ${p.skills.map((s) => `<span class="skill">${escapeHtml(s)}</span>`).join("")}
       </div>
-      <p class="skill-note">Extracted from your resume · not interviewed</p>
+      <p class="skill-note">Extracted from your resume · not covered in chat</p>
     </section>
     <div class="actions">
       <button type="button" class="btn btn-primary" id="save-review">Looks good — continue</button>
@@ -576,8 +576,8 @@ function renderReady() {
     <h1 class="headline">Here's your profile — ready to tailor</h1>
     <p class="helper">Onboarding is complete. Your career profile is the source of truth for every tailored resume from here on.</p>
     <div class="summary-strip">
-      <div class="stat"><p class="stat-n">${state.profile.experiences.length}</p><p class="stat-l">Roles interviewed</p></div>
-      <div class="stat"><p class="stat-n">${state.profile.projects.length}</p><p class="stat-l">Projects interviewed</p></div>
+      <div class="stat"><p class="stat-n">${state.profile.experiences.length}</p><p class="stat-l">Roles covered</p></div>
+      <div class="stat"><p class="stat-n">${state.profile.projects.length}</p><p class="stat-l">Projects covered</p></div>
       <div class="stat"><p class="stat-n">${state.profile.skills.length}</p><p class="stat-l">Skills stored</p></div>
     </div>
     <div class="alert alert-success" role="status" data-visible="true">Hard gate cleared — you can enter Tailor.</div>

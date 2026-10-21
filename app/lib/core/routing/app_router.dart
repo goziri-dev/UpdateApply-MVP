@@ -4,6 +4,7 @@ import '../../features/auth/state/auth_state.dart';
 import '../../features/auth/ui/auth_screen.dart';
 import '../../features/home/ui/home_screen.dart';
 import '../../features/onboarding/state/onboarding_state.dart';
+import '../../features/onboarding/ui/gate_loading_screen.dart';
 import '../../features/onboarding/ui/interview_screen.dart';
 import '../../features/onboarding/ui/parsing_screen.dart';
 import '../../features/onboarding/ui/ready_screen.dart';
@@ -21,11 +22,24 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
       final signedIn = authRepository.isSignedIn;
       final location = state.matchedLocation;
       final onAuth = location == '/auth';
+      final onBoot = location == '/boot';
       final onOnboarding = _isOnboardingPath(location);
       final gate = onboardingGate.value;
 
       if (!signedIn) {
         return onAuth ? null : '/auth';
+      }
+
+      // Status not loaded yet (or API unreachable) — never invent "needs
+      // onboarding." Hold on /boot until we know.
+      if (gate == OnboardingGate.unknown) {
+        return onBoot ? null : '/boot';
+      }
+
+      if (onBoot) {
+        // Gate resolved — leave the loading screen.
+        if (gate == OnboardingGate.complete) return '/';
+        return '/onboarding/upload';
       }
 
       // Signed in: leave auth. Prefer onboarding until complete.
@@ -34,7 +48,6 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
         return '/onboarding/upload';
       }
 
-      // Treat unknown like incomplete so the hard gate never leaks into home.
       if (gate != OnboardingGate.complete && !onOnboarding) {
         return '/onboarding/upload';
       }
@@ -50,6 +63,10 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
+      GoRoute(
+        path: '/boot',
+        builder: (context, state) => GateLoadingScreen(authRefresh: refresh),
+      ),
       GoRoute(
         path: '/onboarding/upload',
         builder: (context, state) => const OnboardingUploadScreen(),

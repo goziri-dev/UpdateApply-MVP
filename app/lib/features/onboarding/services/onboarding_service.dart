@@ -33,9 +33,20 @@ class OnboardingService {
     return response.data ?? {};
   }
 
+  /// PDF → markdown → OpenRouter. On Flutter web, Dio's [connectTimeout] is
+  /// time-to-response-headers (not TCP handshake), so a sync LLM parse that
+  /// takes > default 10s is aborted as connectionTimeout even when the server
+  /// is healthy. Keep these high enough for extract + structured output.
+  static const Duration _parseConnectTimeout = Duration(seconds: 120);
+  static const Duration _parseReceiveTimeout = Duration(seconds: 60);
+
   Future<Map<String, dynamic>> parse() async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/onboarding/parse',
+      options: Options(
+        connectTimeout: _parseConnectTimeout,
+        receiveTimeout: _parseReceiveTimeout,
+      ),
     );
     return response.data ?? {};
   }

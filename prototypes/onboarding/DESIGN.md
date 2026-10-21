@@ -39,16 +39,19 @@
 ## Flow map
 
 1. **Upload** — PDF dropzone + browse; edge: empty, wrong type, oversize
-2. **Parsing** — processing state until mock “experience list ready”
-3. **Interview** — sample work role, then sample project; AI Q + mic + transcript; Next follow-up / Done with this item
-4. **Review** — edit basics, experiences, projects (skills listed, not interviewed)
+2. **Parsing** — processing state until experience list ready (live: PDF → markdown → OpenRouter extract)
+3. **Conversation** — calm consultant chat per work role, then project; AI prompt + mic + transcript; Next / Done with this item (routes may still say `/interview`)
+4. **Review** — edit basics, experiences, projects (skills listed, not conversed)
 5. **Ready** — confirmation + CTA into Tailor
 
 ## Product assumptions (defaults)
 
-- Hard gate: all roles + projects must be interviewed before Review → Ready
-- Skills extracted from PDF are shown on Review but never interviewed
-- After upload: full parse completes before interviews start (no chunk-streaming UI for v1)
-- Turn budget ~3–5 follow-ups / ~2–3 min per item; user can say “that’s all” / Done
+- Hard gate: all roles + projects must be covered in conversation before Review → Ready
+- Tone: career **consultant / therapist**, not recruiter or hiring manager — low pressure so people can admit gaps, shared credit, or resume stretch
+- Skills extracted from PDF are shown on Review but never conversed
+- After upload: full parse completes before conversations start (no chunk-streaming UI for v1)
+- Turn budget ~3–4 prompts / ~2–3 min per item; user can say “that’s all” / Done
+- Prompt cache: bump `INTERVIEW_SCRIPT_VERSION` on the server when regenerating question tone
 - Mic permission denied: inline alert + text answer fallback
 - Max PDF ~10MB; LinkedIn export PDF OK to recommend in copy
+- OpenRouter extract must use a bounded client timeout so parse cannot hang forever

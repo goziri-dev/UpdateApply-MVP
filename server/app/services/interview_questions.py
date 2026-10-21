@@ -1,4 +1,4 @@
-"""Generate guided interview questions from a parsed profile item via OpenRouter."""
+"""Generate calm conversation prompts for a parsed profile item via OpenRouter."""
 
 from __future__ import annotations
 
@@ -18,22 +18,39 @@ logger = logging.getLogger(__name__)
 MAX_QUESTIONS = 4
 MIN_QUESTIONS = 2
 
+# Bump when the system prompt / tone / script shape changes so cached
+# ``item_scripts`` are discarded and regenerated.
+INTERVIEW_SCRIPT_VERSION = 2
+
 INTERVIEW_SYSTEM_PROMPT = """\
-You design a short guided interview for ONE resume item (a work role OR a project).
+You are a calm career consultant helping someone flesh out ONE resume item
+(a work role OR a project) in a low-pressure conversation.
+
+Tone:
+- Warm, curious, and non-judgmental — like a thoughtful consultant or therapist,
+  not a recruiter or hiring manager.
+- Invite honesty: fuzzy memory, shared credit, things they oversold on the resume,
+  or things they undersold. Make it safe to talk openly; no pressure if they're unsure.
+- Prefer open, reflective prompts over ownership/metrics interrogation.
+- Avoid: "Walk me through", "Tell me about a time", STAR/behavioral framing,
+  "prove", "candidate", "interview", grilling on metrics, or capture/evidence language.
 
 Goals:
-- Deepen the story so a career profile has concrete evidence (scope, approach, stack, impact).
-- Questions must be specific to THIS item's company/title/summary/bullets — not generic templates.
-- Do NOT interview skills as a separate topic; skills stay on the resume extract.
-- Respect a tight turn budget: 3–4 questions total.
-- Coverage: 3–4 short theme labels the UI can check off (role examples: Scope, Stack, Impact,
-  Collaboration; project examples: Problem, Approach, Stack, Status). Adapt to what is thin
-  or missing in the resume text.
-- Questions should invite spoken answers (1–3 sentences). Prefer follow-ups that dig into
-  ownership, decisions, metrics, and collaboration when those are weak on the resume.
-- The LAST question must invite wrap-up (e.g. anything else before moving on).
-- Never invent employers, products, or metrics that are not hinted at in the item; you may
-  ask the candidate to supply missing detail.
+- Deepen the story so the career profile reflects what actually happened
+  (what they did, how they worked, tools, outcomes) — specific to THIS item's
+  company/title/summary/bullets, not generic templates.
+- Do NOT treat skills as a separate conversation topic; skills stay on the resume extract.
+- Respect a tight turn budget: 3–4 short spoken prompts total (answers of ~1–3 sentences).
+- Coverage: 3–4 short soft theme labels the UI can check off. Prefer gentle wording
+  (role examples: Day-to-day, How you worked, Tools, Outcomes; project examples:
+  Why it exists, How you approached it, Tools, Where it stands). Adapt to what is
+  thin or missing in the resume text.
+- Clarify gently what was actually theirs vs the team's when that helps; ask what
+  they'd want a friend to understand about the work.
+- The LAST prompt must invite a soft wrap-up (e.g. anything else they'd like to add
+  before moving on — no rush).
+- Never invent employers, products, or metrics that are not hinted at in the item;
+  you may gently ask them to fill gaps in their own words.
 """
 
 
@@ -88,7 +105,8 @@ class InterviewQuestionService:
                     SystemMessage(content=INTERVIEW_SYSTEM_PROMPT),
                     HumanMessage(
                         content=(
-                            "Generate the interview script for this resume item.\n"
+                            "Generate calm conversation prompts (reflection questions) "
+                            "for this resume item.\n"
                             f"Return kind={kind!r}.\n\n"
                             f"{json.dumps(payload, ensure_ascii=False, indent=2)}"
                         )
@@ -143,9 +161,9 @@ class InterviewQuestionService:
 
         if not coverage:
             coverage = (
-                ["Scope", "Stack", "Impact"]
+                ["Day-to-day", "Tools", "Outcomes"]
                 if resolved_kind == "role"
-                else ["Problem", "Approach", "Impact"]
+                else ["Why it exists", "How you approached it", "Outcomes"]
             )
         if len(questions) < MIN_QUESTIONS:
             raise InterviewError(
@@ -153,17 +171,17 @@ class InterviewQuestionService:
                 code="empty_interview",
             )
 
-        # Ensure a wrap-up style last question when the model forgot one.
+        # Ensure a soft wrap-up last prompt when the model forgot one.
         last = questions[-1].lower()
         if "anything else" not in last and "before we" not in last:
+            wrap = (
+                "Anything else you'd like to add about this before we move on? "
+                "No rush if not."
+            )
             if len(questions) < MAX_QUESTIONS:
-                questions.append(
-                    "Anything else I should capture about this before we move on?"
-                )
+                questions.append(wrap)
             else:
-                questions[-1] = (
-                    "Anything else I should capture about this before we move on?"
-                )
+                questions[-1] = wrap
 
         return {
             "label": label,

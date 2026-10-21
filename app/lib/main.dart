@@ -29,6 +29,8 @@ Future<void> main() async {
       apiClientRef,
       onboardingServiceRef,
       onboardingGateRef,
+      onboardingGateSyncingRef,
+      onboardingGateSyncErrorRef,
       onboardingBusyRef,
       onboardingErrorRef,
       onboardingInfoRef,

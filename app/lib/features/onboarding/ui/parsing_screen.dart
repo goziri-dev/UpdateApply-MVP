@@ -21,6 +21,7 @@ class _OnboardingParsingScreenState extends State<OnboardingParsingScreen> {
   int _tick = 0;
   Timer? _timer;
   bool _failed = false;
+  bool _timedOut = false;
   String? _error;
 
   static const _items = [
@@ -64,21 +65,32 @@ class _OnboardingParsingScreenState extends State<OnboardingParsingScreen> {
       _timer?.cancel();
       setState(() {
         _failed = true;
+        _timedOut = _isTimeout(e);
         _error = _dioMessage(e);
       });
     } on Object catch (e) {
       _timer?.cancel();
       setState(() {
         _failed = true;
+        _timedOut = false;
         _error = e.toString();
       });
     }
   }
 
+  bool _isTimeout(DioException e) =>
+      e.type == DioExceptionType.connectionTimeout ||
+      e.type == DioExceptionType.receiveTimeout ||
+      e.type == DioExceptionType.sendTimeout;
+
   String _dioMessage(DioException e) {
     final detail = e.response?.data;
     if (detail is Map && detail['detail'] != null) {
       return detail['detail'].toString();
+    }
+    if (_isTimeout(e)) {
+      return 'The server took too long to parse this resume. '
+          'Confirm the API is running, then try again.';
     }
     return e.message ?? 'Parsing failed';
   }
@@ -97,11 +109,20 @@ class _OnboardingParsingScreenState extends State<OnboardingParsingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text("We couldn't read that resume", style: type.headlineMedium),
+            Text(
+              _timedOut
+                  ? 'Parsing took too long'
+                  : "We couldn't read that resume",
+              style: type.headlineMedium,
+            ),
             const SizedBox(height: AppSpacing.grid * 1.5),
             Text(
-              'The PDF uploaded, but parsing failed. Try another export, or '
-              're-upload a text-based PDF (not a scan).',
+              _timedOut
+                  ? 'The PDF uploaded, but the parse request timed out before '
+                        'the server finished (PDF extract + LLM). Check that '
+                        'the API is up, then try again.'
+                  : 'The PDF uploaded, but parsing failed. Try another export, '
+                        'or re-upload a text-based PDF (not a scan).',
               style: type.bodyMedium?.copyWith(
                 color: colors.muted,
                 height: 1.45,

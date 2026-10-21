@@ -254,7 +254,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
 
     return OnboardingShell(
       stepLabel: '3 / 5',
-      caption: 'Voice fills in what the PDF missed',
+      caption: 'A calm chat to flesh out each item',
       onBack: () => context.go('/onboarding/upload'),
       child: _loading
           ? const Padding(
@@ -266,14 +266,15 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
               children: [
                 Text(
                   isRole
-                      ? 'Tell us about this role'
-                      : 'Tell us about this project',
+                      ? "Let's talk through this role"
+                      : "Let's talk through this project",
                   style: type.headlineMedium,
                 ),
                 const SizedBox(height: AppSpacing.grid * 1.5),
                 Text(
-                  'Resume bullets are a checklist. Your voice is the evidence. '
-                  'Aim for a couple of minutes — say “that’s all” when you’re done.',
+                  'Resumes leave gaps — and sometimes oversell or undersell. '
+                  'Talk freely; fuzzy memory and shared credit are fine. '
+                  'A couple of minutes is enough — say “that’s all” when you’re done.',
                   style: type.bodyMedium?.copyWith(
                     color: colors.muted,
                     height: 1.45,
@@ -334,7 +335,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                               ),
                             ),
                             Text(
-                              'Follow-up ${_qIndex + 1} of ~$_qTotal',
+                              'Part ${_qIndex + 1} of ~$_qTotal',
                               style: type.bodySmall?.copyWith(
                                 color: colors.muted,
                               ),
@@ -394,7 +395,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                                 children: [
                                   Text(_micHint, style: type.bodyLarge),
                                   Text(
-                                    'Or type below. Coverage checklist helps us know when this item is done.',
+                                    'Or type below. Themes below just help us know when this item feels complete.',
                                     style: type.bodySmall?.copyWith(
                                       color: colors.muted,
                                     ),

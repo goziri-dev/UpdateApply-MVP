@@ -207,8 +207,8 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                 Text('Review your profile', style: type.headlineMedium),
                 const SizedBox(height: AppSpacing.grid * 1.5),
                 Text(
-                  "Correct anything we got wrong. Skills are stored from your "
-                  "resume — we don't interview them.",
+                  'Correct anything we got wrong. Skills are stored from your '
+                  "resume — we don't ask about them in the chat.",
                   style: type.bodyMedium?.copyWith(
                     color: colors.muted,
                     height: 1.45,
@@ -328,7 +328,7 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                 ),
                 const SizedBox(height: AppSpacing.grid),
                 Text(
-                  'Extracted from your resume · not interviewed',
+                  'Extracted from your resume · not covered in chat',
                   style: type.bodySmall?.copyWith(color: colors.muted),
                 ),
                 const SizedBox(height: AppSpacing.grid * 3),

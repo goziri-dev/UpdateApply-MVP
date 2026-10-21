@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class GeneratedInterviewScript(BaseModel):
-    """One role/project interview: coverage checklist + guided questions."""
+    """One role/project conversation: soft coverage themes + reflection prompts."""
 
     label: str = Field(
         description="Short display label, e.g. 'Software Engineer · Acme' or 'UpdateApply (project)'."
@@ -16,11 +16,16 @@ class GeneratedInterviewScript(BaseModel):
     kind: Literal["role", "project"] = "role"
     coverage: list[str] = Field(
         default_factory=list,
-        description="3–4 coverage themes to track (e.g. Scope, Stack, Impact).",
+        description=(
+            "3–4 soft theme labels to track (e.g. Day-to-day, Tools, Outcomes)."
+        ),
     )
     questions: list[str] = Field(
         default_factory=list,
-        description="3–4 guided follow-up questions; last invites anything else / wrap-up.",
+        description=(
+            "3–4 calm, open reflection prompts for spoken answers; "
+            "last invites anything else / soft wrap-up."
+        ),
     )
 
     @field_validator("coverage", "questions")

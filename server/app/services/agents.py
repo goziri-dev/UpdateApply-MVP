@@ -23,6 +23,10 @@ _TASK_OVERRIDE_ATTR: dict[AgentTask, str] = {
 class AgentFactory:
     """Build a :class:`ChatOpenRouter` for a specific task's model."""
 
+    # langchain_openrouter uses milliseconds. Default SDK timeout is None
+    # (wait forever) — that freezes sync /parse when a provider stalls.
+    DEFAULT_TIMEOUT_MS = 60_000
+
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
 
@@ -47,6 +51,8 @@ class AgentFactory:
             raise RuntimeError(
                 "OPENROUTER_API_KEY is not configured; cannot create an OpenRouter agent."
             )
+        # Bound hangs: ChatOpenRouter.request_timeout default is None.
+        kwargs.setdefault("timeout", self.DEFAULT_TIMEOUT_MS)
         return ChatOpenRouter(
             model=self.model_for(task),
             api_key=self.settings.openrouter_api_key,

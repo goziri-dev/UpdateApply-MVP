@@ -130,13 +130,10 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _Stat(n: '$_roles', label: 'Roles interviewed'),
+                      child: _Stat(n: '$_roles', label: 'Roles covered'),
                     ),
                     Expanded(
-                      child: _Stat(
-                        n: '$_projects',
-                        label: 'Projects interviewed',
-                      ),
+                      child: _Stat(n: '$_projects', label: 'Projects covered'),
                     ),
                     Expanded(
                       child: _Stat(n: '$_skills', label: 'Skills stored'),

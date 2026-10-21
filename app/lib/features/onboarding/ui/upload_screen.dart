@@ -129,8 +129,8 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
           const SizedBox(height: AppSpacing.grid * 1.5),
           Text(
             "Upload any existing resume. We'll extract your basics, history, "
-            'and projects — then interview each role and project so your '
-            'profile has real evidence.',
+            'and projects — then talk through each role and project in a '
+            'calm chat so your profile reflects what actually happened.',
             style: type.bodyMedium?.copyWith(
               color: colors.muted,
               height: 1.45,
