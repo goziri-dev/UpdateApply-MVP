@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../services/interview_speech.dart';
 import '../state/onboarding_state.dart';
 import '../widgets/onboarding_feedback.dart';
 import '../widgets/onboarding_shell.dart';
 
-/// Guided interview UI. Mic is a stub that fills a mock answer (real STT TODO).
+/// Guided interview UI with browser mic + Web Speech API STT (typed fallback).
 class OnboardingInterviewScreen extends StatefulWidget {
   const OnboardingInterviewScreen({super.key});
 
@@ -19,11 +20,13 @@ class OnboardingInterviewScreen extends StatefulWidget {
 
 class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
   final _transcriptCtrl = TextEditingController();
+  final _speech = InterviewSpeech();
+
   bool _loading = true;
   bool _submitting = false;
   bool _recording = false;
-  // TODO(stt): wire real mic permission + speech-to-text.
-  final bool _micDenied = false;
+  bool _micDenied = false;
+  bool _speechUnsupported = false;
 
   String? _itemId;
   String? _itemKind;
@@ -35,21 +38,16 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
   List<String> _hits = [];
   List<Map<String, dynamic>> _queue = [];
 
-  static const _mockAnswers = [
-    'I owned the tailor flow end-to-end — FastAPI endpoints, Postgres profile storage, and the Flutter client screens.',
-    'I designed the profile schema, wrote Alembic migrations, and wired auth so only completed profiles can tailor.',
-    'We cut time-to-first-tailored-resume from a blank page to under ten minutes for new users in dogfood.',
-    "That's all for this item.",
-  ];
-
   @override
   void initState() {
     super.initState();
+    _speechUnsupported = !_speech.isSupported;
     _load();
   }
 
   @override
   void dispose() {
+    _speech.dispose();
     _transcriptCtrl.dispose();
     super.dispose();
   }
@@ -94,6 +92,9 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
   }
 
   Future<void> _submit({required bool forceDone}) async {
+    if (_recording) {
+      await _speech.stop();
+    }
     final itemId = _itemId;
     if (itemId == null) return;
     final text = _transcriptCtrl.text.trim();
@@ -139,26 +140,94 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
     }
   }
 
-  void _toggleMic() {
-    // TODO(stt): request permission + stream transcript. Stub fills mock text.
+  Future<void> _toggleMic() async {
+    if (_recording) {
+      await _speech.stop();
+      return;
+    }
+
     if (_micDenied) {
       setOnboardingError(
         'Microphone permission was denied. Type your answer in the box — '
-        'voice is preferred, but text works.',
+        'voice is preferred, but text works. Re-enable mic in the browser '
+        'site settings, then tap the mic again.',
       );
       return;
     }
-    setState(() {
-      _recording = !_recording;
-      if (!_recording) {
-        final mock = _mockAnswers[_qIndex.clamp(0, _mockAnswers.length - 1)];
-        _transcriptCtrl.text = mock;
-        clearOnboardingFeedback();
-        setOnboardingInfo(
-          'STUB mic: filled a sample answer. Real speech-to-text is TODO.',
+
+    if (_speechUnsupported || !_speech.isSupported) {
+      setState(() => _speechUnsupported = true);
+      setOnboardingError(
+        'Voice dictation isn’t available in this browser. Type your answer '
+        'below — Chrome or Edge on HTTPS/localhost work best.',
+      );
+      return;
+    }
+
+    clearOnboardingFeedback();
+    final result = await _speech.start(
+      seedTranscript: _transcriptCtrl.text,
+      onUpdate: (update) {
+        if (!mounted) return;
+        _transcriptCtrl.value = TextEditingValue(
+          text: update.transcript,
+          selection: TextSelection.collapsed(offset: update.transcript.length),
         );
-      }
-    });
+      },
+      onEnded: ({String? error}) {
+        if (!mounted) return;
+        setState(() => _recording = false);
+        if (error == 'not-allowed' || error == 'service-not-allowed') {
+          setState(() => _micDenied = true);
+          setOnboardingError(
+            'Microphone permission was denied. Type your answer in the box — '
+            'voice is preferred, but text works. Re-enable mic in the browser '
+            'site settings, then tap the mic again.',
+          );
+          return;
+        }
+        if (error != null && error != 'aborted' && error != 'no-speech') {
+          setOnboardingError(
+            'Voice recognition paused ($error). You can type or tap the mic '
+            'to try again.',
+          );
+        }
+      },
+    );
+
+    if (!mounted) return;
+
+    switch (result) {
+      case InterviewSpeechStart.started:
+        setState(() {
+          _recording = true;
+          _micDenied = false;
+        });
+        setOnboardingInfo('Listening… tap the mic when you’re done.');
+      case InterviewSpeechStart.denied:
+        setState(() {
+          _micDenied = true;
+          _recording = false;
+        });
+        setOnboardingError(
+          'Microphone permission was denied. Type your answer instead.',
+        );
+      case InterviewSpeechStart.unsupported:
+        setState(() {
+          _speechUnsupported = true;
+          _recording = false;
+        });
+        setOnboardingError(
+          'Voice dictation isn’t available in this browser. Type your answer '
+          'below.',
+        );
+      case InterviewSpeechStart.failed:
+        setState(() => _recording = false);
+        setOnboardingError(
+          'Couldn’t start the microphone. Check browser permissions, use '
+          'HTTPS or localhost, then try again — or type your answer.',
+        );
+    }
   }
 
   String _dioMessage(DioException e) {
@@ -167,6 +236,13 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
       return detail['detail'].toString();
     }
     return e.message ?? 'Request failed';
+  }
+
+  String get _micHint {
+    if (_recording) return 'Recording… tap to stop';
+    if (_micDenied) return 'Mic blocked — type your answer';
+    if (_speechUnsupported) return 'Voice unavailable — type your answer';
+    return 'Tap to record your answer';
   }
 
   @override
@@ -300,11 +376,14 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                               shape: const CircleBorder(),
                               child: InkWell(
                                 customBorder: const CircleBorder(),
-                                onTap: _toggleMic,
-                                child: const SizedBox(
+                                onTap: _submitting ? null : _toggleMic,
+                                child: SizedBox(
                                   width: 56,
                                   height: 56,
-                                  child: Icon(Icons.mic, color: Colors.white),
+                                  child: Icon(
+                                    _recording ? Icons.stop : Icons.mic,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -313,14 +392,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    _recording
-                                        ? 'Recording… tap to stop'
-                                        : (_micDenied
-                                              ? 'Mic blocked — type your answer'
-                                              : 'Tap to record your answer'),
-                                    style: type.bodyLarge,
-                                  ),
+                                  Text(_micHint, style: type.bodyLarge),
                                   Text(
                                     'Or type below. Coverage checklist helps us know when this item is done.',
                                     style: type.bodySmall?.copyWith(
