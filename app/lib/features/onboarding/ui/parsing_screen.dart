@@ -174,79 +174,63 @@ class _OnboardingParsingScreenState extends State<OnboardingParsingScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.grid * 3),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.grid * 3),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+          Row(
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: scheme.primary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.grid * 2),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Parsing PDF', style: type.bodyLarge),
+                    Text(
+                      'Please keep this tab open',
+                      style: type.bodySmall?.copyWith(color: colors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.grid * 3),
+          ...List.generate(_items.length, (i) {
+            final done = i < _tick;
+            final isActive = i == active && _tick < _items.length;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.grid),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: scheme.primary,
-                        ),
+                  SizedBox(
+                    width: 22,
+                    child: Text(
+                      done ? '✓' : (isActive ? '•' : ''),
+                      style: type.bodyMedium?.copyWith(
+                        color: done ? scheme.primary : colors.muted,
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(width: AppSpacing.grid * 2),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Parsing PDF', style: type.bodyLarge),
-                            Text(
-                              'Please keep this tab open',
-                              style: type.bodySmall?.copyWith(
-                                color: colors.muted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: AppSpacing.grid * 3),
-                  ...List.generate(_items.length, (i) {
-                    final done = i < _tick;
-                    final isActive = i == active && _tick < _items.length;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.grid),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 22,
-                            child: Text(
-                              done ? '✓' : (isActive ? '•' : ''),
-                              style: type.bodyMedium?.copyWith(
-                                color: done ? scheme.primary : colors.muted,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              _items[i],
-                              style: type.bodyMedium?.copyWith(
-                                color: done || isActive
-                                    ? scheme.onSurface
-                                    : colors.muted,
-                              ),
-                            ),
-                          ),
-                        ],
+                  Expanded(
+                    child: Text(
+                      _items[i],
+                      style: type.bodyMedium?.copyWith(
+                        color: done || isActive
+                            ? scheme.onSurface
+                            : colors.muted,
                       ),
-                    );
-                  }),
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );

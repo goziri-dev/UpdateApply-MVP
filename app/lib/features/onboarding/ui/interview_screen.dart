@@ -317,189 +317,121 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.grid * 2),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _queue.map((q) {
-                    final state = q['state'] as String? ?? 'todo';
-                    final label = q['label'] as String? ?? '';
-                    final color = switch (state) {
-                      'done' => scheme.primary,
-                      'active' => scheme.onSurface,
-                      _ => colors.muted,
-                    };
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: state == 'active'
-                              ? scheme.primary
-                              : colors.oauthBorder,
-                        ),
-                      ),
-                      child: Text(
-                        label,
-                        style: type.bodySmall?.copyWith(color: color),
-                      ),
-                    );
-                  }).toList(),
+                if (_queue.isNotEmpty) ...[
+                  _InterviewQueueStrip(queue: _queue),
+                  const SizedBox(height: AppSpacing.grid * 2),
+                ],
+                const OnboardingFeedbackBanner(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(_itemLabel ?? '', style: type.bodyLarge),
+                    ),
+                    Text(
+                      'Part ${_qIndex + 1} of ~$_qTotal',
+                      style: type.bodySmall?.copyWith(color: colors.muted),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.grid * 2),
-                const OnboardingFeedbackBanner(),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(16),
+                Text(
+                  'UpdateApply',
+                  style: type.labelSmall?.copyWith(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w700,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.grid * 3),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _itemLabel ?? '',
-                                style: type.bodyLarge,
-                              ),
-                            ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _question ?? '',
+                  style: type.bodyLarge?.copyWith(height: 1.4),
+                ),
+                const SizedBox(height: AppSpacing.grid * 2.5),
+                Row(
+                  children: [
+                    Material(
+                      color: _recording
+                          ? scheme.error
+                          : (_transcribing ? colors.muted : scheme.primary),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _micBusy ? null : _toggleMic,
+                        child: SizedBox(
+                          width: 56,
+                          height: 56,
+                          child: _transcribing
+                              ? Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: scheme.onPrimary,
+                                  ),
+                                )
+                              : Icon(
+                                  _recording ? Icons.stop : Icons.mic,
+                                  color: Colors.white,
+                                ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.grid * 2),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_micHint, style: type.bodyLarge),
+                          const SizedBox(height: 4),
+                          if (_recording)
+                            const InterviewRecordingIndicator(active: true)
+                          else
                             Text(
-                              'Part ${_qIndex + 1} of ~$_qTotal',
+                              'Or type below. Themes below just help us know when this item feels complete.',
                               style: type.bodySmall?.copyWith(
                                 color: colors.muted,
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.grid * 2),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.grid * 2),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'UpdateApply',
-                                  style: type.labelSmall?.copyWith(
-                                    color: scheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  _question ?? '',
-                                  style: type.bodyLarge?.copyWith(height: 1.4),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.grid * 2),
-                        Row(
-                          children: [
-                            Material(
-                              color: _recording
-                                  ? scheme.error
-                                  : (_transcribing
-                                        ? colors.muted
-                                        : scheme.primary),
-                              shape: const CircleBorder(),
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: _micBusy ? null : _toggleMic,
-                                child: SizedBox(
-                                  width: 56,
-                                  height: 56,
-                                  child: _transcribing
-                                      ? Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: scheme.onPrimary,
-                                          ),
-                                        )
-                                      : Icon(
-                                          _recording ? Icons.stop : Icons.mic,
-                                          color: Colors.white,
-                                        ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.grid * 2),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(_micHint, style: type.bodyLarge),
-                                  const SizedBox(height: 4),
-                                  if (_recording)
-                                    const InterviewRecordingIndicator(
-                                      active: true,
-                                    )
-                                  else
-                                    Text(
-                                      'Or type below. Themes below just help us know when this item feels complete.',
-                                      style: type.bodySmall?.copyWith(
-                                        color: colors.muted,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.grid * 2),
-                        TextField(
-                          controller: _transcriptCtrl,
-                          maxLines: 4,
-                          readOnly: _recording || _transcribing,
-                          decoration: InputDecoration(
-                            hintText: _recording
-                                ? 'Recording… transcript appears after you stop'
-                                : (_transcribing
-                                      ? 'Transcribing…'
-                                      : 'Your answer appears here…'),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.oauthBorder),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.grid * 2),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _coverage.map((c) {
-                            final hit = _hits.contains(c);
-                            return Chip(
-                              label: Text(c),
-                              backgroundColor: hit
-                                  ? scheme.primary.withValues(alpha: 0.12)
-                                  : Colors.white,
-                              side: BorderSide(
-                                color: hit
-                                    ? scheme.primary
-                                    : colors.oauthBorder,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.grid * 2),
+                TextField(
+                  controller: _transcriptCtrl,
+                  maxLines: 4,
+                  readOnly: _recording || _transcribing,
+                  decoration: InputDecoration(
+                    hintText: _recording
+                        ? 'Recording… transcript appears after you stop'
+                        : (_transcribing
+                              ? 'Transcribing…'
+                              : 'Your answer appears here…'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colors.oauthBorder),
                     ),
                   ),
+                ),
+                const SizedBox(height: AppSpacing.grid * 2),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _coverage.map((c) {
+                    final hit = _hits.contains(c);
+                    return Chip(
+                      label: Text(c),
+                      backgroundColor: hit
+                          ? scheme.primary.withValues(alpha: 0.12)
+                          : scheme.surface,
+                      side: BorderSide(
+                        color: hit ? scheme.primary : colors.oauthBorder,
+                      ),
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: AppSpacing.grid * 3),
                 Row(
@@ -546,6 +478,91 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+/// Compact horizontal progress of roles/projects still in the interview queue.
+///
+/// Long labels used to wrap into a tall vertical stack of chips; this keeps a
+/// single-row strip with a short progress caption instead.
+class _InterviewQueueStrip extends StatelessWidget {
+  const _InterviewQueueStrip({required this.queue});
+
+  final List<Map<String, dynamic>> queue;
+
+  @override
+  Widget build(BuildContext context) {
+    final type = Theme.of(context).textTheme;
+    final colors = context.appColors;
+    final done = queue.where((q) => q['state'] == 'done').length;
+    final total = queue.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          '$done of $total covered',
+          style: type.bodySmall?.copyWith(color: colors.muted),
+        ),
+        const SizedBox(height: AppSpacing.grid),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (var i = 0; i < queue.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                _QueueChip(item: queue[i]),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QueueChip extends StatelessWidget {
+  const _QueueChip({required this.item});
+
+  final Map<String, dynamic> item;
+
+  @override
+  Widget build(BuildContext context) {
+    final type = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final colors = context.appColors;
+    final state = item['state'] as String? ?? 'todo';
+    final label = item['label'] as String? ?? '';
+    final color = switch (state) {
+      'done' => scheme.primary,
+      'active' => scheme.onSurface,
+      _ => colors.muted,
+    };
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 200),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: state == 'active'
+              ? scheme.primary.withValues(alpha: 0.08)
+              : scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: state == 'active' ? scheme.primary : colors.oauthBorder,
+          ),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: type.bodySmall?.copyWith(
+            color: color,
+            fontWeight: state == 'active' ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
     );
   }
 }

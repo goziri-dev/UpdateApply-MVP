@@ -244,36 +244,25 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                 ...List.generate(_experience.length, (i) {
                   final e = _experience[i];
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.grid * 2),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.grid * 2),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              '${e['title'] ?? ''} · ${e['company'] ?? ''}',
-                              style: type.bodyLarge,
-                            ),
-                            Text(
-                              '${e['start'] ?? ''} — ${e['end'] ?? ''}',
-                              style: type.bodySmall?.copyWith(
-                                color: colors.muted,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.grid),
-                            TextField(
-                              controller: _expSummaries[i],
-                              maxLines: 3,
-                              decoration: _fieldDecoration('Summary'),
-                            ),
-                          ],
+                    padding: const EdgeInsets.only(bottom: AppSpacing.grid * 3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          '${e['title'] ?? ''} · ${e['company'] ?? ''}',
+                          style: type.bodyLarge,
                         ),
-                      ),
+                        Text(
+                          '${e['start'] ?? ''} — ${e['end'] ?? ''}',
+                          style: type.bodySmall?.copyWith(color: colors.muted),
+                        ),
+                        const SizedBox(height: AppSpacing.grid),
+                        TextField(
+                          controller: _expSummaries[i],
+                          maxLines: 3,
+                          decoration: _fieldDecoration('Summary'),
+                        ),
+                      ],
                     ),
                   );
                 }),
@@ -282,33 +271,22 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                 ...List.generate(_projects.length, (i) {
                   final e = _projects[i];
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.grid * 2),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.grid * 2),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text('${e['title'] ?? ''}', style: type.bodyLarge),
-                            Text(
-                              '${e['start'] ?? ''} — ${e['end'] ?? ''}',
-                              style: type.bodySmall?.copyWith(
-                                color: colors.muted,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.grid),
-                            TextField(
-                              controller: _projSummaries[i],
-                              maxLines: 3,
-                              decoration: _fieldDecoration('Summary'),
-                            ),
-                          ],
+                    padding: const EdgeInsets.only(bottom: AppSpacing.grid * 3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text('${e['title'] ?? ''}', style: type.bodyLarge),
+                        Text(
+                          '${e['start'] ?? ''} — ${e['end'] ?? ''}',
+                          style: type.bodySmall?.copyWith(color: colors.muted),
                         ),
-                      ),
+                        const SizedBox(height: AppSpacing.grid),
+                        TextField(
+                          controller: _projSummaries[i],
+                          maxLines: 3,
+                          decoration: _fieldDecoration('Summary'),
+                        ),
+                      ],
                     ),
                   );
                 }),

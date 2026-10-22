@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 
-/// Shared chrome: Back + step indicator + left content / right abstract resume.
+/// Shared chrome: Back + step indicator + centered onboarding content.
+///
+/// Set [showResumeIllustration] to re-enable the abstract resume panel
+/// ([OnboardingResumePlaceholder]) on wide layouts.
 class OnboardingShell extends StatelessWidget {
   const OnboardingShell({
     super.key,
@@ -13,6 +16,7 @@ class OnboardingShell extends StatelessWidget {
     required this.child,
     this.onBack,
     this.backEnabled = true,
+    this.showResumeIllustration = false,
   });
 
   final String stepLabel;
@@ -20,6 +24,10 @@ class OnboardingShell extends StatelessWidget {
   final Widget child;
   final VoidCallback? onBack;
   final bool backEnabled;
+
+  /// Deferred: abstract CV placeholder on the right. Off so the flow can
+  /// center; keep [OnboardingResumePlaceholder] for later reuse.
+  final bool showResumeIllustration;
 
   @override
   Widget build(BuildContext context) {
@@ -60,12 +68,14 @@ class OnboardingShell extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.grid * 3,
-                ),
-                child: wide
-                    ? Row(
+              // Scrollable is full viewport width so the scrollbar sits on the
+              // right edge; content is centered/constrained inside.
+              child: showResumeIllustration && wide
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.grid * 3,
+                      ),
+                      child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
@@ -85,17 +95,28 @@ class OnboardingShell extends StatelessWidget {
                           ),
                           Expanded(
                             flex: 4,
-                            child: _IllusPanel(caption: caption),
+                            child: OnboardingResumePlaceholder(
+                              caption: caption,
+                            ),
                           ),
                         ],
-                      )
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.only(
-                          bottom: AppSpacing.grid * 4,
-                        ),
-                        child: child,
                       ),
-              ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.grid * 3,
+                        0,
+                        AppSpacing.grid * 3,
+                        AppSpacing.grid * 4,
+                      ),
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 520),
+                          child: child,
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),
@@ -104,8 +125,12 @@ class OnboardingShell extends StatelessWidget {
   }
 }
 
-class _IllusPanel extends StatelessWidget {
-  const _IllusPanel({required this.caption});
+/// Abstract resume / CV placeholder used beside onboarding on wide layouts.
+///
+/// Not shown while [OnboardingShell.showResumeIllustration] is false — kept
+/// for deferred reuse rather than deleted.
+class OnboardingResumePlaceholder extends StatelessWidget {
+  const OnboardingResumePlaceholder({super.key, required this.caption});
 
   final String caption;
 
