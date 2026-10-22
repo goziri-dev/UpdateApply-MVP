@@ -23,6 +23,8 @@ Cached scripts live under `profile._onboarding.item_scripts` with `script_versio
 
 Task → default model: see `app/core/llm_tasks.py`. Override with `OPENROUTER_MODEL_*` env vars when needed.
 
+Interview mic STT uses OpenRouter `POST /api/v1/audio/transcriptions` (default `openai/whisper-1`). Override with `OPENROUTER_MODEL_INTERVIEW_TRANSCRIBE`. Audio is transcribed in memory and not stored. Endpoint: `POST /api/v1/onboarding/interview/transcribe`.
+
 ## Auth
 
 JWT verify order: JWKS → HS256 (`SUPABASE_JWT_SECRET`) → Auth `get_user` fallback. Requires `SUPABASE_URL` + `SUPABASE_ANON_KEY`.

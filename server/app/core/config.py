@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     openrouter_model_interview_questions: str = ""
     openrouter_model_profile_review: str = ""
     openrouter_model_resume_tailor: str = ""
+    # STT for interview mic (OpenRouter /audio/transcriptions). Empty → whisper-1.
+    openrouter_model_interview_transcribe: str = ""
 
     # Local resume PDF storage (one file per user). Relative paths resolve from unit root.
     resume_upload_dir: str = str(_UNIT_ROOT / "data" / "uploads")

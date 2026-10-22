@@ -73,6 +73,13 @@ class InterviewStateResponse(BaseModel):
     queue: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class InterviewTranscribeResponse(BaseModel):
+    """Whisper (or configured STT) transcript for an interview mic clip."""
+
+    transcript: str
+    detail: str | None = None
+
+
 class OnboardingProfileUpdate(BaseModel):
     """Review-screen edits. Client sends the full editable profile slice."""
 

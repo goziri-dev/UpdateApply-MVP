@@ -74,6 +74,38 @@ class OnboardingService {
     return response.data ?? {};
   }
 
+  /// Mic clip → Whisper transcript. Timeouts cover OpenRouter STT latency.
+  static const Duration _transcribeConnectTimeout = Duration(seconds: 90);
+  static const Duration _transcribeReceiveTimeout = Duration(seconds: 90);
+
+  Future<String> transcribeAudio({
+    required Uint8List bytes,
+    required String filename,
+  }) async {
+    final form = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/onboarding/interview/transcribe',
+      data: form,
+      options: Options(
+        contentType: 'multipart/form-data',
+        connectTimeout: _transcribeConnectTimeout,
+        receiveTimeout: _transcribeReceiveTimeout,
+      ),
+    );
+    final transcript = response.data?['transcript'];
+    if (transcript is String && transcript.trim().isNotEmpty) {
+      return transcript.trim();
+    }
+    throw DioException(
+      requestOptions: response.requestOptions,
+      response: response,
+      type: DioExceptionType.badResponse,
+      message: 'Empty transcript from server',
+    );
+  }
+
   Future<Map<String, dynamic>> getProfile() async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/v1/onboarding/profile',

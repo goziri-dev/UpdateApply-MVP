@@ -12,6 +12,7 @@ from app.core.database import get_session
 from app.schemas.onboarding import (
     InterviewItemKind,
     InterviewStateResponse,
+    InterviewTranscribeResponse,
     InterviewTurnRequest,
     InterviewTurnResponse,
     OnboardingCompleteResponse,
@@ -24,6 +25,11 @@ from app.services import onboarding as svc
 from app.services.extract import ExtractError
 from app.services.interview_questions import InterviewError
 from app.services.resume_storage import ResumeStorage
+from app.services.transcribe import (
+    MAX_AUDIO_BYTES,
+    InterviewTranscribeService,
+    TranscribeError,
+)
 
 router = APIRouter(prefix="/api/v1/onboarding", tags=["onboarding"])
 
@@ -251,6 +257,52 @@ def interview_state(user: DbUser, session: SessionDep) -> InterviewStateResponse
         coverage=[str(c) for c in list(script.get("coverage") or [])],
         coverage_hits=hits,
         queue=_queue_meta(data, queue, index),
+    )
+
+
+def _http_for_transcribe_error(exc: TranscribeError) -> HTTPException:
+    code = exc.code
+    if code in {"empty_audio", "audio_too_large", "empty_transcript"}:
+        status_code = status.HTTP_400_BAD_REQUEST
+    elif code == "openrouter_unconfigured":
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    elif code == "transcription_timeout":
+        status_code = status.HTTP_504_GATEWAY_TIMEOUT
+    else:
+        status_code = status.HTTP_502_BAD_GATEWAY
+    return HTTPException(status_code=status_code, detail=exc.message)
+
+
+@router.post("/interview/transcribe", response_model=InterviewTranscribeResponse)
+async def interview_transcribe(
+    user: DbUser,
+    file: Annotated[UploadFile, File()],
+) -> InterviewTranscribeResponse:
+    """Mic clip → Whisper transcript. Audio is not persisted."""
+    _ = user  # auth gate only; no storage keyed by user
+    filename = file.filename or "recording.webm"
+    content_type = (file.content_type or "audio/webm").lower()
+    raw = await file.read()
+    if len(raw) > MAX_AUDIO_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "That recording is too long. Keep answers to a couple of minutes, "
+                "or type your answer instead."
+            ),
+        )
+    try:
+        transcript = await InterviewTranscribeService().transcribe(
+            raw,
+            filename=filename,
+            content_type=content_type,
+        )
+    except TranscribeError as exc:
+        raise _http_for_transcribe_error(exc) from exc
+
+    return InterviewTranscribeResponse(
+        transcript=transcript,
+        detail="Transcribed with OpenRouter speech-to-text.",
     )
 
 

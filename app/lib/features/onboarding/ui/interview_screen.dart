@@ -4,12 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
-import '../services/interview_speech.dart';
+import '../services/interview_audio.dart';
 import '../state/onboarding_state.dart';
+import '../widgets/interview_recording_indicator.dart';
 import '../widgets/onboarding_feedback.dart';
 import '../widgets/onboarding_shell.dart';
 
-/// Guided interview UI with browser mic + Web Speech API STT (typed fallback).
+/// Guided interview UI: record → Whisper transcript → edit → submit (typed fallback).
 class OnboardingInterviewScreen extends StatefulWidget {
   const OnboardingInterviewScreen({super.key});
 
@@ -20,13 +21,15 @@ class OnboardingInterviewScreen extends StatefulWidget {
 
 class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
   final _transcriptCtrl = TextEditingController();
-  final _speech = InterviewSpeech();
+  final _audio = InterviewAudio();
 
   bool _loading = true;
   bool _submitting = false;
   bool _recording = false;
+  bool _transcribing = false;
   bool _micDenied = false;
-  bool _speechUnsupported = false;
+  bool _audioUnsupported = false;
+  String _seedBeforeRecord = '';
 
   String? _itemId;
   String? _itemKind;
@@ -41,13 +44,13 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
   @override
   void initState() {
     super.initState();
-    _speechUnsupported = !_speech.isSupported;
+    _audioUnsupported = !_audio.isSupported;
     _load();
   }
 
   @override
   void dispose() {
-    _speech.dispose();
+    _audio.dispose();
     _transcriptCtrl.dispose();
     super.dispose();
   }
@@ -88,13 +91,15 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
           .toList();
       _transcriptCtrl.clear();
       _recording = false;
+      _transcribing = false;
     });
   }
 
   Future<void> _submit({required bool forceDone}) async {
     if (_recording) {
-      await _speech.stop();
+      await _stopAndTranscribe();
     }
+    if (_transcribing) return;
     final itemId = _itemId;
     if (itemId == null) return;
     final text = _transcriptCtrl.text.trim();
@@ -141,8 +146,10 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
   }
 
   Future<void> _toggleMic() async {
+    if (_transcribing || _submitting) return;
+
     if (_recording) {
-      await _speech.stop();
+      await _stopAndTranscribe();
       return;
     }
 
@@ -155,56 +162,28 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
       return;
     }
 
-    if (_speechUnsupported || !_speech.isSupported) {
-      setState(() => _speechUnsupported = true);
+    if (_audioUnsupported || !_audio.isSupported) {
+      setState(() => _audioUnsupported = true);
       setOnboardingError(
-        'Voice dictation isn’t available in this browser. Type your answer '
+        'Voice recording isn’t available in this browser. Type your answer '
         'below — Chrome or Edge on HTTPS/localhost work best.',
       );
       return;
     }
 
     clearOnboardingFeedback();
-    final result = await _speech.start(
-      seedTranscript: _transcriptCtrl.text,
-      onUpdate: (update) {
-        if (!mounted) return;
-        _transcriptCtrl.value = TextEditingValue(
-          text: update.transcript,
-          selection: TextSelection.collapsed(offset: update.transcript.length),
-        );
-      },
-      onEnded: ({String? error}) {
-        if (!mounted) return;
-        setState(() => _recording = false);
-        if (error == 'not-allowed' || error == 'service-not-allowed') {
-          setState(() => _micDenied = true);
-          setOnboardingError(
-            'Microphone permission was denied. Type your answer in the box — '
-            'voice is preferred, but text works. Re-enable mic in the browser '
-            'site settings, then tap the mic again.',
-          );
-          return;
-        }
-        if (error != null && error != 'aborted' && error != 'no-speech') {
-          setOnboardingError(
-            'Voice recognition paused ($error). You can type or tap the mic '
-            'to try again.',
-          );
-        }
-      },
-    );
-
+    _seedBeforeRecord = _transcriptCtrl.text.trim();
+    final result = await _audio.start();
     if (!mounted) return;
 
     switch (result) {
-      case InterviewSpeechStart.started:
+      case InterviewAudioStart.started:
         setState(() {
           _recording = true;
           _micDenied = false;
         });
-        setOnboardingInfo('Listening… tap the mic when you’re done.');
-      case InterviewSpeechStart.denied:
+        setOnboardingInfo('Recording… tap stop when you’re done.');
+      case InterviewAudioStart.denied:
         setState(() {
           _micDenied = true;
           _recording = false;
@@ -212,21 +191,74 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
         setOnboardingError(
           'Microphone permission was denied. Type your answer instead.',
         );
-      case InterviewSpeechStart.unsupported:
+      case InterviewAudioStart.unsupported:
         setState(() {
-          _speechUnsupported = true;
+          _audioUnsupported = true;
           _recording = false;
         });
         setOnboardingError(
-          'Voice dictation isn’t available in this browser. Type your answer '
+          'Voice recording isn’t available in this browser. Type your answer '
           'below.',
         );
-      case InterviewSpeechStart.failed:
+      case InterviewAudioStart.failed:
         setState(() => _recording = false);
         setOnboardingError(
           'Couldn’t start the microphone. Check browser permissions, use '
           'HTTPS or localhost, then try again — or type your answer.',
         );
+    }
+  }
+
+  Future<void> _stopAndTranscribe() async {
+    if (!_recording) return;
+    setState(() {
+      _recording = false;
+      _transcribing = true;
+    });
+    clearOnboardingFeedback();
+    setOnboardingInfo('Transcribing your answer…');
+
+    InterviewAudioClip? clip;
+    try {
+      clip = await _audio.stop();
+    } on Object {
+      clip = null;
+    }
+
+    if (!mounted) return;
+
+    if (clip == null || clip.bytes.isEmpty) {
+      setState(() => _transcribing = false);
+      setOnboardingError(
+        'No audio was captured. Tap the mic to try again, or type your answer.',
+      );
+      return;
+    }
+
+    try {
+      final transcript = await onboardingService.transcribeAudio(
+        bytes: clip.bytes,
+        filename: clip.filename,
+      );
+      if (!mounted) return;
+      final merged = [
+        if (_seedBeforeRecord.isNotEmpty) _seedBeforeRecord,
+        transcript,
+      ].join(' ').trim();
+      _transcriptCtrl.value = TextEditingValue(
+        text: merged,
+        selection: TextSelection.collapsed(offset: merged.length),
+      );
+      clearOnboardingFeedback();
+      setOnboardingInfo('Transcript ready — edit if needed, then continue.');
+    } on DioException catch (e) {
+      setOnboardingError('${_dioMessage(e)} You can type your answer instead.');
+    } on Object catch (e) {
+      setOnboardingError(
+        'Transcription failed ($e). Type your answer instead.',
+      );
+    } finally {
+      if (mounted) setState(() => _transcribing = false);
     }
   }
 
@@ -239,11 +271,14 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
   }
 
   String get _micHint {
+    if (_transcribing) return 'Transcribing…';
     if (_recording) return 'Recording… tap to stop';
     if (_micDenied) return 'Mic blocked — type your answer';
-    if (_speechUnsupported) return 'Voice unavailable — type your answer';
+    if (_audioUnsupported) return 'Voice unavailable — type your answer';
     return 'Tap to record your answer';
   }
+
+  bool get _micBusy => _submitting || _transcribing;
 
   @override
   Widget build(BuildContext context) {
@@ -373,18 +408,30 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                         Row(
                           children: [
                             Material(
-                              color: _recording ? scheme.error : scheme.primary,
+                              color: _recording
+                                  ? scheme.error
+                                  : (_transcribing
+                                        ? colors.muted
+                                        : scheme.primary),
                               shape: const CircleBorder(),
                               child: InkWell(
                                 customBorder: const CircleBorder(),
-                                onTap: _submitting ? null : _toggleMic,
+                                onTap: _micBusy ? null : _toggleMic,
                                 child: SizedBox(
                                   width: 56,
                                   height: 56,
-                                  child: Icon(
-                                    _recording ? Icons.stop : Icons.mic,
-                                    color: Colors.white,
-                                  ),
+                                  child: _transcribing
+                                      ? Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: scheme.onPrimary,
+                                          ),
+                                        )
+                                      : Icon(
+                                          _recording ? Icons.stop : Icons.mic,
+                                          color: Colors.white,
+                                        ),
                                 ),
                               ),
                             ),
@@ -394,12 +441,18 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(_micHint, style: type.bodyLarge),
-                                  Text(
-                                    'Or type below. Themes below just help us know when this item feels complete.',
-                                    style: type.bodySmall?.copyWith(
-                                      color: colors.muted,
+                                  const SizedBox(height: 4),
+                                  if (_recording)
+                                    const InterviewRecordingIndicator(
+                                      active: true,
+                                    )
+                                  else
+                                    Text(
+                                      'Or type below. Themes below just help us know when this item feels complete.',
+                                      style: type.bodySmall?.copyWith(
+                                        color: colors.muted,
+                                      ),
                                     ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -409,8 +462,13 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                         TextField(
                           controller: _transcriptCtrl,
                           maxLines: 4,
+                          readOnly: _recording || _transcribing,
                           decoration: InputDecoration(
-                            hintText: 'Your answer appears here…',
+                            hintText: _recording
+                                ? 'Recording… transcript appears after you stop'
+                                : (_transcribing
+                                      ? 'Transcribing…'
+                                      : 'Your answer appears here…'),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -448,7 +506,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: _submitting
+                        onPressed: (_submitting || _transcribing)
                             ? null
                             : () => _submit(forceDone: true),
                         style: OutlinedButton.styleFrom(
@@ -465,7 +523,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                     const SizedBox(width: AppSpacing.grid * 1.5),
                     Expanded(
                       child: FilledButton(
-                        onPressed: _submitting
+                        onPressed: (_submitting || _transcribing)
                             ? null
                             : () => _submit(forceDone: false),
                         child: _submitting
