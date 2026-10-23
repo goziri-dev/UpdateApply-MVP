@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import auth, health, onboarding, profile, tailor
+from app.routers import auth, health, onboarding, profile, resume, tailor
 
 settings = get_settings()
 
@@ -22,6 +22,7 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(onboarding.router)
 app.include_router(profile.router)
+app.include_router(resume.router)
 app.include_router(tailor.router)
 
 

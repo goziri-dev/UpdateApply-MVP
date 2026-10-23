@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     openrouter_model_interview_questions: str = ""
     openrouter_model_profile_review: str = ""
     openrouter_model_resume_tailor: str = ""
+    # Embeddings for pgvector RAG (OpenRouter /embeddings). Empty → text-embedding-3-small.
+    openrouter_model_embedding: str = ""
     # STT for interview mic (OpenRouter /audio/transcriptions). Empty → whisper-1.
     openrouter_model_interview_transcribe: str = ""
 

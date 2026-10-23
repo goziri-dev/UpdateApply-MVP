@@ -106,6 +106,23 @@ class OnboardingService {
     );
   }
 
+  /// OpenRouter rewrite of evergreen master resume (parse + interview).
+  /// Idempotent when the server already has a remade profile at the current
+  /// review script version. Timeouts mirror parse (LLM can take ~60s).
+  static const Duration _reviewConnectTimeout = Duration(seconds: 120);
+  static const Duration _reviewReceiveTimeout = Duration(seconds: 90);
+
+  Future<Map<String, dynamic>> generateReview() async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/onboarding/review/generate',
+      options: Options(
+        connectTimeout: _reviewConnectTimeout,
+        receiveTimeout: _reviewReceiveTimeout,
+      ),
+    );
+    return response.data ?? {};
+  }
+
   Future<Map<String, dynamic>> getProfile() async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/v1/onboarding/profile',

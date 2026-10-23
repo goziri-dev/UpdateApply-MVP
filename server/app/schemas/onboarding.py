@@ -86,6 +86,15 @@ class OnboardingProfileUpdate(BaseModel):
     data: dict[str, Any]
 
 
+class ReviewGenerateResponse(BaseModel):
+    """Remade evergreen master resume for the Review screen."""
+
+    stub: bool = False
+    already_ready: bool = False
+    detail: str | None = None
+    profile: dict[str, Any]
+
+
 class OnboardingCompleteResponse(BaseModel):
     status: OnboardingStatus
     detail: str = "Onboarding complete. Hard gate cleared."

@@ -20,10 +20,13 @@ from app.schemas.onboarding import (
     OnboardingProfileUpdate,
     OnboardingStatusResponse,
     OnboardingUploadResponse,
+    ReviewGenerateResponse,
 )
 from app.services import onboarding as svc
 from app.services.extract import ExtractError
 from app.services.interview_questions import InterviewError
+from app.services.profile_index import get_profile_index_service
+from app.services.profile_review import ProfileReviewError
 from app.services.resume_storage import ResumeStorage
 from app.services.transcribe import (
     MAX_AUDIO_BYTES,
@@ -47,6 +50,19 @@ def _http_for_interview_error(exc: InterviewError) -> HTTPException:
         status_code = status.HTTP_400_BAD_REQUEST
     elif code == "openrouter_unconfigured":
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        status_code = status.HTTP_502_BAD_GATEWAY
+    return HTTPException(status_code=status_code, detail=exc.message)
+
+
+def _http_for_review_error(exc: ProfileReviewError) -> HTTPException:
+    code = exc.code
+    if code in {"empty_review", "invalid_review"}:
+        status_code = status.HTTP_502_BAD_GATEWAY
+    elif code == "openrouter_unconfigured":
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    elif code == "interview_incomplete":
+        status_code = status.HTTP_400_BAD_REQUEST
     else:
         status_code = status.HTTP_502_BAD_GATEWAY
     return HTTPException(status_code=status_code, detail=exc.message)
@@ -183,6 +199,7 @@ def parse_resume(user: DbUser, session: SessionDep) -> OnboardingParseResponse:
         raise _http_for_extract_error(exc) from exc
 
     queue = svc.interview_queue_from_profile(extracted)
+    public = svc.profile_public(extracted)
     data = svc.merge_onboarding_meta(
         extracted,
         resume_filename=meta.get("resume_filename") or filename,
@@ -192,6 +209,8 @@ def parse_resume(user: DbUser, session: SessionDep) -> OnboardingParseResponse:
         interview_index=0,
         question_index=0,
         coverage_hits={},
+        item_transcripts={},
+        parsed_snapshot=public,
     )
     svc.save_profile_data(session, profile, data)
     svc.set_user_onboarding_status(session, user, "in_progress")
@@ -358,9 +377,16 @@ def interview_turn(
             detail="Add a short answer (record or type) before continuing.",
         )
 
+    current_question = (
+        questions[q_index] if questions and q_index < len(questions) else None
+    )
     if transcript:
-        data = svc.apply_transcript_enrichment(
-            data, item_id=current_id, transcript=transcript
+        data = svc.store_interview_transcript(
+            data,
+            item_id=current_id,
+            transcript=transcript,
+            question=current_question,
+            question_index=q_index,
         )
         if coverage:
             hits.add(coverage[min(q_index, len(coverage) - 1)])
@@ -466,13 +492,70 @@ def interview_turn(
     )
 
 
+@router.post("/review/generate", response_model=ReviewGenerateResponse)
+def generate_review_profile(
+    user: DbUser,
+    session: SessionDep,
+) -> ReviewGenerateResponse:
+    """Rewrite evergreen master resume from parse + interview transcripts."""
+    profile = svc.get_or_create_profile(session, user.id)
+    data = dict(profile.data or {})
+    meta = _meta(data)
+    queue = list(meta.get("interview_queue") or [])
+    index = int(meta.get("interview_index") or 0)
+
+    if queue and index < len(queue):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Finish interviewing every role and project before review.",
+        )
+    if not data.get("experience") and not data.get("projects"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Parse a resume and finish the conversation before review.",
+        )
+
+    try:
+        data, is_stub, already_ready = svc.ensure_master_rewrite(data)
+    except ProfileReviewError as exc:
+        raise _http_for_review_error(exc) from exc
+
+    if not already_ready:
+        svc.save_profile_data(session, profile, data)
+        svc.set_user_onboarding_status(session, user, "in_progress")
+
+    detail = (
+        "STUB REVIEW: offline remade master (ALLOW_STUB_PARSE)."
+        if is_stub
+        else (
+            "Remade master resume already ready."
+            if already_ready
+            else "Rewrote master resume from your resume and conversation."
+        )
+    )
+    return ReviewGenerateResponse(
+        stub=is_stub,
+        already_ready=already_ready,
+        detail=detail,
+        profile=svc.profile_public(data),
+    )
+
+
 @router.get("/profile")
 def get_onboarding_profile(user: DbUser, session: SessionDep) -> dict[str, Any]:
     profile = svc.get_or_create_profile(session, user.id)
+    meta = _meta(profile.data or {})
+    # Never expose raw interview Q&A on the public profile payload.
+    safe_meta = {
+        k: v
+        for k, v in meta.items()
+        if k not in {"item_transcripts", "parsed_snapshot"}
+    }
     return {
         "status": user.onboarding_status,
         "data": svc.profile_public(profile.data or {}),
-        "meta": _meta(profile.data or {}),
+        "meta": safe_meta,
+        "review_ready": svc.review_already_ready(profile.data or {}),
     }
 
 
@@ -495,6 +578,8 @@ def update_onboarding_profile(
         "step": "ready",
     }
     svc.save_profile_data(session, profile, merged)
+    # Review edits change remade content — refresh pgvector chunks.
+    get_profile_index_service().reindex_user_best_effort(session, user.id)
     return {
         "status": user.onboarding_status,
         "data": svc.profile_public(merged),
@@ -537,4 +622,6 @@ def complete_onboarding(
     )
     svc.save_profile_data(session, profile, data)
     svc.set_user_onboarding_status(session, user, "complete")
+    # Re-index remade master profile for tailor RAG (best-effort).
+    get_profile_index_service().reindex_user_best_effort(session, user.id)
     return OnboardingCompleteResponse(status="complete")

@@ -20,8 +20,11 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
   final _email = TextEditingController();
   final _location = TextEditingController();
   final _links = TextEditingController();
+  final _summary = TextEditingController();
   final _expSummaries = <TextEditingController>[];
+  final _expBullets = <TextEditingController>[];
   final _projSummaries = <TextEditingController>[];
+  final _projBullets = <TextEditingController>[];
 
   Map<String, dynamic> _data = {};
   List<Map<String, dynamic>> _experience = [];
@@ -29,6 +32,7 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
   List<String> _skills = [];
   bool _loading = true;
   bool _saving = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -42,86 +46,145 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
     _email.dispose();
     _location.dispose();
     _links.dispose();
+    _summary.dispose();
     for (final c in _expSummaries) {
+      c.dispose();
+    }
+    for (final c in _expBullets) {
       c.dispose();
     }
     for (final c in _projSummaries) {
       c.dispose();
     }
+    for (final c in _projBullets) {
+      c.dispose();
+    }
     super.dispose();
   }
 
+  void _disposeItemControllers() {
+    for (final c in _expSummaries) {
+      c.dispose();
+    }
+    for (final c in _expBullets) {
+      c.dispose();
+    }
+    for (final c in _projSummaries) {
+      c.dispose();
+    }
+    for (final c in _projBullets) {
+      c.dispose();
+    }
+    _expSummaries.clear();
+    _expBullets.clear();
+    _projSummaries.clear();
+    _projBullets.clear();
+  }
+
+  String _bulletsText(dynamic raw) {
+    if (raw is! List) return '';
+    return raw.map((e) => '$e'.trim()).where((e) => e.isNotEmpty).join('\n');
+  }
+
+  List<String> _bulletsFromText(String text) {
+    return text
+        .split('\n')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    clearOnboardingFeedback();
     try {
-      final res = await onboardingService.getProfile();
-      final data = Map<String, dynamic>.from((res['data'] as Map?) ?? const {});
-      final basics = Map<String, dynamic>.from(
-        (data['basics'] as Map?) ?? const {},
+      // Remade master (idempotent). Do not load raw interview Q&A as Review.
+      final generated = await onboardingService.generateReview();
+      final data = Map<String, dynamic>.from(
+        (generated['profile'] as Map?) ?? const {},
       );
-      final experience = (data['experience'] as List? ?? [])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-      final projects = (data['projects'] as List? ?? [])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-      final skills = <String>[];
-      for (final group in data['skills'] as List? ?? []) {
-        if (group is String) {
-          skills.add(group);
-        } else if (group is Map) {
-          final keywords = group['keywords'] as List? ?? [];
-          if (keywords.isNotEmpty) {
-            skills.addAll(keywords.map((e) => '$e'));
-          } else if (group['name'] != null) {
-            skills.add('${group['name']}');
-          }
+      _applyProfile(data);
+      if (!mounted) return;
+      setState(() => _loading = false);
+    } on DioException catch (e) {
+      final message = _dioMessage(e);
+      setOnboardingError(message);
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadError = message;
+      });
+    } on Object catch (e) {
+      final message = e.toString();
+      setOnboardingError(message);
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadError = message;
+      });
+    }
+  }
+
+  void _applyProfile(Map<String, dynamic> data) {
+    final basics = Map<String, dynamic>.from(
+      (data['basics'] as Map?) ?? const {},
+    );
+    final experience = (data['experience'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    final projects = (data['projects'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    final skills = <String>[];
+    for (final group in data['skills'] as List? ?? []) {
+      if (group is String) {
+        skills.add(group);
+      } else if (group is Map) {
+        final keywords = group['keywords'] as List? ?? [];
+        if (keywords.isNotEmpty) {
+          skills.addAll(keywords.map((e) => '$e'));
+        } else if (group['name'] != null) {
+          skills.add('${group['name']}');
         }
       }
-
-      for (final c in _expSummaries) {
-        c.dispose();
-      }
-      for (final c in _projSummaries) {
-        c.dispose();
-      }
-      _expSummaries
-        ..clear()
-        ..addAll(
-          experience.map(
-            (e) => TextEditingController(text: '${e['summary'] ?? ''}'),
-          ),
-        );
-      _projSummaries
-        ..clear()
-        ..addAll(
-          projects.map(
-            (e) => TextEditingController(text: '${e['summary'] ?? ''}'),
-          ),
-        );
-
-      _name.text = '${basics['name'] ?? ''}';
-      _email.text = '${basics['email'] ?? ''}';
-      _location.text = '${basics['location'] ?? ''}';
-      final links = basics['links'];
-      _links.text = links is List ? links.join(' · ') : '${links ?? ''}';
-
-      setState(() {
-        _data = data;
-        _experience = experience;
-        _projects = projects;
-        _skills = skills;
-        _loading = false;
-      });
-    } on DioException catch (e) {
-      setOnboardingError(_dioMessage(e));
-      setState(() => _loading = false);
-    } on Object catch (e) {
-      setOnboardingError(e.toString());
-      setState(() => _loading = false);
     }
+
+    _disposeItemControllers();
+    _expSummaries.addAll(
+      experience.map(
+        (e) => TextEditingController(text: '${e['summary'] ?? ''}'),
+      ),
+    );
+    _expBullets.addAll(
+      experience.map(
+        (e) => TextEditingController(text: _bulletsText(e['bullets'])),
+      ),
+    );
+    _projSummaries.addAll(
+      projects.map((e) => TextEditingController(text: '${e['summary'] ?? ''}')),
+    );
+    _projBullets.addAll(
+      projects.map(
+        (e) => TextEditingController(text: _bulletsText(e['bullets'])),
+      ),
+    );
+
+    _name.text = '${basics['name'] ?? ''}';
+    _email.text = '${basics['email'] ?? ''}';
+    _location.text = '${basics['location'] ?? ''}';
+    final links = basics['links'];
+    _links.text = links is List ? links.join(' · ') : '${links ?? ''}';
+    _summary.text = '${data['summary'] ?? ''}';
+
+    _data = data;
+    _experience = experience;
+    _projects = projects;
+    _skills = skills;
   }
 
   Future<void> _save() async {
@@ -138,6 +201,7 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
         experience.add({
           ..._experience[i],
           'summary': _expSummaries[i].text.trim(),
+          'bullets': _bulletsFromText(_expBullets[i].text),
         });
       }
       final projects = <Map<String, dynamic>>[];
@@ -145,6 +209,7 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
         projects.add({
           ..._projects[i],
           'summary': _projSummaries[i].text.trim(),
+          'bullets': _bulletsFromText(_projBullets[i].text),
         });
       }
       final payload = {
@@ -156,12 +221,13 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
           'location': _location.text.trim(),
           'links': links,
         },
+        'summary': _summary.text.trim(),
         'experience': experience,
         'projects': projects,
       };
       await onboardingService.updateProfile(payload);
       if (!mounted) return;
-      context.go('/onboarding/ready');
+      context.go('/onboarding/reveal');
     } on DioException catch (e) {
       setOnboardingError(_dioMessage(e));
     } on Object catch (e) {
@@ -176,7 +242,7 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
     if (detail is Map && detail['detail'] != null) {
       return detail['detail'].toString();
     }
-    return e.message ?? 'Save failed';
+    return e.message ?? 'Request failed';
   }
 
   InputDecoration _fieldDecoration(String label) {
@@ -194,21 +260,49 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
 
     return OnboardingShell(
       stepLabel: '4 / 5',
-      caption: 'Check anything that looks off',
+      caption: 'Check the remade resume',
       onBack: () => context.go('/onboarding/interview'),
       child: _loading
-          ? const Padding(
-              padding: EdgeInsets.only(top: 48),
-              child: Center(child: CircularProgressIndicator()),
+          ? Padding(
+              padding: const EdgeInsets.only(top: 48),
+              child: Column(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: AppSpacing.grid * 2),
+                  Text(
+                    'Rewriting your master resume…',
+                    textAlign: TextAlign.center,
+                    style: type.bodyMedium?.copyWith(
+                      color: colors.muted,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : _loadError != null
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Couldn’t rewrite your resume',
+                  style: type.headlineMedium,
+                ),
+                const SizedBox(height: AppSpacing.grid * 1.5),
+                const OnboardingFeedbackBanner(),
+                const SizedBox(height: AppSpacing.grid * 2),
+                FilledButton(onPressed: _load, child: const Text('Try again')),
+              ],
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Review your profile', style: type.headlineMedium),
+                Text('Review your remade resume', style: type.headlineMedium),
                 const SizedBox(height: AppSpacing.grid * 1.5),
                 Text(
-                  'Correct anything we got wrong. Skills are stored from your '
-                  "resume — we don't ask about them in the chat.",
+                  'We rewrote your master profile from your resume and '
+                  'conversation. Correct anything we got wrong — this is what '
+                  "you'll tailor later, not a replay of your answers.",
                   style: type.bodyMedium?.copyWith(
                     color: colors.muted,
                     height: 1.45,
@@ -238,6 +332,12 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                   controller: _links,
                   decoration: _fieldDecoration('Links'),
                 ),
+                const SizedBox(height: AppSpacing.grid),
+                TextField(
+                  controller: _summary,
+                  maxLines: 4,
+                  decoration: _fieldDecoration('Profile summary'),
+                ),
                 const SizedBox(height: AppSpacing.grid * 3),
                 Text('Experience', style: type.titleMedium),
                 const SizedBox(height: AppSpacing.grid),
@@ -261,6 +361,14 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                           controller: _expSummaries[i],
                           maxLines: 3,
                           decoration: _fieldDecoration('Summary'),
+                        ),
+                        const SizedBox(height: AppSpacing.grid),
+                        TextField(
+                          controller: _expBullets[i],
+                          maxLines: 5,
+                          decoration: _fieldDecoration(
+                            'Bullets (one per line)',
+                          ),
                         ),
                       ],
                     ),
@@ -286,6 +394,14 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                           maxLines: 3,
                           decoration: _fieldDecoration('Summary'),
                         ),
+                        const SizedBox(height: AppSpacing.grid),
+                        TextField(
+                          controller: _projBullets[i],
+                          maxLines: 5,
+                          decoration: _fieldDecoration(
+                            'Bullets (one per line)',
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -306,7 +422,7 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                 ),
                 const SizedBox(height: AppSpacing.grid),
                 Text(
-                  'Extracted from your resume · not covered in chat',
+                  'From your remade resume · skills are not interviewed',
                   style: type.bodySmall?.copyWith(color: colors.muted),
                 ),
                 const SizedBox(height: AppSpacing.grid * 3),

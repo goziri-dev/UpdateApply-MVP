@@ -7,9 +7,10 @@ import '../../features/onboarding/state/onboarding_state.dart';
 import '../../features/onboarding/ui/gate_loading_screen.dart';
 import '../../features/onboarding/ui/interview_screen.dart';
 import '../../features/onboarding/ui/parsing_screen.dart';
-import '../../features/onboarding/ui/ready_screen.dart';
 import '../../features/onboarding/ui/review_screen.dart';
 import '../../features/onboarding/ui/upload_screen.dart';
+import '../../features/resume/ui/resume_reveal_screen.dart';
+import '../../features/tailor/ui/tailor_screen.dart';
 import 'auth_router_refresh.dart';
 
 bool _isOnboardingPath(String location) => location.startsWith('/onboarding');
@@ -53,8 +54,11 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
       }
 
       if (gate == OnboardingGate.complete && onOnboarding) {
-        // Allow ready screen only until they hit complete → home.
-        if (location == '/onboarding/ready') return null;
+        // Allow reveal/ready until they leave for the dashboard.
+        if (location == '/onboarding/reveal' ||
+            location == '/onboarding/ready') {
+          return null;
+        }
         return '/';
       }
 
@@ -62,6 +66,10 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
     },
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+      GoRoute(
+        path: '/tailor',
+        builder: (context, state) => const TailorScreen(),
+      ),
       GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
       GoRoute(
         path: '/boot',
@@ -84,8 +92,13 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
         builder: (context, state) => const OnboardingReviewScreen(),
       ),
       GoRoute(
+        path: '/onboarding/reveal',
+        builder: (context, state) => const ResumeRevealScreen(),
+      ),
+      GoRoute(
         path: '/onboarding/ready',
-        builder: (context, state) => const OnboardingReadyScreen(),
+        // Legacy path — same unlock moment as reveal.
+        builder: (context, state) => const ResumeRevealScreen(),
       ),
     ],
   );

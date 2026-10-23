@@ -14,6 +14,7 @@ class ResumeMeta(BaseModel):
 class ResumeBasics(BaseModel):
     name: str = ""
     email: str = ""
+    location: str = ""
     links: list[str] = Field(default_factory=list)
 
 
@@ -27,6 +28,21 @@ class ExperienceItem(BaseModel):
     title: str = ""
     start: str = ""
     end: str = ""
+    summary: str = ""
+    bullets: list[str] = Field(default_factory=list)
+
+
+class EducationItem(BaseModel):
+    school: str = ""
+    degree: str = ""
+    end: str = ""
+
+
+class ProjectItem(BaseModel):
+    title: str = ""
+    start: str = ""
+    end: str = ""
+    summary: str = ""
     bullets: list[str] = Field(default_factory=list)
 
 
@@ -36,8 +52,8 @@ class ResumeDocument(BaseModel):
     summary: str = ""
     skills: list[SkillGroup] = Field(default_factory=list)
     experience: list[ExperienceItem] = Field(default_factory=list)
-    education: list[dict[str, Any]] = Field(default_factory=list)
-    projects: list[dict[str, Any]] = Field(default_factory=list)
+    education: list[EducationItem] = Field(default_factory=list)
+    projects: list[ProjectItem] = Field(default_factory=list)
 
 
 class TailorRequest(BaseModel):
@@ -50,5 +66,24 @@ class TailorRequest(BaseModel):
 
 class TailorResponse(BaseModel):
     resume: ResumeDocument
-    stub: bool = True
+    stub: bool = False
     detail: str | None = None
+
+
+class ResumeTemplateInfo(BaseModel):
+    id: str
+    name: str
+    version: str
+    description: str = ""
+
+
+class ResumeExportRequest(BaseModel):
+    """Export PDF from the same HTML template used for preview.
+
+    Omit ``resume`` to render the authenticated user's remade master profile
+    as a ResumeDocument (post-onboarding + dashboard). Pass a tailored
+    ``ResumeDocument`` when exporting a job-specific variant.
+    """
+
+    template_id: str = "classic"
+    resume: ResumeDocument | None = None

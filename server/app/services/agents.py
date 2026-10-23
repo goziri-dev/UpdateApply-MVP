@@ -17,6 +17,7 @@ _TASK_OVERRIDE_ATTR: dict[AgentTask, str] = {
     AgentTask.INTERVIEW_QUESTIONS: "openrouter_model_interview_questions",
     AgentTask.PROFILE_REVIEW: "openrouter_model_profile_review",
     AgentTask.RESUME_TAILOR: "openrouter_model_resume_tailor",
+    AgentTask.EMBEDDING: "openrouter_model_embedding",
 }
 
 
@@ -45,8 +46,13 @@ class AgentFactory:
         """Return a chat model for ``task``.
 
         Raises:
-            RuntimeError: when ``OPENROUTER_API_KEY`` is missing.
+            RuntimeError: when ``OPENROUTER_API_KEY`` is missing, or when
+            ``task`` is :attr:`~AgentTask.EMBEDDING` (use EmbeddingsClient).
         """
+        if task is AgentTask.EMBEDDING:
+            raise RuntimeError(
+                "AgentTask.EMBEDDING is not a chat model; use EmbeddingsClient."
+            )
         if not self.configured():
             raise RuntimeError(
                 "OPENROUTER_API_KEY is not configured; cannot create an OpenRouter agent."

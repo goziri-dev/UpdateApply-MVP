@@ -11,6 +11,7 @@ from app.core.database import get_session
 from app.models.profile import Profile
 from app.schemas.profile import ProfileRead, ProfileUpdate
 from app.services import onboarding as onboarding_svc
+from app.services.profile_index import get_profile_index_service
 
 router = APIRouter(prefix="/api/v1/profile", tags=["profile"])
 
@@ -49,6 +50,8 @@ def put_profile(
     if isinstance(meta, dict):
         merged["_onboarding"] = meta
     onboarding_svc.save_profile_data(session, profile, merged)
+    # Remade content changed — replace prior pgvector chunks for this user.
+    get_profile_index_service().reindex_user_best_effort(session, user.id)
     return ProfileRead(
         id=profile.id,
         user_id=profile.user_id,

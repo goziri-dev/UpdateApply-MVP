@@ -17,6 +17,8 @@ class AgentTask(StrEnum):
     INTERVIEW_QUESTIONS = "interview_questions"
     PROFILE_REVIEW = "profile_review"
     RESUME_TAILOR = "resume_tailor"
+    # Embeddings use EmbeddingsClient (HTTP /embeddings), not ChatOpenRouter.
+    EMBEDDING = "embedding"
 
 
 # Cheap + capable OpenRouter slugs. Prefer Gemini Flash for extract / Q-gen
@@ -27,4 +29,5 @@ DEFAULT_MODEL_BY_TASK: dict[AgentTask, str] = {
     AgentTask.INTERVIEW_QUESTIONS: "google/gemini-2.5-flash",
     AgentTask.PROFILE_REVIEW: "openai/gpt-4o-mini",
     AgentTask.RESUME_TAILOR: "openai/gpt-4o-mini",
+    AgentTask.EMBEDDING: "openai/text-embedding-3-small",
 }

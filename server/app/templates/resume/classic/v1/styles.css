@@ -1,0 +1,138 @@
+/* classic/v1 — single-column ATS-friendly resume.
+   Real text only (no icons/graphics). Shared by HTML preview + PyMuPDF PDF.
+*/
+
+@page {
+  size: Letter;
+  margin: 0.65in 0.7in;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  color: #111111;
+  background: #ffffff;
+  font-family: "Source Sans 3", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.4;
+}
+
+.resume {
+  max-width: 8.5in;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 14pt;
+  padding-bottom: 8pt;
+  border-bottom: 1.5pt solid #111111;
+}
+
+.name {
+  margin: 0 0 4pt;
+  font-size: 18pt;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.contact {
+  margin: 0;
+  color: #3a3a3a;
+  font-size: 9.5pt;
+}
+
+.contact span + span::before {
+  content: " · ";
+  color: #6b6b6b;
+}
+
+.section {
+  margin-top: 12pt;
+}
+
+.section-title {
+  margin: 0 0 6pt;
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #111111;
+  border-bottom: 0.75pt solid #c8c8c8;
+  padding-bottom: 2pt;
+}
+
+.summary {
+  margin: 0;
+}
+
+.item {
+  margin-bottom: 9pt;
+}
+
+.item:last-child {
+  margin-bottom: 0;
+}
+
+.item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12pt;
+  align-items: baseline;
+}
+
+.item-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 10.5pt;
+}
+
+.item-sub {
+  margin: 1pt 0 0;
+  color: #3a3a3a;
+  font-size: 9.5pt;
+}
+
+.item-dates {
+  margin: 0;
+  color: #6b6b6b;
+  font-size: 9pt;
+  white-space: nowrap;
+}
+
+.item-summary {
+  margin: 3pt 0 0;
+}
+
+.bullets {
+  margin: 3pt 0 0;
+  padding-left: 16pt;
+}
+
+.bullets li {
+  margin: 0 0 2pt;
+}
+
+.skills-row {
+  margin: 0 0 3pt;
+}
+
+.skills-label {
+  font-weight: 700;
+}
+
+.skills-keywords {
+  color: #3a3a3a;
+}
+
+.empty-hint {
+  margin: 24pt 0;
+  color: #6b6b6b;
+  text-align: center;
+  font-size: 10pt;
+}

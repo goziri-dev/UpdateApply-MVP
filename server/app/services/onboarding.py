@@ -1,8 +1,10 @@
-"""Onboarding helpers: profile upsert, resume parse, interview turns.
+"""Onboarding helpers: profile upsert, resume parse, interview turns, rewrite.
 
 Parse: PDF bytes (local storage) → markdown → ``AgentFactory`` RESUME_EXTRACT.
 Interview: LLM scripts via ``AgentTask.INTERVIEW_QUESTIONS`` (stub only when
 ``ALLOW_STUB_PARSE`` and OpenRouter is off).
+Review: ``AgentTask.PROFILE_REVIEW`` rewrites an evergreen master resume from
+parse + stored transcripts (raw Q&A stays under ``_onboarding`` only).
 """
 
 from __future__ import annotations
@@ -22,6 +24,11 @@ from app.services.interview_questions import (
     INTERVIEW_SCRIPT_VERSION,
     InterviewError,
     InterviewQuestionService,
+)
+from app.services.profile_review import (
+    PROFILE_REVIEW_VERSION,
+    ProfileReviewError,
+    ProfileReviewService,
 )
 from app.services.resume_storage import ResumeStorage
 
@@ -422,30 +429,36 @@ def skill_labels(data: dict[str, Any]) -> list[str]:
     return labels
 
 
-def apply_transcript_enrichment(
+def store_interview_transcript(
     data: dict[str, Any],
     *,
     item_id: str,
     transcript: str,
+    question: str | None = None,
+    question_index: int = 0,
 ) -> dict[str, Any]:
-    """Append transcript into bullets/summary for the interviewed item (stub)."""
-    out = deepcopy(data)
+    """Persist one Q&A turn under ``_onboarding.item_transcripts`` (not public bullets)."""
     text = transcript.strip()
     if not text:
-        return out
+        return data
 
-    for key in ("experience", "projects"):
-        items = out.get(key) or []
-        for item in items:
-            if item.get("id") != item_id:
-                continue
-            bullets = list(item.get("bullets") or [])
-            bullets.append(text)
-            item["bullets"] = bullets
-            # Prefer keeping parse summary; prepend a short note when empty.
-            if not (item.get("summary") or "").strip():
-                item["summary"] = text[:280]
-            return out
+    out = deepcopy(data)
+    meta = dict(out.get("_onboarding") or {})
+    by_item = dict(meta.get("item_transcripts") or {})
+    turns = list(by_item.get(item_id) or [])
+    turns.append(
+        {
+            "question_index": question_index,
+            "question": (question or "").strip(),
+            "answer": text,
+        }
+    )
+    by_item[item_id] = turns
+    meta["item_transcripts"] = by_item
+    # New conversation invalidates a prior remade master.
+    meta.pop("review_ready", None)
+    meta.pop("review_version", None)
+    out["_onboarding"] = meta
     return out
 
 
@@ -456,3 +469,176 @@ def mark_item_interviewed(data: dict[str, Any], item_id: str) -> dict[str, Any]:
             if item.get("id") == item_id:
                 item["interviewed"] = True
     return out
+
+
+def _item_index_by_id(items: list[Any]) -> dict[str, dict[str, Any]]:
+    indexed: dict[str, dict[str, Any]] = {}
+    for item in items:
+        if isinstance(item, dict):
+            item_id = item.get("id")
+            if isinstance(item_id, str) and item_id:
+                indexed[item_id] = item
+    return indexed
+
+
+def _merge_rewritten_profile(
+    source: dict[str, Any],
+    remade: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply remade public fields; restore ids / interviewed from source when possible."""
+    out = deepcopy(remade)
+    src_exp = _item_index_by_id(list(source.get("experience") or []))
+    src_proj = _item_index_by_id(list(source.get("projects") or []))
+
+    experience: list[dict[str, Any]] = []
+    for i, item in enumerate(out.get("experience") or [], start=1):
+        if not isinstance(item, dict):
+            continue
+        item_id = str(item.get("id") or "").strip() or f"exp-{i}"
+        prior = src_exp.get(item_id)
+        experience.append(
+            {
+                **item,
+                "id": item_id,
+                "interviewed": bool(prior.get("interviewed")) if prior else True,
+            }
+        )
+
+    projects: list[dict[str, Any]] = []
+    for i, item in enumerate(out.get("projects") or [], start=1):
+        if not isinstance(item, dict):
+            continue
+        item_id = str(item.get("id") or "").strip() or f"proj-{i}"
+        prior = src_proj.get(item_id)
+        projects.append(
+            {
+                **item,
+                "id": item_id,
+                "interviewed": bool(prior.get("interviewed")) if prior else True,
+            }
+        )
+
+    out["experience"] = experience
+    out["projects"] = projects
+    return out
+
+
+def _stub_rewrite_profile(
+    parsed: dict[str, Any],
+    item_transcripts: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Offline remake: weave answers into one summary + a few bullets (no raw dump)."""
+    out = deepcopy(parsed)
+    for key in ("experience", "projects"):
+        for item in out.get(key) or []:
+            if not isinstance(item, dict):
+                continue
+            item_id = item.get("id")
+            if not isinstance(item_id, str):
+                continue
+            turns = item_transcripts.get(item_id) or []
+            answers = [
+                str(t.get("answer") or "").strip()
+                for t in turns
+                if isinstance(t, dict) and str(t.get("answer") or "").strip()
+            ]
+            if not answers:
+                continue
+            # One polished summary + up to 3 condensed bullets — not every turn pasted.
+            joined = " ".join(answers)
+            if not (item.get("summary") or "").strip():
+                item["summary"] = joined[:320].rstrip()
+            else:
+                # Keep parse summary; append a short clarifying clause once.
+                base = str(item["summary"]).rstrip()
+                clause = answers[0][:160].rstrip()
+                if clause and clause.lower() not in base.lower():
+                    item["summary"] = f"{base} Clarified: {clause}"
+            bullets = [
+                a if len(a) <= 220 else f"{a[:217].rstrip()}…" for a in answers[:3]
+            ]
+            item["bullets"] = bullets
+    return out
+
+
+def review_already_ready(data: dict[str, Any]) -> bool:
+    meta = data.get("_onboarding") if isinstance(data.get("_onboarding"), dict) else {}
+    return bool(
+        meta.get("review_ready")
+        and meta.get("review_version") == PROFILE_REVIEW_VERSION
+    )
+
+
+def ensure_master_rewrite(
+    data: dict[str, Any],
+    *,
+    settings: Settings | None = None,
+) -> tuple[dict[str, Any], bool, bool]:
+    """Return ``(data, stub, already_ready)`` with remade public fields.
+
+    Live path: OpenRouter ``PROFILE_REVIEW``. Stub path: only when
+    ``allow_stub_parse`` and OpenRouter is off. Idempotent when
+    ``review_version`` matches ``PROFILE_REVIEW_VERSION``.
+    """
+    if review_already_ready(data):
+        return data, False, True
+
+    cfg = settings or get_settings()
+    meta = dict(data.get("_onboarding") or {})
+    parsed = meta.get("parsed_snapshot")
+    if not isinstance(parsed, dict) or not parsed:
+        parsed = profile_public(data)
+
+    item_transcripts_raw = meta.get("item_transcripts") or {}
+    item_transcripts: dict[str, list[dict[str, Any]]] = {}
+    if isinstance(item_transcripts_raw, dict):
+        for item_id, turns in item_transcripts_raw.items():
+            if isinstance(turns, list):
+                item_transcripts[str(item_id)] = [
+                    t for t in turns if isinstance(t, dict)
+                ]
+
+    coverage_raw = meta.get("coverage_hits") or {}
+    coverage_hits: dict[str, list[str]] = {}
+    if isinstance(coverage_raw, dict):
+        for item_id, hits in coverage_raw.items():
+            coverage_hits[str(item_id)] = [str(h) for h in list(hits or [])]
+
+    scripts_raw = meta.get("item_scripts") or {}
+    item_scripts = scripts_raw if isinstance(scripts_raw, dict) else {}
+
+    if cfg.openrouter_configured:
+        remade = ProfileReviewService(cfg).rewrite(
+            parsed_profile=parsed,
+            item_transcripts=item_transcripts,
+            coverage_hits=coverage_hits,
+            item_scripts=item_scripts,
+        )
+        is_stub = False
+    elif cfg.allow_stub_parse:
+        remade = _stub_rewrite_profile(parsed, item_transcripts)
+        is_stub = True
+    else:
+        raise ProfileReviewError(
+            "Profile rewrite is not configured. Set OPENROUTER_API_KEY on the server.",
+            code="openrouter_unconfigured",
+        )
+
+    merged_public = _merge_rewritten_profile(data, remade)
+    out = {**merged_public, "_onboarding": meta}
+    out = merge_onboarding_meta(
+        out,
+        review_ready=True,
+        review_version=PROFILE_REVIEW_VERSION,
+        step="review",
+        interview_queue=meta.get("interview_queue") or [],
+        interview_index=meta.get("interview_index") or 0,
+        question_index=meta.get("question_index") or 0,
+        coverage_hits=meta.get("coverage_hits") or {},
+        item_transcripts=meta.get("item_transcripts") or {},
+        item_scripts=meta.get("item_scripts") or {},
+        parsed_snapshot=parsed,
+        resume_filename=meta.get("resume_filename"),
+        resume_size_bytes=meta.get("resume_size_bytes"),
+    )
+    return out, is_stub, False
