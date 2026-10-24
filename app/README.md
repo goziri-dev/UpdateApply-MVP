@@ -1,6 +1,6 @@
 # UpdateApply app
 
-Flutter client for UpdateApply (auth + onboarding → resume reveal → dashboard / tailor).
+Flutter client for UpdateApply (auth + onboarding → resume reveal → Home / Applications / tailor).
 
 ## Run
 
@@ -10,6 +10,32 @@ flutter run -d chrome --dart-define-from-file=.env
 ```
 
 Required `--dart-define` keys (see `.env.example` if present): `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Optional: `SUPABASE_AUTH_REDIRECT_URL`.
+
+### VS Code / Cursor launch tip
+
+Prefer **UpdateApply (Chrome) — recommended** in `.vscode/launch.json` (`noDebug: true`, Chrome, `--web-port=5173`). Plain F5 debug on Flutter web often hangs on breakpoints / DWDS; use **UpdateApply (Chrome + debugger)** only when you need the debugger.
+
+## Shell (post-onboarding)
+
+After onboarding, authenticated routes use a `StatefulShellRoute` with two tabs:
+
+| Tab | Path | Role |
+|-----|------|------|
+| Home | `/` | Master remade resume preview + **Tailor to a job description** CTA |
+| Applications | `/applications` | Tailored-version history (list → detail) |
+
+**Tailor** (`/tailor`) is **not** a shell tab — opened from Home CTA, Applications empty CTA, or detail “Tailor again” (optional `TailorLaunchArgs` via `GoRouter` extra).
+
+Shell header includes a compact **account menu** (email + Sign out). Home no longer hosts debug/session chrome.
+
+## Applications flow
+
+1. Tailor succeeds → server always inserts a new `application` draft; Flutter shows “Saved as draft · vN” + **View in Applications**.
+2. List (`ApplicationsListScreen`) — newest first; same company+role can appear many times as separate versions.
+3. Detail (`/applications/:id`) — tailored preview, download PDF, mark applied, tailor again.
+4. Empty state — single CTA into `/tailor`.
+
+Prototype (approved, then implemented): `prototypes/applications/`.
 
 ## OAuth (Flutter web)
 
@@ -43,7 +69,7 @@ On web, Dio’s `connectTimeout` is time until response **headers**. Resume `/pa
 
 After Review, the flow opens **`/onboarding/reveal`** (`ResumeRevealScreen`; legacy `/onboarding/ready` is the same screen): full HTML preview of the remade master, **Download PDF**, then **Go to dashboard** (`complete` + gate refresh → `/`).
 
-On the home dashboard, a **mini** letter-aspect preview (`ResumePreview` mini mode) taps into a modal with a larger preview + Download. Both surfaces use `ResumeService` → `GET/POST /api/v1/resume/html` (same server Jinja template as PDF). Default `template_id` is `classic`.
+On Home, a **mini** letter-aspect preview (`ResumePreview` mini mode) taps into a modal with a larger preview + Download. Application detail and tailor results reuse the same preview/download path for tailored `ResumeDocument` JSON. Surfaces use `ResumeService` → `GET/POST /api/v1/resume/html` (same server Jinja template as PDF). Default `template_id` is `classic`.
 
 Download calls `POST /api/v1/resume/export`, then on **web** triggers a browser save via blob URL (`resume_download_web.dart`). Non-web builds stub and throw. Filename is derived from basics name when possible.
 

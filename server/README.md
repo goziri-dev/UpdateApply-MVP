@@ -34,7 +34,7 @@ Primary vectors come from the **approved remade master profile** (bullets, summa
 - Embedding model: `openai/text-embedding-3-small` (1536 dims). Override: `OPENROUTER_MODEL_EMBEDDING`.
 - Table: `profile_chunk` (Alembic `b2c3d4e5f6a7`). Re-index replaces prior chunks for the user on onboarding `complete`, onboarding profile PUT (review edits), and `PUT /api/v1/profile`.
 - `POST /api/v1/tailor` embeds the pasted JD, retrieves top-k chunks, and runs `AgentTask.RESUME_TAILOR` → validated `ResumeDocument`. Stub only when `ALLOW_STUB_PARSE` and no OpenRouter key.
-- On success, tailor **always inserts a new** `application` draft row (JSONB `resume_document`; PDFs not stored). Same company+role can appear many times as separate versions. Response includes `application_id` + `application_version`.
+- On success, tailor **always inserts a new** `application` draft row (JSONB `resume_document`; PDFs not stored). Same company+role can appear many times as separate versions. `TailorResponse` always includes `application_id` + `application_version` on success (Flutter deep-links to Applications).
 
 ## Applications (tailored history)
 

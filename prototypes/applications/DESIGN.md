@@ -1,7 +1,9 @@
 # Applications design — UpdateApply
 
 HTML/CSS prototype for the **Applications** tracker (tailored-resume history).
-Not production Flutter/API until Favour green-lights Implementation.
+**Shipped** in Flutter + server on `feat/application-tracker` (commit after
+approval). Keep this folder as the visual reference; Flutter is SSOT for
+runtime behavior.
 
 ## Status
 
@@ -31,12 +33,12 @@ mark applied / tailor again.
 4. Same company/role can appear multiple times as separate versions — never unique
    on company+role alone.
 
-**API / data (later):** Application record: company, role, created/applied dates,
-status (draft | applied), version label/number, JD snippet, tailored resume
-artifact. Master remade resume stays on Home — out of scope for this screen.
+**API / data (shipped):** `application` table + `/api/v1/applications*` (see
+`server/README.md`). Tailor response includes `application_id` +
+`application_version`. Master remade resume stays on Home.
 
-**Constraints:** Prototype only under `prototypes/applications/`. No Flutter/server
-changes. Web-first shell (matches current app).
+**Constraints:** Prototype remains under `prototypes/applications/` as design
+reference. Web-first shell (matches current app).
 
 **UX copy:**
 - Home body: no “Home” title — lead with **Your resume** label + preview +
