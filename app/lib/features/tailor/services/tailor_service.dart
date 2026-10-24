@@ -11,7 +11,7 @@ class TailorService {
 
   /// Live OpenRouter tailor can take a while (embed JD + LLM rewrite).
   static const Duration _connectTimeout = Duration(seconds: 120);
-  static const Duration _receiveTimeout = Duration(seconds: 90);
+  static const Duration _receiveTimeout = Duration(seconds: 150);
 
   Future<Map<String, dynamic>> tailor({
     required String jobDescription,

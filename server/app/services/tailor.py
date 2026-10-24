@@ -34,24 +34,32 @@ TAILOR_SYSTEM_PROMPT = """\
 You rewrite a candidate's remade master career profile into a tailored resume
 for one specific job description.
 
-Inputs you receive:
-1. The full remade master profile (source of truth).
-2. Retrieved profile chunks most relevant to the JD (RAG).
-3. The pasted job description, optional target role / company.
+Inputs you receive (JSON):
+1. master_resume — the remade master as ResumeDocument (source of truth).
+2. retrieved_chunks — profile passages most relevant to the JD (RAG).
+3. job_description, target_role, company — the pasted JD and optional hints.
+
+Output: a ResumeDocument (meta, basics, summary, skills, experience, education,
+projects). This must be a JD-specific rewrite, not a copy of master_resume.
 
 Rules:
-- Produce structured resume JSON matching the schema (meta, basics, summary,
-  skills, experience, education, projects).
-- Emphasize facts that match the JD; reorder and rephrase bullets for relevance.
-- Honesty: do NOT invent employers, metrics, degrees, tools, or achievements that
-  are not supported by the master profile or retrieved chunks.
-- Prefer concrete wording from the profile; tighten for the JD without lying.
+- Do NOT return the master unchanged. At minimum: rewrite summary for the JD,
+  reorder experience/projects by relevance, and reorder/filter bullets and
+  skills toward the JD. Rephrase for clarity and keyword fit when supported.
+- Honesty: do NOT invent employers, metrics, degrees, tools, titles, or
+  achievements that are not supported by master_resume or retrieved_chunks.
+- Prefer concrete wording from the master; tighten for the JD without lying.
 - meta.target_role / meta.company: use request hints when provided, else infer
   lightly from the JD title/company if obvious, else leave empty.
-- Keep experience/project structure; drop weak bullets only when clearly
-  irrelevant — do not empty the resume.
-- Skills: prioritize JD-relevant keywords that exist in the profile.
+- Keep experience/project entries that still matter; drop weak bullets only when
+  clearly irrelevant — do not empty the resume.
+- Skills: prioritize JD-relevant keywords that already exist in the master.
+- Ignore any onboarding-only fields (ids, interviewed flags); they are not part
+  of ResumeDocument.
 """
+
+# Tailor = embed JD + structured rewrite; default agent timeout (60s) is tight.
+_TAILOR_TIMEOUT_MS = 120_000
 
 
 class TailorError(Exception):
@@ -145,43 +153,36 @@ class TailorService:
         session: Session | None,
         user_id: UUID | None,
     ) -> TailorResponse:
-        retrieved: list[dict[str, Any]] = []
-        if session is not None and user_id is not None:
-            try:
-                chunks = self.index.retrieve_for_jd(
-                    session,
-                    user_id=user_id,
-                    job_description=request.job_description,
-                )
-                retrieved = [
-                    {
-                        "chunk_type": c.chunk_type,
-                        "source_item_id": c.source_item_id,
-                        "text": c.text,
-                    }
-                    for c in chunks
-                ]
-            except ProfileIndexError:
-                logger.exception("RAG retrieve failed; continuing with full profile")
+        # Master as ResumeDocument — same shape as output; no onboarding ids.
+        master_resume = profile_to_resume_document(profile_data)
+        retrieved = self._retrieve_chunks(
+            request,
+            session=session,
+            user_id=user_id,
+        )
 
         payload = {
             "job_description": request.job_description.strip(),
             "target_role": request.target_role or "",
             "company": request.company or "",
-            "master_profile": profile_data,
+            "master_resume": master_resume.model_dump(),
             "retrieved_chunks": retrieved,
         }
 
         try:
-            llm = self.agents.create(AgentTask.RESUME_TAILOR)
+            llm = self.agents.create(
+                AgentTask.RESUME_TAILOR,
+                timeout=_TAILOR_TIMEOUT_MS,
+            )
             structured = llm.with_structured_output(ResumeDocument)
             result = structured.invoke(
                 [
                     SystemMessage(content=TAILOR_SYSTEM_PROMPT),
                     HumanMessage(
                         content=(
-                            "Tailor this master profile to the job description. "
-                            "Use retrieved chunks for emphasis; keep honesty.\n\n"
+                            "Produce a tailored ResumeDocument for this job. "
+                            "Rewrite from master_resume; use retrieved_chunks for "
+                            "emphasis; keep honesty — no invented facts.\n\n"
                             f"{json.dumps(payload, ensure_ascii=False, indent=2)}"
                         )
                     ),
@@ -202,16 +203,53 @@ class TailorService:
             resume.meta.company = request.company
 
         detail = (
-            f"Live tailor via {self.agents.model_for(AgentTask.RESUME_TAILOR)}; "
+            f"Tailored resume via {self.agents.model_for(AgentTask.RESUME_TAILOR)}; "
             f"{len(retrieved)} retrieved chunk(s)."
         )
         return TailorResponse(resume=resume, stub=False, detail=detail)
+
+    def _retrieve_chunks(
+        self,
+        request: TailorRequest,
+        *,
+        session: Session | None,
+        user_id: UUID | None,
+    ) -> list[dict[str, Any]]:
+        if session is None or user_id is None:
+            return []
+        try:
+            chunks = self.index.retrieve_for_jd(
+                session,
+                user_id=user_id,
+                job_description=request.job_description,
+            )
+            # Empty index → try one reindex then retrieve again.
+            if not chunks:
+                written = self.index.reindex_user_best_effort(session, user_id)
+                if written:
+                    chunks = self.index.retrieve_for_jd(
+                        session,
+                        user_id=user_id,
+                        job_description=request.job_description,
+                    )
+            return [
+                {
+                    "chunk_type": c.chunk_type,
+                    "source_item_id": c.source_item_id,
+                    "text": c.text,
+                }
+                for c in chunks
+            ]
+        except ProfileIndexError:
+            logger.exception("RAG retrieve failed; continuing with master resume")
+            return []
 
     def _stub_tailor(
         self,
         request: TailorRequest,
         profile: dict[str, Any],
     ) -> TailorResponse:
+        # Offline only: master mapped to ResumeDocument — not a real rewrite.
         resume = profile_to_resume_document(profile)
         resume.meta = ResumeMeta(
             target_role=request.target_role or "",
@@ -221,7 +259,8 @@ class TailorService:
 
         jd_preview = request.job_description.strip()[:80]
         detail = (
-            "Stub tailor: returned profile-shaped JSON without LLM rewrite. "
+            "Stub tailor: returned your master resume mapped to ResumeDocument "
+            "(no LLM rewrite). "
             f"JD preview: {jd_preview!r}. "
             "Set OPENROUTER_API_KEY to enable live tailor + RAG."
         )

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:scoped_deps/scoped_deps.dart';
@@ -12,13 +13,23 @@ import 'features/onboarding/state/onboarding_state.dart';
 import 'services/api_client.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await bootstrapSupabase();
-  runScoped(
-    () {
-      final refresh = AuthRouterRefresh();
-      final router = createAppRouter(refresh);
-      runApp(UpdateApplyApp(routerConfig: router, authRefresh: refresh));
+  // Binding + runApp must share the same zone (Flutter zone-mismatch rules).
+  // ensureInitialized outside runScoped made GoRouter redirects resolve
+  // onboardingGate via orElse fallbacks while auth sync wrote the scoped
+  // signal — leaving /boot on "Checking your profile…" forever.
+  await runScoped(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      try {
+        await bootstrapSupabase();
+        final refresh = AuthRouterRefresh();
+        final router = createAppRouter(refresh);
+        runApp(UpdateApplyApp(routerConfig: router, authRefresh: refresh));
+      } on Object catch (error, stackTrace) {
+        debugPrint('UpdateApply bootstrap failed: $error\n$stackTrace');
+        runApp(_BootstrapErrorApp(error: error, stackTrace: stackTrace));
+      }
     },
     values: {
       homeMessageRef,
@@ -36,6 +47,36 @@ Future<void> main() async {
       onboardingInfoRef,
     },
   );
+}
+
+/// Surfaced when Supabase/router bootstrap throws before the first frame.
+class _BootstrapErrorApp extends StatelessWidget {
+  const _BootstrapErrorApp({required this.error, this.stackTrace});
+
+  final Object error;
+  final StackTrace? stackTrace;
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = kDebugMode && stackTrace != null
+        ? '$error\n\n$stackTrace'
+        : '$error';
+    return MaterialApp(
+      title: 'UpdateApply',
+      theme: AppTheme.light(),
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: SelectableText(
+              'UpdateApply failed to start.\n\n$detail',
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class UpdateApplyApp extends StatefulWidget {

@@ -11,6 +11,26 @@ flutter run -d chrome --dart-define-from-file=.env
 
 Required `--dart-define` keys (see `.env.example` if present): `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Optional: `SUPABASE_AUTH_REDIRECT_URL`.
 
+## OAuth (Flutter web)
+
+Sign-in uses **same-tab** redirect (PKCE). The IdP returns to the current origin; you should end with **one** UpdateApply tab, not a leftover original + callback tab.
+
+Pin a stable web origin when developing so Supabase allow-lists match:
+
+```bash
+flutter run -d chrome --web-port=5000 --dart-define-from-file=.env
+```
+
+In **Supabase Dashboard → Authentication → URL Configuration**, confirm:
+
+| Field | Local example | Notes |
+|-------|---------------|--------|
+| Site URL | `http://localhost:5000` | Prefer the pinned `--web-port` origin |
+| Redirect URLs | `http://localhost:5000` | Same origin; add production origins too |
+| Redirect URLs | `io.updateapply.app://login-callback/` | Native deep link (when shipping mobile) |
+
+Optional dart-define `SUPABASE_AUTH_REDIRECT_URL` overrides the redirect; on web leave it empty so the app uses `Uri.base.origin` (must still be allow-listed). Enable providers under **Authentication → Providers** (Google, GitHub, Notion, Email).
+
 ## Onboarding tone
 
 The role/project chat is a **calm consultant conversation**, not a hiring interview. Copy and generated prompts invite honest detail (gaps, shared credit, underselling) without grilling.

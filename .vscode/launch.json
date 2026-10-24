@@ -21,7 +21,24 @@
       "deviceId": "chrome",
       "toolArgs": [
         "--dart-define-from-file",
-        "${workspaceFolder}/app/.env"
+        "${workspaceFolder}/app/.env",
+        "--web-port",
+        "5173"
+      ]
+    },
+    {
+      "name": "UpdateApply (Chrome, no debug — F5-safe)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "${workspaceFolder}/app",
+      "program": "${workspaceFolder}/app/lib/main.dart",
+      "deviceId": "chrome",
+      "noDebug": true,
+      "toolArgs": [
+        "--dart-define-from-file",
+        "${workspaceFolder}/app/.env",
+        "--web-port",
+        "5173"
       ]
     },
     {

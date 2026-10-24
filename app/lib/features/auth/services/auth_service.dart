@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_env.dart';
 import 'supabase_bootstrap.dart';
@@ -46,6 +45,10 @@ class AuthService {
   String? get accessToken => currentSession?.accessToken;
 
   /// Redirect used after OAuth / email links. Web uses origin unless overridden.
+  ///
+  /// Must be allow-listed in Supabase Dashboard → Authentication → URL
+  /// Configuration. On web this should be the **same origin** as the app so
+  /// PKCE returns into one tab (`detectSessionInUri` + GoRouter).
   String? get oauthRedirectTo {
     if (AppEnv.supabaseAuthRedirectUrl.isNotEmpty) {
       return AppEnv.supabaseAuthRedirectUrl;
@@ -81,26 +84,20 @@ class AuthService {
     );
   }
 
-  /// Web: open IdP in a new tab. supabase_flutter hardcodes `webOnlyWindowName:
-  /// '_self'`, which navigates Flutter's debug Chrome away and breaks Google
-  /// sign-in input (ChromeProxyService / DWDS context loss).
-  Future<bool> signInWithOAuth(AuthOAuthProvider provider) async {
-    final redirectTo = oauthRedirectTo;
-    if (kIsWeb) {
-      final res = await client.auth.getOAuthSignInUrl(
-        provider: provider.gotrue,
-        redirectTo: redirectTo,
-      );
-      return launchUrl(
-        Uri.parse(res.url),
-        mode: LaunchMode.platformDefault,
-        webOnlyWindowName: '_blank',
-      );
-    }
+  /// Starts OAuth. On web, supabase_flutter launches with `webOnlyWindowName:
+  /// '_self'` (same-tab redirect). Do **not** use `_blank` — that leaves a
+  /// duplicate UpdateApply tab after the callback.
+  ///
+  /// Debug note: same-tab navigation briefly disconnects DWDS; after the IdP
+  /// returns to this origin the app reloads, PKCE completes, and routing
+  /// continues from `/boot` as usual.
+  Future<bool> signInWithOAuth(AuthOAuthProvider provider) {
     return client.auth.signInWithOAuth(
       provider.gotrue,
-      redirectTo: redirectTo,
-      authScreenLaunchMode: LaunchMode.externalApplication,
+      redirectTo: oauthRedirectTo,
+      authScreenLaunchMode: kIsWeb
+          ? LaunchMode.platformDefault
+          : LaunchMode.externalApplication,
     );
   }
 

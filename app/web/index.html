@@ -18,21 +18,140 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="UpdateApply">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="app">
+  <meta name="apple-mobile-web-app-title" content="UpdateApply">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>app</title>
+  <title>UpdateApply</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    /* Visible until Flutter paints — avoids a silent white page on reload. */
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #f7f5f0;
+      color: #1b4d3e;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+    }
+    #ua-boot {
+      box-sizing: border-box;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 24px;
+      text-align: center;
+    }
+    #ua-boot strong {
+      font-size: 1.25rem;
+      letter-spacing: 0.02em;
+    }
+    #ua-boot p {
+      margin: 0;
+      max-width: 36rem;
+      line-height: 1.45;
+      color: #3d524a;
+      font-size: 0.95rem;
+    }
+    #ua-boot code {
+      font-size: 0.85em;
+      word-break: break-word;
+    }
+  </style>
 </head>
 <body>
+  <div id="ua-boot" role="status" aria-live="polite">
+    <strong>UpdateApply</strong>
+    <p>Starting…</p>
+  </div>
+  <!--
+    Debug launches use --start-paused. After a browser F5 (especially if the
+    IDE/debug session died), DWDS loads scripts but waits forever for a
+    resume that never comes — blank white page. This watchdog surfaces that
+    and calls $dartRunMain when the debugger orphaned the isolate.
+  -->
+  <script>
+    (function () {
+      var boot = document.getElementById('ua-boot');
+      var started = Date.now();
+      var ranMain = false;
+
+      function hasFlutterUi() {
+        return !!(
+          document.querySelector('flt-glass-pane') ||
+          document.querySelector('flutter-view')
+        );
+      }
+
+      function clearBoot() {
+        if (boot && boot.parentNode) {
+          boot.parentNode.removeChild(boot);
+          boot = null;
+        }
+      }
+
+      function setBootMessage(title, detail) {
+        if (!boot) return;
+        boot.innerHTML =
+          '<strong>' + title + '</strong>' +
+          (detail ? '<p>' + detail + '</p>' : '');
+      }
+
+      function tick() {
+        if (hasFlutterUi()) {
+          clearBoot();
+          return;
+        }
+
+        var elapsed = Date.now() - started;
+
+        if (
+          !ranMain &&
+          elapsed >= 2500 &&
+          typeof window.$dartRunMain === 'function'
+        ) {
+          ranMain = true;
+          console.warn(
+            '[UpdateApply] Debugger did not resume after reload; calling $dartRunMain().'
+          );
+          setBootMessage('UpdateApply', 'Resuming after reload…');
+          try {
+            window.$dartRunMain();
+          } catch (error) {
+            console.error('[UpdateApply] $dartRunMain failed', error);
+            setBootMessage(
+              'UpdateApply failed to start',
+              String(error && error.message ? error.message : error)
+            );
+            return;
+          }
+        }
+
+        if (elapsed >= 12000 && !hasFlutterUi()) {
+          setBootMessage(
+            'UpdateApply did not start',
+            'Browser reload left the debug isolate paused. Use IDE hot restart, ' +
+              'or run without the debugger:<br><code>flutter run -d chrome ' +
+              '--web-port=5173 --dart-define-from-file=.env</code>'
+          );
+          return;
+        }
+
+        setTimeout(tick, 200);
+      }
+
+      setTimeout(tick, 200);
+    })();
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

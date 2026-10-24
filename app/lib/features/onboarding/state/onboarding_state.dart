@@ -85,8 +85,11 @@ void clearOnboardingFeedback() {
 
 Future<void> refreshOnboardingGate({String? statusHint}) async {
   if (statusHint != null) {
-    onboardingGate.value = gateFromStatus(statusHint);
-    onboardingGateSyncError.value = null;
+    final gate = gateFromStatus(statusHint);
+    onboardingGate.value = gate;
+    onboardingGateSyncError.value = gate == OnboardingGate.unknown
+        ? 'Unexpected profile status "$statusHint".'
+        : null;
     onboardingGateSyncing.value = false;
     return;
   }
@@ -94,8 +97,17 @@ Future<void> refreshOnboardingGate({String? statusHint}) async {
   onboardingGateSyncError.value = null;
   try {
     final me = await onboardingService.status();
-    onboardingGate.value = gateFromStatus(me['status'] as String?);
-    onboardingGateSyncError.value = null;
+    final raw = me['status'];
+    final status = raw is String ? raw : raw?.toString();
+    final gate = gateFromStatus(status);
+    onboardingGate.value = gate;
+    if (gate == OnboardingGate.unknown) {
+      onboardingGateSyncError.value =
+          'Unexpected profile status${status == null ? '' : ' "$status"'}. '
+          'Retry, or sign out and back in.';
+    } else {
+      onboardingGateSyncError.value = null;
+    }
   } on Object {
     // Keep last known gate if we already resolved one; otherwise stay unknown.
     if (onboardingGate.value == OnboardingGate.unknown) {

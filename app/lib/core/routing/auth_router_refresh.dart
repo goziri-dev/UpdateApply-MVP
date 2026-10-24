@@ -12,9 +12,14 @@ import '../../services/api_client.dart';
 class AuthRouterRefresh extends ChangeNotifier {
   AuthRouterRefresh([AuthRepository? repository]) {
     final auth = repository ?? authRepository;
-    _subscription = auth.authStateChanges().listen((_) {
-      unawaited(_syncGateAndNotify());
-    });
+    // Supabase may emit from JS/interop outside the scoped_deps zone; bind
+    // so gate writes hit the same signals GoRouter redirects read.
+    final zone = Zone.current;
+    _subscription = auth.authStateChanges().listen(
+      zone.bindUnaryCallback((_) {
+        unawaited(_syncGateAndNotify());
+      }),
+    );
     unawaited(_syncGateAndNotify());
   }
 
@@ -40,13 +45,11 @@ class AuthRouterRefresh extends ChangeNotifier {
 
     try {
       final me = await apiClient.authMe();
-      onboardingGate.value = gateFromStatus(me['onboarding_status'] as String?);
-      onboardingGateSyncError.value = null;
+      _applyStatus(me['onboarding_status']);
     } on Object {
       try {
         final status = await onboardingService.status();
-        onboardingGate.value = gateFromStatus(status['status'] as String?);
-        onboardingGateSyncError.value = null;
+        _applyStatus(status['status']);
       } on Object {
         if (onboardingGate.value == OnboardingGate.unknown) {
           onboardingGateSyncError.value = _unreachableMessage;
@@ -56,6 +59,19 @@ class AuthRouterRefresh extends ChangeNotifier {
       onboardingGateSyncing.value = false;
     }
     notifyListeners();
+  }
+
+  void _applyStatus(Object? raw) {
+    final status = raw is String ? raw : raw?.toString();
+    final gate = gateFromStatus(status);
+    onboardingGate.value = gate;
+    if (gate == OnboardingGate.unknown) {
+      onboardingGateSyncError.value =
+          'Unexpected profile status${status == null ? '' : ' "$status"'}. '
+          'Retry, or sign out and back in.';
+    } else {
+      onboardingGateSyncError.value = null;
+    }
   }
 
   void notifyGateChanged() => notifyListeners();
