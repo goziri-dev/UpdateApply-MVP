@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UpdateApply — Jobs For You prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app" data-view="home" data-jobs="list">
+      <header class="shell-top">
+        <div class="brand" aria-hidden="true" title="UpdateApply">
+          <span class="mark">
+            <span class="mark-letter">u</span><span class="mark-plus">+</span>
+          </span>
+          <span class="brand-name">UpdateApply</span>
+        </div>
+        <nav class="shell-nav" aria-label="Primary">
+          <button type="button" class="nav-link is-active" data-dest="home">
+            Home
+          </button>
+          <button type="button" class="nav-link" data-dest="jobs">
+            Jobs For You
+          </button>
+          <button type="button" class="nav-link" data-dest="applications">
+            Applications
+          </button>
+        </nav>
+        <button
+          type="button"
+          class="shell-settings"
+          data-dest="settings"
+          aria-label="Settings"
+          title="Settings"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+              stroke="currentColor"
+              stroke-width="1.6"
+            />
+            <path
+              d="M19.4 13.5a1.6 1.6 0 0 0 .3 1.8l.1.1a1.9 1.9 0 1 1-2.7 2.7l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V19a1.9 1.9 0 1 1-3.8 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a1.9 1.9 0 1 1-2.7-2.7l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H5a1.9 1.9 0 1 1 0-3.8h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a1.9 1.9 0 1 1 2.7-2.7l.1.1a1.6 1.6 0 0 0 1.8.3h.1a1.6 1.6 0 0 0 1-1.5V5a1.9 1.9 0 1 1 3.8 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a1.9 1.9 0 1 1 2.7 2.7l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1H19a1.9 1.9 0 1 1 0 3.8h-.1a1.6 1.6 0 0 0-1.5 1Z"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </header>
+
+      <!-- HOME -->
+      <main class="page" id="page-home">
+        <div class="page-inner page-inner-narrow">
+          <section class="master-block" aria-label="Master resume">
+            <p class="section-label">Master resume</p>
+            <button type="button" class="master-preview" tabindex="-1">
+              <div class="letter-mini" aria-hidden="true">
+                <span class="bar bar-lg"></span>
+                <span class="bar bar-sm"></span>
+                <span class="bar bar-md"></span>
+                <span class="bar bar-lg"></span>
+                <span class="bar bar-sm"></span>
+              </div>
+              <span class="master-hint">Tap to enlarge or download</span>
+            </button>
+            <p class="helper">
+              Paste a job description to tailor your resume from this master
+              profile.
+            </p>
+            <div class="home-actions">
+              <button type="button" class="btn btn-primary" data-dest="tailor-blank">
+                Tailor to a job description
+              </button>
+            </div>
+            <p class="home-teaser">
+              Looking for roles that fit?
+              <button type="button" class="text-link" data-dest="jobs">
+                Open Jobs For You
+              </button>
+            </p>
+          </section>
+        </div>
+      </main>
+
+      <!-- APPLICATIONS (shell context) -->
+      <main class="page" id="page-applications" hidden>
+        <div class="page-inner">
+          <p class="list-meta">Shell context — use Applications prototype</p>
+          <p class="helper">
+            Tailored drafts still land under Applications after you run tailor
+            from a Jobs For You row. Discovery lives on its own tab.
+          </p>
+          <button type="button" class="btn btn-secondary" data-dest="home">
+            Back to Home
+          </button>
+        </div>
+      </main>
+
+      <!-- SETTINGS -->
+      <main class="page" id="page-settings" hidden>
+        <div class="page-inner page-inner-mid">
+          <header class="page-head">
+            <h1 class="page-title">Settings</h1>
+            <p class="page-sub">
+              Account, resume, and how UpdateApply finds roles for you.
+            </p>
+          </header>
+
+          <ul class="settings-list" aria-label="Settings">
+            <li>
+              <button type="button" class="settings-row" data-dest="match-prefs">
+                <span class="settings-row-text">
+                  <span class="settings-row-title">Job preferences</span>
+                  <span class="settings-row-sub">
+                    Titles, location, and seniority for Jobs For You
+                  </span>
+                </span>
+                <span class="settings-chev" aria-hidden="true">→</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="settings-row is-muted" disabled>
+                <span class="settings-row-text">
+                  <span class="settings-row-title">Account</span>
+                  <span class="settings-row-sub">Sign out and profile (existing)</span>
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </main>
+
+      <!-- JOB PREFERENCES (under Settings; id remains match-prefs) -->
+      <main class="page" id="page-match-prefs" hidden>
+        <div class="page-inner page-inner-mid">
+          <button type="button" class="back" data-dest="settings">
+            <span class="back-arrow" aria-hidden="true">←</span> Settings
+          </button>
+
+          <header class="page-head">
+            <p class="eyebrow">Jobs For You</p>
+            <h1 class="page-title">Job preferences</h1>
+            <p class="page-sub">
+              We propose hiring titles from your master profile. Edit the list,
+              set place and seniority, then save. These strings become the hard
+              filter for Jobs For You.
+            </p>
+          </header>
+
+          <section class="confirm-block" aria-labelledby="titles-heading">
+            <div class="block-head">
+              <h2 class="block-title" id="titles-heading">Preferred titles</h2>
+              <button type="button" class="btn btn-ghost btn-sm" id="add-title">
+                Add title
+              </button>
+            </div>
+            <ul class="title-list" id="title-list">
+              <li class="title-chip" data-title="Product Designer">
+                <input
+                  type="text"
+                  value="Product Designer"
+                  aria-label="Preferred title"
+                />
+                <button
+                  type="button"
+                  class="chip-remove"
+                  aria-label="Remove Product Designer"
+                >
+                  ×
+                </button>
+              </li>
+              <li class="title-chip" data-title="Design Engineer">
+                <input
+                  type="text"
+                  value="Design Engineer"
+                  aria-label="Preferred title"
+                />
+                <button
+                  type="button"
+                  class="chip-remove"
+                  aria-label="Remove Design Engineer"
+                >
+                  ×
+                </button>
+              </li>
+              <li class="title-chip" data-title="Product Design Lead">
+                <input
+                  type="text"
+                  value="Product Design Lead"
+                  aria-label="Preferred title"
+                />
+                <button
+                  type="button"
+                  class="chip-remove"
+                  aria-label="Remove Product Design Lead"
+                >
+                  ×
+                </button>
+              </li>
+            </ul>
+            <p class="caption">
+              Skill-shaped titles are not suggested. If you type one and keep it,
+              that exact string is what we filter on.
+            </p>
+          </section>
+
+          <section class="confirm-block" aria-labelledby="place-heading">
+            <h2 class="block-title" id="place-heading">Location or remote</h2>
+            <div class="seg" role="radiogroup" aria-label="Remote preference">
+              <button
+                type="button"
+                class="seg-btn"
+                data-remote="remote_only"
+                aria-pressed="false"
+              >
+                Remote only
+              </button>
+              <button
+                type="button"
+                class="seg-btn is-on"
+                data-remote="remote_ok"
+                aria-pressed="true"
+              >
+                Hybrid
+              </button>
+              <button
+                type="button"
+                class="seg-btn"
+                data-remote="onsite_only"
+                aria-pressed="false"
+              >
+                On-site only
+              </button>
+            </div>
+            <label class="field">
+              <span class="field-label">Countries</span>
+              <input
+                type="text"
+                id="countries"
+                value="United Kingdom, Ireland"
+                placeholder="e.g. United Kingdom, Nigeria"
+              />
+            </label>
+          </section>
+
+          <section class="confirm-block" aria-labelledby="seniority-heading">
+            <h2 class="block-title" id="seniority-heading">Seniority</h2>
+            <div class="chip-row" id="seniority-row" role="radiogroup">
+              <button type="button" class="filter-chip" data-seniority="junior">
+                Junior
+              </button>
+              <button
+                type="button"
+                class="filter-chip is-on"
+                data-seniority="mid"
+                aria-pressed="true"
+              >
+                Mid
+              </button>
+              <button
+                type="button"
+                class="filter-chip is-on"
+                data-seniority="senior"
+                aria-pressed="true"
+              >
+                Senior
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                data-seniority="staff_principal"
+              >
+                Staff / Principal
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                data-seniority="lead_manager"
+              >
+                Lead / Manager
+              </button>
+            </div>
+          </section>
+
+          <div class="confirm-actions">
+            <button type="button" class="btn btn-secondary" data-dest="settings">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" id="prefs-save">
+              Save preferences
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <!-- JOBS FOR YOU -->
+      <main class="page" id="page-jobs" hidden>
+        <div class="page-inner page-inner-wide discovery">
+          <header class="hero">
+            <p class="eyebrow">Personalized for your preferences</p>
+            <h1 class="hero-title" id="hero-title">Jobs For You</h1>
+            <p class="page-sub" id="hero-sub">
+              Fresh roles from Greenhouse, Lever, and Ashby boards that passed
+              your title, place, and seniority filters — ranked by fit to your
+              profile.
+            </p>
+          </header>
+
+          <div class="toolbar" role="search">
+            <label class="loc-select">
+              <span class="visually-hidden">Location</span>
+              <select id="location-filter" aria-label="Filter by location">
+                <option value="all">All locations</option>
+                <option value="remote">Remote</option>
+                <option value="uk">United Kingdom</option>
+                <option value="ie">Ireland</option>
+                <option value="us">United States</option>
+                <option value="ng">Nigeria</option>
+              </select>
+              <span class="chev" aria-hidden="true"></span>
+            </label>
+            <label class="search-field">
+              <span class="search-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                  />
+                  <path
+                    d="M16.5 16.5L21 21"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </span>
+              <input
+                type="search"
+                id="job-search"
+                placeholder="Search by company or role"
+                autocomplete="off"
+              />
+            </label>
+          </div>
+
+          <div
+            class="alert"
+            id="jobs-error"
+            role="alert"
+            data-visible="false"
+          >
+            Couldn’t load jobs. Check your connection and try again.
+            <button type="button" class="alert-action" id="retry-jobs">
+              Retry
+            </button>
+          </div>
+
+          <!-- Empty: no preferences -->
+          <section
+            class="empty"
+            id="state-no-prefs"
+            hidden
+            aria-labelledby="no-prefs-title"
+          >
+            <div class="empty-illus" aria-hidden="true">
+              <div class="empty-target">
+                <span></span><span></span>
+              </div>
+            </div>
+            <h2 class="empty-title" id="no-prefs-title">
+              Set Job preferences first
+            </h2>
+            <p class="empty-body">
+              Jobs For You needs titles, place, and seniority from your master
+              resume. Set those in Settings — then we’ll surface strong matches
+              here.
+            </p>
+            <button type="button" class="btn btn-primary" data-dest="match-prefs">
+              Open Job preferences
+            </button>
+          </section>
+
+          <!-- Empty: nothing matched -->
+          <section
+            class="empty"
+            id="state-no-matches"
+            hidden
+            aria-labelledby="no-matches-title"
+          >
+            <div class="empty-illus" aria-hidden="true">
+              <div class="empty-glass">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <circle
+                    cx="20"
+                    cy="20"
+                    r="12"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  />
+                  <path
+                    d="M29 29L38 38"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </div>
+            </div>
+            <h2 class="empty-title" id="no-matches-title">
+              No strong matches yet
+            </h2>
+            <p class="empty-body">
+              Nothing new passed your filters with a strong enough profile fit.
+              Check back after the next ingest, or loosen location / titles in
+              Job preferences.
+            </p>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dest="match-prefs"
+            >
+              Edit Job preferences
+            </button>
+          </section>
+
+          <!-- Loading -->
+          <div
+            class="discovery-body"
+            id="state-loading"
+            hidden
+            aria-busy="true"
+            aria-label="Loading jobs"
+          >
+            <aside class="sidebar">
+              <div class="sk sk-side"></div>
+              <div class="sk sk-side"></div>
+              <div class="sk sk-side"></div>
+            </aside>
+            <div class="results">
+              <div class="job-card skeleton">
+                <div class="sk sk-title"></div>
+                <div class="sk sk-meta"></div>
+                <div class="sk sk-snip"></div>
+              </div>
+              <div class="job-card skeleton">
+                <div class="sk sk-title"></div>
+                <div class="sk sk-meta"></div>
+                <div class="sk sk-snip"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- List + search empty -->
+          <div class="discovery-body" id="state-list">
+            <aside class="sidebar" aria-label="Filter by preferred title">
+              <p class="sidebar-label">Your titles</p>
+              <button
+                type="button"
+                class="side-item is-on"
+                data-target="all"
+                aria-pressed="true"
+              >
+                <span>All matches</span>
+                <span class="side-count" id="count-all">6</span>
+              </button>
+              <button
+                type="button"
+                class="side-item"
+                data-target="Product Designer"
+                aria-pressed="false"
+              >
+                <span>Product Designer</span>
+                <span class="side-count">3</span>
+              </button>
+              <button
+                type="button"
+                class="side-item"
+                data-target="Design Engineer"
+                aria-pressed="false"
+              >
+                <span>Design Engineer</span>
+                <span class="side-count">2</span>
+              </button>
+              <button
+                type="button"
+                class="side-item"
+                data-target="Product Design Lead"
+                aria-pressed="false"
+              >
+                <span>Product Design Lead</span>
+                <span class="side-count">1</span>
+              </button>
+              <button
+                type="button"
+                class="side-edit"
+                data-dest="match-prefs"
+              >
+                Job preferences
+              </button>
+            </aside>
+
+            <div class="results">
+              <div class="results-head">
+                <h2 class="results-title" id="results-title">Top matches</h2>
+                <p class="list-meta" id="results-meta">6 showing · default cap</p>
+              </div>
+
+              <section
+                class="empty empty-inline"
+                id="state-search-empty"
+                hidden
+                aria-labelledby="search-empty-title"
+              >
+                <div class="empty-illus empty-illus-sm" aria-hidden="true">
+                  <div class="empty-glass">
+                    <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+                      <circle
+                        cx="20"
+                        cy="20"
+                        r="12"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                      />
+                      <path
+                        d="M29 29L38 38"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h2 class="empty-title" id="search-empty-title">
+                  No results found
+                </h2>
+                <p class="empty-body">
+                  Nothing matches that company, role, or location. Clear search
+                  or pick another title.
+                </p>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  id="clear-filters"
+                >
+                  Clear filters
+                </button>
+              </section>
+
+              <div class="job-list" id="job-list" aria-label="Matched roles">
+                <!-- filled by script -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- TAILOR PREFILL (handoff from Jobs For You) -->
+      <main class="page" id="page-tailor" hidden>
+        <div class="page-inner page-inner-mid">
+          <button type="button" class="back" id="tailor-back">
+            <span class="back-arrow" aria-hidden="true">←</span> Jobs For You
+          </button>
+
+          <header class="page-head">
+            <p class="eyebrow">Prefill from Jobs For You</p>
+            <h1 class="page-title" id="tailor-heading">Tailor resume</h1>
+            <p class="page-sub" id="tailor-sub">
+              Description is filled from the stored posting. You still choose to
+              generate — nothing auto-tailors.
+            </p>
+          </header>
+
+          <label class="field">
+            <span class="field-label">Company</span>
+            <input type="text" id="tailor-company" readonly />
+          </label>
+          <label class="field">
+            <span class="field-label">Role</span>
+            <input type="text" id="tailor-role" readonly />
+          </label>
+          <label class="field">
+            <span class="field-label">Job description</span>
+            <textarea id="tailor-jd" rows="10" readonly></textarea>
+          </label>
+
+          <div class="confirm-actions">
+            <button type="button" class="btn btn-secondary" id="tailor-cancel">
+              Back
+            </button>
+            <button type="button" class="btn btn-primary" id="run-tailor">
+              Generate tailored resume
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <!-- Demo controls -->
+      <aside class="demo" aria-label="Prototype state controls">
+        <p class="demo-label">Demo states · Jobs For You</p>
+        <div class="demo-row">
+          <button type="button" class="demo-btn" data-demo="list">List</button>
+          <button type="button" class="demo-btn" data-demo="loading">
+            Loading
+          </button>
+          <button type="button" class="demo-btn" data-demo="error">Error</button>
+          <button type="button" class="demo-btn" data-demo="no-prefs">
+            No preferences
+          </button>
+          <button type="button" class="demo-btn" data-demo="no-matches">
+            No matches
+          </button>
+          <button type="button" class="demo-btn" data-demo="search-empty">
+            Search empty
+          </button>
+        </div>
+      </aside>
+
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+        Job preferences saved — Jobs For You will use this set.
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

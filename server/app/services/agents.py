@@ -18,6 +18,7 @@ _TASK_OVERRIDE_ATTR: dict[AgentTask, str] = {
     AgentTask.PROFILE_REVIEW: "openrouter_model_profile_review",
     AgentTask.RESUME_TAILOR: "openrouter_model_resume_tailor",
     AgentTask.RESUME_EDIT: "openrouter_model_resume_edit",
+    AgentTask.TITLE_SUGGESTIONS: "openrouter_model_title_suggestions",
     AgentTask.EMBEDDING: "openrouter_model_embedding",
 }
 

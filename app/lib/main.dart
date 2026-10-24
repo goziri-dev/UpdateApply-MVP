@@ -9,7 +9,9 @@ import 'core/theme/app_theme.dart';
 import 'features/applications/state/applications_state.dart';
 import 'features/auth/services/supabase_bootstrap.dart';
 import 'features/auth/state/auth_state.dart';
+import 'features/jobs_for_you/state/jobs_for_you_state.dart';
 import 'features/onboarding/state/onboarding_state.dart';
+import 'features/resume/state/master_resume_state.dart';
 import 'services/api_client.dart';
 
 Future<void> main() async {
@@ -45,6 +47,8 @@ Future<void> main() async {
       onboardingErrorRef,
       onboardingInfoRef,
       applicationsEpochRef,
+      jobsForYouEpochRef,
+      masterResumeEpochRef,
     },
   );
 }

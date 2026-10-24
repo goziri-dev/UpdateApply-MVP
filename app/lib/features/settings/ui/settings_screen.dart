@@ -59,11 +59,78 @@ class SettingsScreen extends StatelessWidget {
                     Text('Settings', style: type.headlineMedium),
                     const SizedBox(height: AppSpacing.grid),
                     Text(
-                      'Account and profile controls.',
+                      'Account, resume, and how UpdateApply finds roles for you.',
                       style: type.bodyMedium?.copyWith(
                         color: colors.muted,
                         height: 1.45,
                         fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.grid * 4),
+                    Text(
+                      'JOBS FOR YOU',
+                      style: type.bodySmall?.copyWith(
+                        color: colors.label,
+                        letterSpacing: 0.02 * 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.grid),
+                    Text(
+                      'Change what roles we look for — even after you’ve saved.',
+                      style: type.bodySmall?.copyWith(
+                        color: colors.muted,
+                        height: 1.4,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.grid * 1.5),
+                    Material(
+                      color: scheme.surfaceContainerHighest,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.markRadius,
+                        ),
+                        side: BorderSide(color: scheme.outlineVariant),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.markRadius,
+                        ),
+                        onTap: () =>
+                            context.push('/settings/match-preferences'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.grid * 2.5,
+                            vertical: AppSpacing.grid * 2.5,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Job preferences',
+                                      style: type.bodyLarge?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Edit titles, place, and seniority anytime',
+                                      style: type.bodySmall?.copyWith(
+                                        color: colors.muted,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(Icons.chevron_right, color: colors.muted),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.grid * 4),

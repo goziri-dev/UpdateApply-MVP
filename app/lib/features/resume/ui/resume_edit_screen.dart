@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../applications/services/applications_service.dart';
 import '../services/resume_service.dart';
+import '../state/master_resume_state.dart';
 import '../widgets/resume_document_form.dart';
 import 'resume_deepen_screen.dart';
 
@@ -163,6 +164,9 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
         _saving = false;
       });
       _formKey.currentState?.applyDocument(saved);
+      if (widget.target == ResumeEditTarget.master) {
+        bumpMasterResumeEpoch();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

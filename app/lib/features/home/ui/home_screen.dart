@@ -69,6 +69,35 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () => context.push('/tailor'),
                   child: const Text('Tailor to a job description'),
                 ),
+                const SizedBox(height: AppSpacing.grid * 3),
+                Text.rich(
+                  TextSpan(
+                    style: type.bodyMedium?.copyWith(
+                      color: colors.muted,
+                      height: 1.45,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    children: [
+                      const TextSpan(text: 'Looking for roles that fit? '),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.baseline,
+                        baseline: TextBaseline.alphabetic,
+                        child: GestureDetector(
+                          onTap: () => context.go('/jobs'),
+                          child: Text(
+                            'Open Jobs For You',
+                            style: type.bodyMedium?.copyWith(
+                              color: colors.link,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                              decorationColor: colors.link,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

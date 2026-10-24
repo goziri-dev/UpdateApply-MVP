@@ -6,10 +6,10 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/widgets/auth_brand_mark.dart';
 import '../widgets/shell_account_menu.dart';
 
-/// Post-onboarding chrome: brand + centered Home | Applications tabs.
+/// Post-onboarding chrome: brand + Home | Jobs For You | Applications.
 ///
 /// Tailor is intentionally not a shell tab — reached via CTAs only.
-/// Account menu: Settings + Sign out. Reset / re-onboard lives in Settings.
+/// Account menu: Settings + Sign out. Job preferences lives under Settings.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -132,7 +132,8 @@ class _ShellTabs extends StatelessWidget {
           children: [
             Text(
               label,
-              style: type.bodyMedium?.copyWith(
+              style: type.bodySmall?.copyWith(
+                fontSize: 13,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected ? ink : muted,
               ),
@@ -154,8 +155,10 @@ class _ShellTabs extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         tab('Home', 0),
-        const SizedBox(width: AppSpacing.grid),
-        tab('Applications', 1),
+        const SizedBox(width: AppSpacing.grid * 0.5),
+        tab('Jobs For You', 1),
+        const SizedBox(width: AppSpacing.grid * 0.5),
+        tab('Applications', 2),
       ],
     );
   }

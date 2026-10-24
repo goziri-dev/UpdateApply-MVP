@@ -100,20 +100,23 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
     }
   }
 
-  void _tailorAgain() {
+  Future<void> _tailorAgain() async {
     final d = _detail;
     if (d == null) {
-      context.push('/tailor');
-      return;
+      await context.push('/tailor');
+    } else {
+      await context.push(
+        '/tailor',
+        extra: TailorLaunchArgs(
+          company: d['company'] as String?,
+          targetRole: d['target_role'] as String?,
+          jobDescription: d['job_description'] as String?,
+        ),
+      );
     }
-    context.push(
-      '/tailor',
-      extra: TailorLaunchArgs(
-        company: d['company'] as String?,
-        targetRole: d['target_role'] as String?,
-        jobDescription: d['job_description'] as String?,
-      ),
-    );
+    // Same pattern as Edit resume: shell-kept detail must refetch if the
+    // user pops back (e.g. Keep editing → Back) after a tailor run.
+    if (mounted) await _load();
   }
 
   Future<void> _confirmDelete() async {

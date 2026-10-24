@@ -1,11 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:signals/signals_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../services/resume_download.dart';
 import '../services/resume_service.dart';
+import '../state/master_resume_state.dart';
 import 'resume_html_frame.dart';
 
 /// Letter aspect ratio (width / height) for ATS classic template.
@@ -56,6 +58,8 @@ class _ResumePreviewState extends State<ResumePreview> {
   String? _html;
   String? _error;
   bool _loading = true;
+  int _seenMasterEpoch = -1;
+  EffectCleanup? _masterEpochCleanup;
 
   @override
   void initState() {
@@ -63,6 +67,20 @@ class _ResumePreviewState extends State<ResumePreview> {
     _viewType =
         '${widget.viewTypePrefix}-${widget.mode.name}-${identityHashCode(this)}';
     _load();
+    // Master HTML (no explicit resume) can go stale while Home stays mounted
+    // in the shell indexed stack after /resume/edit.
+    if (widget.resume == null) {
+      _masterEpochCleanup = effect(() {
+        final epoch = masterResumeEpoch.value;
+        if (_seenMasterEpoch == -1) {
+          _seenMasterEpoch = epoch;
+          return;
+        }
+        if (epoch == _seenMasterEpoch) return;
+        _seenMasterEpoch = epoch;
+        _load();
+      });
+    }
   }
 
   @override
@@ -76,6 +94,7 @@ class _ResumePreviewState extends State<ResumePreview> {
 
   @override
   void dispose() {
+    _masterEpochCleanup?.call();
     disposeResumeHtmlFrame(_viewType);
     super.dispose();
   }

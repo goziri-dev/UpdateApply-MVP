@@ -5,7 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/state/auth_state.dart';
 
-enum _AccountMenuAction { settings, signOut }
+enum _AccountMenuAction { settings, jobTargets, signOut }
 
 /// Compact account control for the shell header (email, Settings, Sign out).
 class ShellAccountMenu extends StatelessWidget {
@@ -35,6 +35,8 @@ class ShellAccountMenu extends StatelessWidget {
         switch (action) {
           case _AccountMenuAction.settings:
             context.push('/settings');
+          case _AccountMenuAction.jobTargets:
+            context.push('/settings/match-preferences');
           case _AccountMenuAction.signOut:
             await signOut();
         }
@@ -54,6 +56,13 @@ class ShellAccountMenu extends StatelessWidget {
           ),
         ),
         const PopupMenuDivider(height: 1),
+        PopupMenuItem<_AccountMenuAction>(
+          value: _AccountMenuAction.jobTargets,
+          child: Text(
+            'Job preferences',
+            style: type.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
         PopupMenuItem<_AccountMenuAction>(
           value: _AccountMenuAction.settings,
           child: Text(

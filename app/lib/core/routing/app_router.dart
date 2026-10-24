@@ -5,6 +5,8 @@ import '../../features/applications/ui/applications_list_screen.dart';
 import '../../features/auth/state/auth_state.dart';
 import '../../features/auth/ui/auth_screen.dart';
 import '../../features/home/ui/home_screen.dart';
+import '../../features/jobs_for_you/ui/jobs_for_you_screen.dart';
+import '../../features/jobs_for_you/ui/match_preferences_screen.dart';
 import '../../features/onboarding/state/onboarding_state.dart';
 import '../../features/onboarding/ui/gate_loading_screen.dart';
 import '../../features/onboarding/ui/interview_screen.dart';
@@ -87,6 +89,14 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: '/jobs',
+                builder: (context, state) => const JobsForYouScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: '/applications',
                 builder: (context, state) => const ApplicationsListScreen(),
                 routes: [
@@ -141,6 +151,12 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+        routes: [
+          GoRoute(
+            path: 'match-preferences',
+            builder: (context, state) => const MatchPreferencesScreen(),
+          ),
+        ],
       ),
       GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
       GoRoute(

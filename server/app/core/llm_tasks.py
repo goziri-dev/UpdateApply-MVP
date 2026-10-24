@@ -18,6 +18,7 @@ class AgentTask(StrEnum):
     PROFILE_REVIEW = "profile_review"
     RESUME_TAILOR = "resume_tailor"
     RESUME_EDIT = "resume_edit"
+    TITLE_SUGGESTIONS = "title_suggestions"
     # Embeddings use EmbeddingsClient (HTTP /embeddings), not ChatOpenRouter.
     EMBEDDING = "embedding"
 
@@ -36,5 +37,6 @@ DEFAULT_MODEL_BY_TASK: dict[AgentTask, str] = {
     AgentTask.PROFILE_REVIEW: "openai/gpt-4o-mini",
     AgentTask.RESUME_TAILOR: "openai/gpt-4o-mini",
     AgentTask.RESUME_EDIT: "google/gemini-2.5-flash",
+    AgentTask.TITLE_SUGGESTIONS: "openai/gpt-4o-mini",
     AgentTask.EMBEDDING: "openai/text-embedding-3-small",
 }

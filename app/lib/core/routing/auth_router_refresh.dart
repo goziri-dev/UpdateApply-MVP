@@ -25,8 +25,7 @@ class AuthRouterRefresh extends ChangeNotifier {
 
   StreamSubscription<AuthState>? _subscription;
 
-  static const _unreachableMessage =
-      "Can't reach the server. Check that the API is running, then retry.";
+  static const _unreachableMessage = "Can't reach the server.";
 
   Future<void> retryGateSync() => _syncGateAndNotify();
 
