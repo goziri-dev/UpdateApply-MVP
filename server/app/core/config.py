@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # STT for interview mic (OpenRouter /audio/transcriptions). Empty → whisper-1.
     openrouter_model_interview_transcribe: str = ""
 
-    # Optional Tavily key for resume edit research_propose mode. Empty → clear error.
+    # Optional Tavily key for resume Ask mode (live web search). Empty → clear error.
     tavily_api_key: str = ""
 
     # Local resume PDF storage (one file per user). Relative paths resolve from unit root.

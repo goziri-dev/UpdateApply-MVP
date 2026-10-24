@@ -89,8 +89,7 @@ class _OnboardingParsingScreenState extends State<OnboardingParsingScreen> {
       return detail['detail'].toString();
     }
     if (_isTimeout(e)) {
-      return 'The server took too long to parse this resume. '
-          'Confirm the API is running, then try again.';
+      return 'This took too long. Please try again.';
     }
     return e.message ?? 'Parsing failed';
   }
@@ -118,11 +117,8 @@ class _OnboardingParsingScreenState extends State<OnboardingParsingScreen> {
             const SizedBox(height: AppSpacing.grid * 1.5),
             Text(
               _timedOut
-                  ? 'The PDF uploaded, but the parse request timed out before '
-                        'the server finished (PDF extract + LLM). Check that '
-                        'the API is up, then try again.'
-                  : 'The PDF uploaded, but parsing failed. Try another export, '
-                        'or re-upload a text-based PDF (not a scan).',
+                  ? 'Your PDF uploaded, but reading it timed out. Try again.'
+                  : 'Try another PDF. Scanned files may not work.',
               style: type.bodyMedium?.copyWith(
                 color: colors.muted,
                 height: 1.45,
@@ -165,8 +161,7 @@ class _OnboardingParsingScreenState extends State<OnboardingParsingScreen> {
           Text('Reading your resume', style: type.headlineMedium),
           const SizedBox(height: AppSpacing.grid * 1.5),
           Text(
-            "We're extracting a structured profile. Interviews start once "
-            'your experience list is ready — this usually takes a few seconds.',
+            'This usually takes a few seconds.',
             style: type.bodyMedium?.copyWith(
               color: colors.muted,
               height: 1.45,

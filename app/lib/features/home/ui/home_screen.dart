@@ -57,8 +57,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.grid * 2),
                 Text(
-                  'Paste a job description to generate a tailored resume '
-                  'from your remade master profile.',
+                  'Paste a job description to tailor your resume.',
                   style: type.bodyMedium?.copyWith(
                     color: colors.muted,
                     height: 1.45,

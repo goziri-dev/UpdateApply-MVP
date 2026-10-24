@@ -190,10 +190,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
       if (!mounted) return;
       _applyState(res);
       if (res['item_complete'] == true) {
-        setState(
-          () => _info =
-              'Done with this item — propose an enriched version when ready.',
-        );
+        setState(() => _info = 'All set. Propose the updated item when ready.');
       }
     } on DioException catch (e) {
       if (!mounted) return;
@@ -211,9 +208,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
     if (_transcribing) return;
     final text = _transcriptCtrl.text.trim();
     if (text.isEmpty) {
-      setState(
-        () => _error = 'Add a short update (record or type) — what happened, what you learnt…',
-      );
+      setState(() => _error = 'Add a short update first.');
       return;
     }
 
@@ -234,7 +229,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
         _applyState(res);
         setState(() {
           _journalClarify = false;
-          _info = 'Ready — propose an enriched version when you like.';
+          _info = 'Ready. Propose the updated item when you like.';
         });
         return;
       }
@@ -257,9 +252,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
           _question = res['question'] as String?;
           _itemComplete = false;
           _transcriptCtrl.clear();
-          _info =
-              res['detail'] as String? ??
-              'One quick clarify — then we can enrich this item.';
+          _info = res['detail'] as String? ?? 'One quick question first.';
         });
         return;
       }
@@ -371,7 +364,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
     if (_audioUnsupported || !_audio.isSupported) {
       setState(() {
         _audioUnsupported = true;
-        _error = 'Voice recording isn’t available in this browser. Type your answer below.';
+        _error = 'Voice isn’t available here. Type your answer instead.';
       });
       return;
     }
@@ -399,12 +392,12 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
         setState(() {
           _audioUnsupported = true;
           _recording = false;
-          _error = 'Voice recording isn’t available in this browser. Type your answer below.';
+          _error = 'Voice isn’t available here. Type your answer instead.';
         });
       case InterviewAudioStart.failed:
         setState(() {
           _recording = false;
-          _error = 'Couldn’t start the microphone. Check permissions, or type your answer.';
+          _error = 'Couldn’t start the mic. Type your answer instead.';
         });
     }
   }
@@ -430,8 +423,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
     if (clip == null || clip.bytes.isEmpty) {
       setState(() {
         _transcribing = false;
-        _error =
-            'No audio was captured. Tap the mic to try again, or type instead.';
+        _error = 'No audio captured. Try again or type instead.';
       });
       return;
     }
@@ -560,8 +552,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
         ),
         const SizedBox(height: AppSpacing.grid * 1.5),
         Text(
-          'Choose how you want to add detail. Both end the same way: '
-          'a proposed enrichment you can Accept into the editor, then Save.',
+          'Choose how you’d like to add detail.',
           style: type.bodyMedium?.copyWith(color: colors.muted, height: 1.45),
         ),
         if (_error != null) ...[
@@ -571,18 +562,14 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
         const SizedBox(height: AppSpacing.grid * 3),
         _ChoiceCard(
           title: 'Deepen with questions',
-          subtitle:
-              'A few short, thoughtful prompts — voice or type. Fresh each time, '
-              'grounded in what’s thin on this item.',
+          subtitle: 'A few short questions. Answer by voice or text.',
           cta: 'Start guided',
           onTap: _chooseGuided,
         ),
         const SizedBox(height: AppSpacing.grid * 2),
         _ChoiceCard(
           title: 'Add a daily/weekly update',
-          subtitle:
-              'Dump what happened today — no interview. We’ll weave it into '
-              'the summary and bullets.',
+          subtitle: 'Share what changed. No questions.',
           cta: 'Add update',
           onTap: _chooseJournal,
           outlined: true,
@@ -601,8 +588,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
         ),
         const SizedBox(height: AppSpacing.grid),
         Text(
-          'Short consultant questions specific to this item. Fuzzy memory '
-          'and shared credit are fine.',
+          'Short questions about this item. Rough answers are fine.',
           style: type.bodyMedium?.copyWith(color: colors.muted, height: 1.45),
         ),
         const SizedBox(height: AppSpacing.grid * 2),
@@ -649,10 +635,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
             const SizedBox(height: AppSpacing.grid * 2.5),
             _micRow(type, colors, scheme),
             const SizedBox(height: AppSpacing.grid * 2),
-            _answerField(
-              hintRecording: 'Recording… transcript appears after you stop',
-              hintIdle: 'Your answer appears here…',
-            ),
+            _answerField(hintRecording: 'Recording…', hintIdle: 'Your answer…'),
             const SizedBox(height: AppSpacing.grid * 2),
             _coverageChips(scheme, colors),
             const SizedBox(height: AppSpacing.grid * 3),
@@ -727,9 +710,8 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
         const SizedBox(height: AppSpacing.grid),
         Text(
           _journalClarify
-              ? 'One clarify before we weave this in.'
-              : 'No interview — dump what happened. Example: today at work my '
-                    'manager let me operate the food production line, I learnt…',
+              ? 'One quick question first.'
+              : 'Share what changed in this role or project.',
           style: type.bodyMedium?.copyWith(color: colors.muted, height: 1.45),
         ),
         const SizedBox(height: AppSpacing.grid * 2),
@@ -782,10 +764,8 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
           _answerField(
             minLines: _journalClarify ? 3 : 5,
             maxLines: _journalClarify ? 6 : 10,
-            hintRecording: 'Recording… transcript appears after you stop',
-            hintIdle: _journalClarify
-                ? 'Your clarify answer…'
-                : 'What happened, what you learnt, what changed…',
+            hintRecording: 'Recording…',
+            hintIdle: _journalClarify ? 'Your answer…' : 'What changed?',
           ),
           const SizedBox(height: AppSpacing.grid * 3),
           FilledButton(
@@ -816,8 +796,7 @@ class _ResumeDeepenScreenState extends State<ResumeDeepenScreen> {
           Text(_proposeDetail!, style: type.bodyMedium?.copyWith(height: 1.4)),
         const SizedBox(height: AppSpacing.grid * 2),
         Text(
-          'Accept merges into your editor form. Save there to persist '
-          'and reindex for tailor.',
+          'Accepting adds this to the editor. Save there to keep it.',
           style: type.bodySmall?.copyWith(color: colors.muted),
         ),
         const SizedBox(height: AppSpacing.grid * 2),

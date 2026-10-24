@@ -178,8 +178,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.grid * 1.5),
           Text(
-            'Tailor your first job description. Drafts show up here with '
-            'company, role, and a short snippet so you can tell versions apart.',
+            'Tailored resumes will show up here.',
             textAlign: TextAlign.center,
             style: type.bodyMedium?.copyWith(
               color: colors.muted,

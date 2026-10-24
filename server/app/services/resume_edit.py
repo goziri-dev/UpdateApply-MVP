@@ -1,9 +1,10 @@
-"""Agentic resume edit harness: edit / advise / research_propose + session memory."""
+"""Agentic resume harness: edit / ask (resume + live web search) + session memory."""
 
 from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 from uuid import UUID
 
@@ -12,7 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from app.core.config import Settings, get_settings
 from app.core.llm_tasks import AgentTask
 from app.schemas.resume import (
-    ResumeAdviseModel,
+    ResumeAskModel,
     ResumeDocument,
     ResumeEditMode,
     ResumeEditOutcome,
@@ -60,60 +61,50 @@ Honesty:
   achievements they did not provide. Prefer a sparse stub over inventing detail.
 - Do NOT invent employers/schools the user never named. If they ask to “add a
   role” with no company/title/facts, leave the document unchanged and say what
-  facts you need in `detail`. (Research+propose can verify public company names.)
+  facts you need in `detail`. (Ask mode can look up public company info on the
+  web; then tell Edit the facts you want applied.)
 - Preserve existing item `id` values. New rows may use empty `id` (server assigns).
 - Apply the instruction as fully as possible without inventing facts.
 
 Return the complete document, not a partial patch.
 """
 
-ADVISE_SYSTEM_PROMPT = """\
-You are a resume coach for the user's current ResumeDocument. Answer their
-question clearly and practically. Do NOT rewrite or return a ResumeDocument.
-
-Inputs (JSON): resume, instruction (the question), prior_turns (session context).
-
-Output: ResumeAdviseModel with `answer` only.
-
-Guidance:
-- Prefer region-aware norms when asked (e.g. US vs EU professional summary).
-- Ground advice in what is actually on their resume when relevant.
-- If they ask you to change the resume, explain what you would do and tell them
-  to switch to Edit (or Research+propose) mode to apply it — do not emit JSON
-  edits here.
-"""
-
-RESEARCH_SYSTEM_PROMPT = """\
-You propose a ResumeDocument change after reviewing web research results for a
-user claim (e.g. adding an employer they named, correcting a company spelling).
+ASK_SYSTEM_PROMPT = """\
+You answer the user's question about their career, resume, or employers using
+BOTH their current ResumeDocument and live web research results. Do NOT rewrite
+or return a ResumeDocument.
 
 Inputs (JSON):
-1. resume — current ResumeDocument.
-2. instruction — what the user wants (often “add X” / verify a name).
-3. research — search snippets (title, url, content). May be incomplete.
-4. prior_turns — session context.
+1. resume — current ResumeDocument (source of truth for what they did).
+2. instruction — the question.
+3. search_query — the grounded query that was sent to web search.
+4. research — search snippets (title, url, content). May be incomplete.
+5. prior_turns — session context.
 
-Output: ResumeEditProposalModel with:
-- resume — proposed document (minimal diffs; preserve formats as in edit mode)
-- detail — short summary of the proposal for the user
-- confidence — 0.0–1.0 based on how well research supports the claim
-- research_notes — brief what you verified (or could not verify)
+Output: ResumeAskModel with:
+- answer — clear, practical answer (short paragraphs; no JSON edits)
+- confidence — 0.0–1.0 based on how well research + resume support the answer
+- research_notes — brief what research verified, or could not verify (mention
+  source sites by name when helpful)
 
-Honesty with research:
-- Public facts from research (company name existence, official spelling, rough
-  industry) MAY be used to propose adding or correcting an employer/school the
-  user claimed.
-- Still do NOT invent metrics, achievements, titles, or employment dates the
-  user did not provide. If they only said “add Outlier”, add a sparse experience
-  entry (company name from research; empty/placeholder title/dates/bullets only
-  if the user did not supply them — prefer leaving title/dates empty strings
-  rather than fabricating).
-- If research is weak or contradictory, keep confidence low, prefer not adding
-  dubious facts, and explain in detail/research_notes.
-- Preserve unrelated fields exactly (same date-format rules as edit mode).
+Guidance:
+- Use research for public facts (what a company does, industry norms, region
+  conventions). Use the resume for what the user actually did — never present
+  web facts as the user's own achievements.
+- When the question names an employer or school on the resume, connect the
+  answer to that role (title, dates) where it helps.
+- If research is weak, empty, or contradictory, say so, keep confidence low,
+  and do not guess company facts.
+- Prefer region-aware norms when asked (e.g. US vs EU professional summary).
+- If they ask you to change the resume, answer briefly (what you would change)
+  and tell them to switch to Edit to apply it — do not emit JSON edits here.
 """
 
 _EDIT_TIMEOUT_MS = 90_000
+_MAX_QUERY_CHARS = 380  # Tavily caps queries at ~400 chars.
+_ORG_STOPWORDS = frozenset(
+    {"inc", "ltd", "llc", "limited", "the", "and", "corp", "group", "company"}
+)
 
 
 class ResumeEditError(Exception):
@@ -126,7 +117,7 @@ class ResumeEditError(Exception):
 
 
 class ResumeEditService:
-    """Propose edits / advice / researched proposals with session memory."""
+    """Propose edits / answer questions (Ask) with session memory."""
 
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
@@ -149,6 +140,15 @@ class ResumeEditService:
             raise ResumeEditError(
                 "Describe what to change before proposing edits.",
                 code="empty_instruction",
+            )
+
+        # Ask must go to the web — fail loudly (before stub/LLM) when unconfigured.
+        if mode is ResumeEditMode.ASK and not self.search.configured():
+            raise ResumeEditError(
+                "Ask uses live web search, which isn’t configured. Set "
+                "TAVILY_API_KEY on the server, or use Edit for changes that "
+                "don’t need verification.",
+                code="research_unavailable",
             )
 
         session = self.sessions.get_or_create(
@@ -184,12 +184,8 @@ class ResumeEditService:
             )
 
         try:
-            if mode is ResumeEditMode.ADVISE:
-                response = self._advise(session, resume=resume, instruction=text)
-            elif mode is ResumeEditMode.RESEARCH_PROPOSE:
-                response = self._research_propose(
-                    session, resume=resume, instruction=text
-                )
+            if mode is ResumeEditMode.ASK:
+                response = self._ask(session, resume=resume, instruction=text)
             else:
                 response = self._edit(session, resume=resume, instruction=text)
         except ResumeEditError:
@@ -255,71 +251,93 @@ class ResumeEditService:
             applied=True,
         )
 
-    def _advise(
+    def _ask(
         self,
         session: EditSession,
         *,
         resume: ResumeDocument,
         instruction: str,
     ) -> ResumeEditResponse:
+        query = self._build_search_query(resume, instruction)
+        hits = self.search.search(query)
         llm = self.agents.create(
             AgentTask.RESUME_EDIT,
             timeout=_EDIT_TIMEOUT_MS,
         )
-        structured = llm.with_structured_output(ResumeAdviseModel)
+        structured = llm.with_structured_output(ResumeAskModel)
         payload = {
             "resume": resume.model_dump(),
             "instruction": instruction,
+            "search_query": query,
+            "research": hits,
             "prior_turns": self.sessions.transcript_for_prompt(session),
         }
         result = structured.invoke(
             [
-                SystemMessage(content=ADVISE_SYSTEM_PROMPT),
+                SystemMessage(content=ASK_SYSTEM_PROMPT),
                 HumanMessage(content=json.dumps(payload)),
             ]
         )
-        answer = self._coerce_advise(result)
+        answer = self._coerce_ask(result)
+        detail = answer.answer.strip()
+        if answer.research_notes and answer.research_notes.strip():
+            detail = f"{detail}\n\nResearch: {answer.research_notes.strip()}"
         response = ResumeEditResponse(
             resume=resume,
             stub=False,
-            detail=answer.answer,
-            mode=ResumeEditMode.ADVISE,
+            detail=detail,
+            mode=ResumeEditMode.ASK,
             session_id=session.session_id,
             applied=False,
+            confidence=answer.confidence,
         )
         self._record_turn(
             session,
             user_content=instruction,
-            mode=ResumeEditMode.ADVISE,
-            assistant_content=answer.answer,
+            mode=ResumeEditMode.ASK,
+            assistant_content=detail,
             pending=None,
         )
         return response
 
-    def _research_propose(
-        self,
-        session: EditSession,
-        *,
-        resume: ResumeDocument,
-        instruction: str,
-    ) -> ResumeEditResponse:
-        hits = self.search.search(instruction)
-        proposal = self._invoke_proposal(
-            system=RESEARCH_SYSTEM_PROMPT,
-            payload={
-                "resume": resume.model_dump(),
-                "instruction": instruction,
-                "research": hits,
-                "prior_turns": self.sessions.transcript_for_prompt(session),
-            },
-        )
-        return self._finish_proposal(
-            session,
-            mode=ResumeEditMode.RESEARCH_PROPOSE,
-            instruction=instruction,
-            proposal=proposal,
-            applied=True,
-        )
+    def _build_search_query(self, resume: ResumeDocument, instruction: str) -> str:
+        """Enrich the question with resume context for any employer/school it names.
+
+        e.g. “Tell me about IPN” → “Tell me about IPN — IPN, Product Designer,
+        Jan 2022–Mar 2023”. Falls back to the bare question when nothing matches.
+        """
+        lowered = instruction.lower()
+        context: list[str] = []
+        for item in resume.experience:
+            if self._names_org(lowered, item.company):
+                dates = " – ".join(p for p in (item.start, item.end) if p.strip())
+                context.append(
+                    ", ".join(p for p in (item.company, item.title, dates) if p.strip())
+                )
+        for edu in resume.education:
+            if self._names_org(lowered, edu.school):
+                context.append(
+                    ", ".join(p for p in (edu.school, edu.degree) if p.strip())
+                )
+        if not context:
+            return instruction[:_MAX_QUERY_CHARS]
+        grounded = f"{instruction} — {'; '.join(context)}"
+        return grounded[:_MAX_QUERY_CHARS]
+
+    @staticmethod
+    def _names_org(lowered_instruction: str, name: str) -> bool:
+        """True when the instruction mentions the org (full name or a distinct word)."""
+        full = name.strip().lower()
+        if not full:
+            return False
+        if re.search(rf"\b{re.escape(full)}\b", lowered_instruction):
+            return True
+        for token in re.findall(r"[a-z0-9&]+", full):
+            if len(token) < 3 or token in _ORG_STOPWORDS:
+                continue
+            if re.search(rf"\b{re.escape(token)}\b", lowered_instruction):
+                return True
+        return False
 
     def _invoke_proposal(
         self,
@@ -350,8 +368,6 @@ class ResumeEditService:
         applied: bool,
     ) -> ResumeEditResponse:
         detail = (proposal.detail or "").strip() or "Proposed changes ready to review."
-        if mode is ResumeEditMode.RESEARCH_PROPOSE and proposal.research_notes:
-            detail = f"{detail}\n\nResearch: {proposal.research_notes.strip()}"
         response = ResumeEditResponse(
             resume=proposal.resume,
             stub=False,
@@ -359,7 +375,6 @@ class ResumeEditService:
             mode=mode,
             session_id=session.session_id,
             applied=applied,
-            confidence=proposal.confidence,
         )
         pending = proposal.resume.model_dump() if applied else None
         self._record_turn(
@@ -401,13 +416,13 @@ class ResumeEditService:
             code="invalid_result",
         )
 
-    def _coerce_advise(self, result: object) -> ResumeAdviseModel:
-        if isinstance(result, ResumeAdviseModel):
+    def _coerce_ask(self, result: object) -> ResumeAskModel:
+        if isinstance(result, ResumeAskModel):
             return result
         if isinstance(result, dict):
-            return ResumeAdviseModel.model_validate(result)
+            return ResumeAskModel.model_validate(result)
         raise ResumeEditError(
-            "Model returned an unexpected advice shape.",
+            "Model returned an unexpected answer shape.",
             code="invalid_result",
         )
 

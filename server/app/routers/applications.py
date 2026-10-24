@@ -118,6 +118,33 @@ def patch_application(
         ) from exc
 
 
+@router.delete(
+    "/{application_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_application(
+    application_id: UUID,
+    user: DbUser,
+    session: SessionDep,
+) -> None:
+    try:
+        _svc().delete(
+            session,
+            user_id=user.id,
+            application_id=application_id,
+        )
+    except ApplicationError as exc:
+        if exc.code == "not_found":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=exc.message,
+            ) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.message,
+        ) from exc
+
+
 # Re-export for type checkers / tests that import summaries from the router.
 __all__ = [
     "ApplicationSummary",

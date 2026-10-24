@@ -38,7 +38,7 @@ Shell header **account menu**: email → **Settings** → Sign out. Home stays m
 
 - **Edit master** — Home mini preview → modal → **Edit master resume** under Download → `/resume/edit`. Add/Remove experience & projects; Save → `PUT /api/v1/resume/document` (reindexes).
 - **Edit tailored** — Application detail → edit → same form; Save → `PATCH /api/v1/applications/{id}` with `resume`.
-- **Agentic harness** — Edit / Advise / Research (Research kept). Propose-only turns with session memory; Accept into form, then Save. Clear session when leaving.
+- **Agentic harness** — Edit / Ask (Ask = resume + live web search; needs server `TAVILY_API_KEY`; never changes the form). Propose-only turns with session memory; Accept into form, then Save. Clear session when leaving.
 - **Deepen** — From edit form on a role/project: choose **guided** (novel consultant Qs) or **journal** (freeform dump). Accept merges into the form; Save persists.
 
 ## Reset / re-onboard

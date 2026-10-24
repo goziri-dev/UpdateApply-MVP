@@ -12,7 +12,43 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from app.schemas.resume import ResumeDocument, ResumeTemplateInfo
+from app.schemas.resume import EducationItem, ResumeDocument, ResumeTemplateInfo
+
+_CERT_MARKERS = (
+    "certificat",
+    "cert.",
+    " certified",
+    "license",
+    "licence",
+    "credential",
+    "nanodegree",
+    "bootcamp",
+)
+
+
+def education_entry_is_certificate(item: EducationItem | dict[str, object]) -> bool:
+    """True when an education row is (or looks like) a certificate / credential."""
+    if isinstance(item, EducationItem):
+        kind = (item.kind or "").strip().lower()
+        blob = f"{item.degree} {item.school}".lower()
+    else:
+        kind = str(item.get("kind") or "").strip().lower()
+        blob = f"{item.get('degree') or ''} {item.get('school') or ''}".lower()
+    if kind in {"certificate", "cert", "credential", "license", "licence"}:
+        return True
+    if kind in {"education", "degree", "school"}:
+        return False
+    return any(marker in blob for marker in _CERT_MARKERS)
+
+
+def education_section_title(
+    items: list[EducationItem] | list[dict[str, object]],
+) -> str:
+    """Section heading: include Certificates only when at least one cert is present."""
+    if any(education_entry_is_certificate(item) for item in items):
+        return "Education & Certificates"
+    return "Education"
+
 
 _TEMPLATES_ROOT = Path(__file__).resolve().parent.parent / "templates" / "resume"
 
@@ -130,7 +166,12 @@ def render_resume_html(
         if p.title or p.summary or p.bullets
     ]
     education = [
-        {"school": e.school, "degree": e.degree, "end": e.end}
+        {
+            "school": e.school,
+            "degree": e.degree,
+            "end": e.end,
+            "kind": e.kind,
+        }
         for e in resume.education
         if e.school or e.degree
     ]
@@ -158,5 +199,8 @@ def render_resume_html(
         experience=experience,
         projects=projects,
         education=education,
+        education_section_title=education_section_title(
+            [e for e in resume.education if e.school or e.degree]
+        ),
         has_content=has_content,
     )

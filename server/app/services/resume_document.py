@@ -220,6 +220,7 @@ def _education_items(raw: object) -> list[EducationItem]:
                 school=str(item.get("school") or ""),
                 degree=str(item.get("degree") or ""),
                 end=str(item.get("end") or ""),
+                kind=str(item.get("kind") or "").strip().lower(),
             )
         )
     return out

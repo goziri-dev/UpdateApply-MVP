@@ -190,6 +190,21 @@ class ApplicationService:
         session.refresh(row)
         return _detail(row)
 
+    def delete(
+        self,
+        session: Session,
+        *,
+        user_id: UUID,
+        application_id: UUID,
+    ) -> None:
+        row = self.get_for_user(
+            session,
+            user_id=user_id,
+            application_id=application_id,
+        )
+        session.delete(row)
+        session.commit()
+
     def patch(
         self,
         session: Session,

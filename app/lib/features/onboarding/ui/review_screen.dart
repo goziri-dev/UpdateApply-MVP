@@ -300,9 +300,7 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                 Text('Review your remade resume', style: type.headlineMedium),
                 const SizedBox(height: AppSpacing.grid * 1.5),
                 Text(
-                  'We rewrote your master profile from your resume and '
-                  'conversation. Correct anything we got wrong — this is what '
-                  "you'll tailor later, not a replay of your answers.",
+                  'Fix anything that looks off.',
                   style: type.bodyMedium?.copyWith(
                     color: colors.muted,
                     height: 1.45,
@@ -422,7 +420,7 @@ class _OnboardingReviewScreenState extends State<OnboardingReviewScreen> {
                 ),
                 const SizedBox(height: AppSpacing.grid),
                 Text(
-                  'From your remade resume · skills are not interviewed',
+                  'From your resume',
                   style: type.bodySmall?.copyWith(color: colors.muted),
                 ),
                 const SizedBox(height: AppSpacing.grid * 3),

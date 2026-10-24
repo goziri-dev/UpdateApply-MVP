@@ -104,9 +104,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
     if (itemId == null) return;
     final text = _transcriptCtrl.text.trim();
     if (text.isEmpty && !forceDone) {
-      setOnboardingError(
-        'Add a short answer (record or type) before continuing.',
-      );
+      setOnboardingError('Add a short answer to continue.');
       return;
     }
     setState(() => _submitting = true);
@@ -155,9 +153,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
 
     if (_micDenied) {
       setOnboardingError(
-        'Microphone permission was denied. Type your answer in the box — '
-        'voice is preferred, but text works. Re-enable mic in the browser '
-        'site settings, then tap the mic again.',
+        'Mic is blocked. Type your answer or allow mic access in your browser.',
       );
       return;
     }
@@ -165,8 +161,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
     if (_audioUnsupported || !_audio.isSupported) {
       setState(() => _audioUnsupported = true);
       setOnboardingError(
-        'Voice recording isn’t available in this browser. Type your answer '
-        'below — Chrome or Edge on HTTPS/localhost work best.',
+        'Voice isn’t available here. Type your answer instead.',
       );
       return;
     }
@@ -188,24 +183,18 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
           _micDenied = true;
           _recording = false;
         });
-        setOnboardingError(
-          'Microphone permission was denied. Type your answer instead.',
-        );
+        setOnboardingError('Mic is blocked. Type your answer instead.');
       case InterviewAudioStart.unsupported:
         setState(() {
           _audioUnsupported = true;
           _recording = false;
         });
         setOnboardingError(
-          'Voice recording isn’t available in this browser. Type your answer '
-          'below.',
+          'Voice isn’t available here. Type your answer instead.',
         );
       case InterviewAudioStart.failed:
         setState(() => _recording = false);
-        setOnboardingError(
-          'Couldn’t start the microphone. Check browser permissions, use '
-          'HTTPS or localhost, then try again — or type your answer.',
-        );
+        setOnboardingError('Couldn’t start the mic. Type your answer instead.');
     }
   }
 
@@ -229,9 +218,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
 
     if (clip == null || clip.bytes.isEmpty) {
       setState(() => _transcribing = false);
-      setOnboardingError(
-        'No audio was captured. Tap the mic to try again, or type your answer.',
-      );
+      setOnboardingError('No audio captured. Try again or type your answer.');
       return;
     }
 
@@ -250,13 +237,11 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
         selection: TextSelection.collapsed(offset: merged.length),
       );
       clearOnboardingFeedback();
-      setOnboardingInfo('Transcript ready — edit if needed, then continue.');
+      setOnboardingInfo('Transcript ready. Edit if needed.');
     } on DioException catch (e) {
       setOnboardingError('${_dioMessage(e)} You can type your answer instead.');
-    } on Object catch (e) {
-      setOnboardingError(
-        'Transcription failed ($e). Type your answer instead.',
-      );
+    } on Object {
+      setOnboardingError('Transcription failed. Type your answer instead.');
     } finally {
       if (mounted) setState(() => _transcribing = false);
     }
@@ -307,9 +292,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                 ),
                 const SizedBox(height: AppSpacing.grid * 1.5),
                 Text(
-                  'Resumes leave gaps — and sometimes oversell or undersell. '
-                  'Talk freely; fuzzy memory and shared credit are fine. '
-                  'A couple of minutes is enough — say “that’s all” when you’re done.',
+                  'Answer in your own words. Rough answers are fine.',
                   style: type.bodyMedium?.copyWith(
                     color: colors.muted,
                     height: 1.45,
@@ -386,7 +369,7 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                             const InterviewRecordingIndicator(active: true)
                           else
                             Text(
-                              'Or type below. Themes below just help us know when this item feels complete.',
+                              'Or type below.',
                               style: type.bodySmall?.copyWith(
                                 color: colors.muted,
                               ),
@@ -403,10 +386,8 @@ class _OnboardingInterviewScreenState extends State<OnboardingInterviewScreen> {
                   readOnly: _recording || _transcribing,
                   decoration: InputDecoration(
                     hintText: _recording
-                        ? 'Recording… transcript appears after you stop'
-                        : (_transcribing
-                              ? 'Transcribing…'
-                              : 'Your answer appears here…'),
+                        ? 'Recording…'
+                        : (_transcribing ? 'Transcribing…' : 'Your answer…'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

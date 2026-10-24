@@ -13,19 +13,17 @@ import 'resume_deepen_screen.dart';
 
 enum ResumeEditTarget { master, application }
 
-enum _HarnessMode { edit, advise, researchPropose }
+enum _HarnessMode { edit, ask }
 
 extension on _HarnessMode {
   String get apiValue => switch (this) {
     _HarnessMode.edit => 'edit',
-    _HarnessMode.advise => 'advise',
-    _HarnessMode.researchPropose => 'research_propose',
+    _HarnessMode.ask => 'ask',
   };
 
   String get label => switch (this) {
     _HarnessMode.edit => 'Edit',
-    _HarnessMode.advise => 'Advise',
-    _HarnessMode.researchPropose => 'Research',
+    _HarnessMode.ask => 'Ask',
   };
 }
 
@@ -210,7 +208,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
       _pendingOutcome = null;
       _baselineBeforeProposal = null;
       _history.clear();
-      _banner = 'Edit session cleared — next message starts fresh.';
+      _banner = 'Chat cleared — next message starts fresh.';
       _error = null;
     });
   }
@@ -221,7 +219,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
     final instruction = _instruction.text.trim();
     if (instruction.isEmpty) {
       setState(
-        () => _error = _mode == _HarnessMode.advise
+        () => _error = _mode == _HarnessMode.ask
             ? 'Ask a question first.'
             : 'Describe what to change first.',
       );
@@ -251,7 +249,6 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
       final doc = Map<String, dynamic>.from(proposed);
       final sid = result['session_id']?.toString();
       final detail = result['detail'] as String?;
-      final stub = result['stub'] == true;
       final applied = result['applied'] != false;
       final confidence = result['confidence'];
       if (!mounted) return;
@@ -261,9 +258,13 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
         text: instruction,
         mode: _mode.label,
       );
-      final agentText = (detail != null && detail.trim().isNotEmpty)
+      final confBit = confidence is num
+          ? '\n\nConfidence: ${(confidence * 100).round()}%.'
+          : '';
+      final baseText = (detail != null && detail.trim().isNotEmpty)
           ? detail.trim()
-          : (applied ? 'Proposed changes loaded.' : 'Advice ready.');
+          : (applied ? 'Proposed changes loaded.' : 'Answer ready.');
+      final agentText = '$baseText$confBit';
       final historyAgent = _HistoryEntry(
         role: 'agent',
         text: agentText,
@@ -276,18 +277,13 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
         _history.add(historyYou);
         _history.add(historyAgent);
         _proposing = false;
+        // Model text lives only in the transcript — no duplicate banner.
+        _banner = null;
         if (applied) {
           _baselineBeforeProposal = current;
           _document = doc;
-          final confBit = confidence is num
-              ? ' Confidence: ${(confidence * 100).round()}%.'
-              : '';
-          _banner = stub
-              ? (detail ?? 'Stub proposal — review before saving.')
-              : '${detail ?? 'Proposed changes loaded — review fields, then Save to keep.'}$confBit';
         } else {
           _baselineBeforeProposal = null;
-          _banner = detail ?? 'Advice ready — switch to Edit to apply changes.';
         }
       });
       if (applied) {
@@ -314,8 +310,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
     setState(() {
       _pendingOutcome = 'accepted';
       _baselineBeforeProposal = null;
-      _banner =
-          'Proposal kept in the form — Save to persist, or continue editing.';
+      _banner = 'Kept in the form. Save when ready.';
     });
   }
 
@@ -355,9 +350,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
     if (!mounted || result == null) return;
     setState(() {
       _document = result;
-      _banner =
-          'Deepen applied to the form — review, then Save to persist '
-          'and reindex.';
+      _banner = 'Added to the form. Review, then save.';
       _error = null;
       _baselineBeforeProposal = null;
     });
@@ -366,23 +359,13 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
 
   String get _helperCopy => switch (_mode) {
     _HarnessMode.edit =>
-      'Describe a change — e.g. “add Software Engineer at Acme, Jan 2024–present” '
-          '(user-authored facts only) or “change the Acme start year to 2021.” '
-          'Session memory lets you continue. We won’t invent metrics.',
-    _HarnessMode.advise =>
-      'Ask a coaching question — e.g. “Do I need a professional summary '
-          'for US vs EU applications?” Advice won’t change the form until '
-          'you switch to Edit.',
-    _HarnessMode.researchPropose =>
-      'Name something to verify before adding — e.g. “add Outlier as a '
-          'role.” Needs TAVILY_API_KEY on the server; review confidence, '
-          'then Save. Research mode stays alongside Edit + Advise.',
+      'Describe a change to your resume. We won’t invent details.',
+    _HarnessMode.ask => 'Ask a question about your resume. Nothing changes until you switch to Edit.',
   };
 
   String get _ctaLabel => switch (_mode) {
     _HarnessMode.edit => 'Propose edits',
-    _HarnessMode.advise => 'Ask',
-    _HarnessMode.researchPropose => 'Research & propose',
+    _HarnessMode.ask => 'Ask',
   };
 
   @override
@@ -393,9 +376,8 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
     final isMaster = widget.target == ResumeEditTarget.master;
     final title = isMaster ? 'Edit master resume' : 'Edit tailored resume';
     final subtitle = isMaster
-        ? 'Add or update roles anytime. Optional deepen (guided or journal) '
-              'enriches one item — Save updates your master profile and index.'
-        : 'Changes update this application’s tailored resume only.';
+        ? 'Update your roles and projects, then save.'
+        : 'Changes apply to this tailored resume only.';
 
     return Scaffold(
       body: SafeArea(
@@ -507,30 +489,6 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                           ),
                         ),
                       ],
-                      if (_baselineBeforeProposal != null) ...[
-                        const SizedBox(height: AppSpacing.grid),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: _proposing || _saving
-                                    ? null
-                                    : _rejectProposal,
-                                child: const Text('Discard proposal'),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.grid),
-                            Expanded(
-                              child: FilledButton.tonal(
-                                onPressed: _proposing || _saving
-                                    ? null
-                                    : _acceptProposal,
-                                child: const Text('Keep in form'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                       const SizedBox(height: AppSpacing.grid * 3),
                       Row(
                         children: [
@@ -573,13 +531,8 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                           fontWeight: FontWeight.w400,
                         ),
                       ),
-                      if (_history.isNotEmpty) ...[
+                      if (_history.isNotEmpty || _proposing) ...[
                         const SizedBox(height: AppSpacing.grid * 2),
-                        Text(
-                          'This session',
-                          style: type.labelLarge?.copyWith(color: colors.muted),
-                        ),
-                        const SizedBox(height: AppSpacing.grid),
                         DecoratedBox(
                           decoration: BoxDecoration(
                             border: Border.all(color: scheme.outlineVariant),
@@ -592,23 +545,62 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                               children: [
                                 for (var i = 0; i < _history.length; i++) ...[
                                   if (i > 0)
-                                    const SizedBox(height: AppSpacing.grid),
+                                    const SizedBox(
+                                      height: AppSpacing.grid * 1.5,
+                                    ),
+                                  _ChatBubble(entry: _history[i]),
+                                ],
+                                if (_proposing) ...[
+                                  if (_history.isNotEmpty)
+                                    const SizedBox(
+                                      height: AppSpacing.grid * 1.5,
+                                    ),
                                   Text(
-                                    _history[i].role == 'you'
-                                        ? 'You · ${_history[i].mode}'
-                                        : 'Agent · ${_history[i].mode}',
-                                    style: type.labelMedium?.copyWith(
+                                    _mode == _HarnessMode.ask
+                                        ? 'Agent is searching…'
+                                        : 'Agent is working…',
+                                    style: type.bodySmall?.copyWith(
                                       color: colors.muted,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _history[i].text,
-                                    style: type.bodySmall?.copyWith(
-                                      height: 1.4,
-                                    ),
-                                  ),
                                 ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (_baselineBeforeProposal != null) ...[
+                        const SizedBox(height: AppSpacing.grid),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.grid * 2,
+                              vertical: AppSpacing.grid,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Proposal is in the form below',
+                                    style: type.bodySmall,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _proposing || _saving
+                                      ? null
+                                      : _rejectProposal,
+                                  child: const Text('Discard'),
+                                ),
+                                FilledButton.tonal(
+                                  onPressed: _proposing || _saving
+                                      ? null
+                                      : _acceptProposal,
+                                  child: const Text('Keep'),
+                                ),
                               ],
                             ),
                           ),
@@ -619,7 +611,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                         controller: _instruction,
                         maxLines: 3,
                         decoration: InputDecoration(
-                          labelText: _mode == _HarnessMode.advise
+                          labelText: _mode == _HarnessMode.ask
                               ? 'Question'
                               : 'Instruction',
                           border: OutlineInputBorder(
@@ -669,6 +661,56 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                       ),
                     ],
                   ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One transcript message: You (right, tinted) / Agent (left, outlined).
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({required this.entry});
+
+  final _HistoryEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final type = Theme.of(context).textTheme;
+    final colors = context.appColors;
+    final scheme = Theme.of(context).colorScheme;
+    final isYou = entry.role == 'you';
+    return Align(
+      alignment: isYou ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: Column(
+          crossAxisAlignment: isYou
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          children: [
+            Text(
+              isYou ? 'You · ${entry.mode}' : 'Agent · ${entry.mode}',
+              style: type.labelSmall?.copyWith(color: colors.muted),
+            ),
+            const SizedBox(height: 4),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: isYou ? scheme.surfaceContainerHighest : null,
+                border: isYou ? null : Border.all(color: scheme.outlineVariant),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.grid * 1.5,
+                  vertical: AppSpacing.grid,
+                ),
+                child: SelectableText(
+                  entry.text,
+                  style: type.bodyMedium?.copyWith(height: 1.4),
                 ),
               ),
             ),

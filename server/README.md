@@ -36,14 +36,15 @@ Interview mic STT uses OpenRouter `POST /api/v1/audio/transcriptions` (default `
 | `mode` | Behavior |
 |--------|----------|
 | `edit` (default) | Minimal-diff rewrite; preserves date/link formats; returns proposed `resume` + `detail` summary |
-| `advise` | Answers questions without mutating; `applied=false`, `resume` unchanged |
-| `research_propose` | Optional web search (Tavily) then propose addition/correction with `confidence` |
+| `ask` | Live web search (Tavily, query grounded in matching resume employers/schools) + resume → answer in `detail` (with research notes) and optional `confidence`; never mutates: `applied=false`, `resume` unchanged. Change requests get a short answer and a nudge to Edit |
+
+Legacy `advise` / `research_propose` values are accepted and treated as `ask`.
 
 **Session memory (MVP):** server keeps an in-memory session per `session_id` (scoped to the authenticated user). Pass `session_id` from the prior response to continue (“also shorten that bullet”). Optional `prior_outcome`: `accepted` \| `rejected` for the last proposal. Clear with `DELETE /api/v1/resume/edit/session/{session_id}` when leaving the edit screen or resetting.
 
 **Limits:** process-local (lost on restart / not shared across workers); TTL ~1 hour idle; ~40 turns / ~500 sessions capped. Fine for single-process local/dev.
 
-**Research:** set optional `TAVILY_API_KEY`. Without it, `research_propose` returns HTTP 400 with a clear “not configured” message — Edit/Advise still work. Research mode is retained alongside Edit + Advise (living-master does not remove it).
+**Ask:** requires `TAVILY_API_KEY`. Without it, `ask` returns HTTP 400 (`research_unavailable`) with a clear “not configured” message — Edit still works.
 
 ### Living-master voice deepen
 
@@ -85,6 +86,7 @@ Table: `application` (Alembic `c3d4e5f6a7b8`). Auth required (`DbUser`). Newest 
 | `GET` | `/api/v1/applications/{id}` | Detail + full `resume` document |
 | `POST` | `/api/v1/applications/{id}/mark-applied` | Sets `status=applied`, `applied_at` (optional body override) |
 | `PATCH` | `/api/v1/applications/{id}` | Optional company / role / status / applied_at / **`resume`** (full tailored `ResumeDocument` after hybrid edit) |
+| `DELETE` | `/api/v1/applications/{id}` | Remove one tailored version (204). Does not renumber remaining versions. |
 
 No unique constraint on company+role. Master remade profile stays on Home / profile routes — Applications only stores tailored versions.
 

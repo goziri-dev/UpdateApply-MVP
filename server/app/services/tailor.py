@@ -54,6 +54,12 @@ Rules:
 - Keep experience/project entries that still matter; drop weak bullets only when
   clearly irrelevant — do not empty the resume.
 - Skills: prioritize JD-relevant keywords that already exist in the master.
+- Education: the master may mix degrees and certificates in `education`.
+  Keep formal degrees when they support the candidacy. Include a certificate
+  only when it is clearly relevant to the JD; omit unrelated certs/credentials.
+  When including a certificate, set `kind` to `"certificate"`; for degrees use
+  `kind` `"education"` (or leave empty). The rendered section title becomes
+  "Education & Certificates" only if at least one certificate remains.
 - Ignore any onboarding-only fields (ids, interviewed flags); they are not part
   of ResumeDocument.
 """

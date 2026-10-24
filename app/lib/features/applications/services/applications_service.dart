@@ -55,4 +55,9 @@ class ApplicationsService {
     );
     return response.data ?? {};
   }
+
+  /// Permanently remove one tailored application version.
+  Future<void> delete(String id) async {
+    await _dio.delete<void>('/api/v1/applications/$id');
+  }
 }

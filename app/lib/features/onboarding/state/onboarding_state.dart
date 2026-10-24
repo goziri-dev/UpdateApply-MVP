@@ -112,7 +112,7 @@ Future<void> refreshOnboardingGate({String? statusHint}) async {
     // Keep last known gate if we already resolved one; otherwise stay unknown.
     if (onboardingGate.value == OnboardingGate.unknown) {
       onboardingGateSyncError.value =
-          "Can't reach the server. Check that the API is running, then retry.";
+          "Can't reach the server. Please try again.";
     }
   } finally {
     onboardingGateSyncing.value = false;

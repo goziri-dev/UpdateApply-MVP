@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../resume/widgets/resume_preview.dart';
 import '../../tailor/ui/tailor_screen.dart';
 import '../services/applications_service.dart';
+import '../state/applications_state.dart';
 
 class ApplicationDetailScreen extends StatefulWidget {
   const ApplicationDetailScreen({super.key, required this.applicationId});
@@ -23,6 +24,7 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
 
   bool _loading = true;
   bool _marking = false;
+  bool _deleting = false;
   String? _error;
   Map<String, dynamic>? _detail;
 
@@ -114,6 +116,57 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
     );
   }
 
+  Future<void> _confirmDelete() async {
+    final d = _detail;
+    final version = d?['version'] as int? ?? 1;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        return AlertDialog(
+          title: const Text('Delete this resume?'),
+          content: Text(
+            'Version $version will be removed. This can’t be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: TextButton.styleFrom(foregroundColor: scheme.error),
+              child: const Text('Delete this resume'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+    await _delete();
+  }
+
+  Future<void> _delete() async {
+    setState(() => _deleting = true);
+    try {
+      await _service.delete(widget.applicationId);
+      bumpApplicationsEpoch();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Version deleted')));
+      context.go('/applications');
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(_dioMessage(e))));
+    } on Object catch (e) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final type = Theme.of(context).textTheme;
@@ -159,18 +212,40 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () => context.go('/applications'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: scheme.onSurface,
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => context.go('/applications'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: scheme.onSurface,
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('← Applications'),
                     ),
-                    child: const Text('← Applications'),
-                  ),
+                    const Spacer(),
+                    if (!_loading && _error == null)
+                      TextButton(
+                        onPressed: _deleting ? null : _confirmDelete,
+                        style: TextButton.styleFrom(
+                          foregroundColor: scheme.error,
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: _deleting
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: scheme.error,
+                                ),
+                              )
+                            : const Text('Delete this resume'),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.grid * 2),
                 if (_loading)
@@ -351,8 +426,7 @@ class _JdPanel extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.grid * 2),
             Text(
-              'Applied date is optional. Mark applied when you send it — '
-              'drafts stay here until then.',
+              'Mark as applied once you’ve sent it.',
               style: type.bodySmall?.copyWith(
                 color: colors.muted,
                 fontWeight: FontWeight.w400,

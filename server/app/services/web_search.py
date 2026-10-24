@@ -1,4 +1,4 @@
-"""Optional web search for research_propose (Tavily when configured)."""
+"""Live web search for resume Ask mode (Tavily)."""
 
 from __future__ import annotations
 
@@ -37,14 +37,14 @@ class WebSearchService:
         text = query.strip()
         if not text:
             raise WebSearchError(
-                "Need a search query to research that claim.",
+                "Need a search query to look that up.",
                 code="empty_query",
             )
         if not self.configured():
             raise WebSearchError(
-                "Web research is not configured. Set TAVILY_API_KEY on the "
-                "server (optional), or use Edit mode for changes that do not "
-                "need verification.",
+                "Ask uses live web search, which isn’t configured. Set "
+                "TAVILY_API_KEY on the server, or use Edit for changes that "
+                "don’t need verification.",
                 code="research_unavailable",
             )
 

@@ -84,8 +84,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.grid),
                     Text(
-                      'Clear your master profile and walk through onboarding '
-                      'again with a new resume. Application history is kept.',
+                      'Start over with a new resume. Applications are kept.',
                       style: type.bodySmall?.copyWith(
                         color: colors.muted,
                         height: 1.45,

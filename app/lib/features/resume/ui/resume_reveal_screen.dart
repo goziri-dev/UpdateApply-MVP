@@ -124,9 +124,7 @@ class _ResumeRevealScreenState extends State<ResumeRevealScreen>
                 Text("Here's your resume", style: type.headlineMedium),
                 const SizedBox(height: AppSpacing.grid * 1.5),
                 Text(
-                  'We turned your remade profile into a clean, ATS-friendly '
-                  'resume. Download a PDF or open your dashboard — same '
-                  'preview lives there as a mini card.',
+                  'Download a PDF or continue to your dashboard.',
                   style: type.bodyMedium?.copyWith(
                     color: colors.muted,
                     height: 1.45,

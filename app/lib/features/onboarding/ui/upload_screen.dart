@@ -49,9 +49,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
         _fileSize = null;
         _bytes = null;
       });
-      setOnboardingError(
-        "That file isn't a PDF. Upload a PDF resume (LinkedIn export works).",
-      );
+      setOnboardingError("That file isn't a PDF. Upload a PDF resume.");
       return;
     }
     if (bytes.length > _maxBytes) {
@@ -60,9 +58,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
         _fileSize = null;
         _bytes = null;
       });
-      setOnboardingError(
-        'This file is over 10MB. Export a leaner PDF and try again.',
-      );
+      setOnboardingError('This file is over 10MB. Try a smaller PDF.');
       return;
     }
     setState(() {
@@ -76,9 +72,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
     final name = _fileName;
     final bytes = _bytes;
     if (name == null || bytes == null) {
-      setOnboardingError(
-        "Choose a PDF resume to continue. Onboarding can't be skipped.",
-      );
+      setOnboardingError('Choose a PDF resume to continue.');
       return;
     }
     onboardingBusy.value = true;
@@ -128,9 +122,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
           Text("Let's build your profile", style: type.headlineMedium),
           const SizedBox(height: AppSpacing.grid * 1.5),
           Text(
-            "Upload any existing resume. We'll extract your basics, history, "
-            'and projects — then talk through each role and project in a '
-            'calm chat so your profile reflects what actually happened.',
+            'Upload your resume to get started.',
             style: type.bodyMedium?.copyWith(
               color: colors.muted,
               height: 1.45,
@@ -214,7 +206,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
                             ),
                             const SizedBox(height: AppSpacing.grid),
                             Text(
-                              'PDF only · max 10MB · LinkedIn export recommended',
+                              'PDF only · max 10MB',
                               textAlign: TextAlign.center,
                               style: type.bodySmall?.copyWith(
                                 color: colors.muted,

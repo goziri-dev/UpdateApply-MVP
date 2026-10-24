@@ -111,7 +111,7 @@ def put_document(
 
 @router.post("/edit", response_model=ResumeEditResponse)
 def edit_resume(body: ResumeEditRequest, user: DbUser) -> ResumeEditResponse:
-    """Agentic harness turn: edit / advise / research_propose (does not persist).
+    """Agentic harness turn: edit / ask (does not persist).
 
     Pass ``session_id`` from a prior response to continue multi-turn memory.
     Optional ``prior_outcome`` records accept/reject of the last proposal.

@@ -202,8 +202,7 @@ class _TailorScreenState extends State<TailorScreen> {
                 ),
                 const SizedBox(height: AppSpacing.grid * 1.5),
                 Text(
-                  '$label is in Applications. Mark it applied when you send '
-                  'it — or tailor again anytime.',
+                  '$label is in Applications.',
                   textAlign: TextAlign.center,
                   style: type.bodyMedium?.copyWith(
                     color: colors.muted,
@@ -435,8 +434,7 @@ class _TailorForm extends StatelessWidget {
         Text('Tailor resume', style: type.headlineMedium),
         const SizedBox(height: AppSpacing.grid * 1.5),
         Text(
-          'Paste a job description. We match pieces of your remade profile '
-          'and rewrite a resume aimed at that role.',
+          'Paste a job description to tailor your resume.',
           style: type.bodyMedium?.copyWith(
             color: colors.muted,
             height: 1.45,
@@ -494,7 +492,7 @@ class _TailorForm extends StatelessWidget {
         if (busy) ...[
           const SizedBox(height: AppSpacing.grid * 2),
           Text(
-            'Matching your profile and rewriting for this job…',
+            'Tailoring your resume…',
             textAlign: TextAlign.center,
             style: type.bodySmall?.copyWith(color: colors.muted, height: 1.4),
           ),
@@ -597,9 +595,7 @@ class _TailorResult extends StatelessWidget {
                 vertical: AppSpacing.grid * 1.5,
               ),
               child: Text(
-                'Stub response — this is your master resume mapped for '
-                'preview, not a live JD rewrite. Configure OpenRouter on '
-                'the server for real tailoring.',
+                'Preview only. This isn’t tailored yet.',
                 style: type.bodySmall?.copyWith(
                   color: colors.label,
                   height: 1.4,
@@ -667,7 +663,7 @@ class _PreviewPlaceholder extends StatelessWidget {
                       const CircularProgressIndicator(strokeWidth: 2),
                       const SizedBox(height: AppSpacing.grid * 2),
                       Text(
-                        'Building your tailored resume…',
+                        'Tailoring your resume…',
                         textAlign: TextAlign.center,
                         style: type.bodySmall?.copyWith(
                           color: muted,
@@ -677,7 +673,7 @@ class _PreviewPlaceholder extends StatelessWidget {
                     ],
                   )
                 : Text(
-                    'Your tailored resume will appear here after you generate.',
+                    'Your tailored resume will appear here.',
                     textAlign: TextAlign.center,
                     style: type.bodySmall?.copyWith(color: muted, height: 1.45),
                   ),

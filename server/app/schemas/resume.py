@@ -40,6 +40,8 @@ class EducationItem(BaseModel):
     school: str = ""
     degree: str = ""
     end: str = ""
+    # Optional: "education" | "certificate". Empty → inferred from wording at render.
+    kind: str = ""
 
 
 class ProjectItem(BaseModel):
@@ -103,8 +105,14 @@ class ResumeEditMode(StrEnum):
     """Agentic harness mode for ``POST /resume/edit``."""
 
     EDIT = "edit"
-    ADVISE = "advise"
-    RESEARCH_PROPOSE = "research_propose"
+    ASK = "ask"
+
+    @classmethod
+    def _missing_(cls, value: object) -> ResumeEditMode | None:
+        # Legacy clients: advise / research_propose both became non-mutating Ask.
+        if value in {"advise", "research_propose"}:
+            return cls.ASK
+        return None
 
 
 class ResumeEditOutcome(StrEnum):
@@ -132,7 +140,7 @@ class ResumeEditRequest(BaseModel):
 
 
 class ResumeEditResponse(BaseModel):
-    """Harness reply. ``resume`` is unchanged when ``applied`` is false (advise)."""
+    """Harness reply. ``resume`` is unchanged when ``applied`` is false (ask)."""
 
     resume: ResumeDocument
     stub: bool = False
@@ -144,27 +152,27 @@ class ResumeEditResponse(BaseModel):
 
 
 class ResumeEditProposalModel(BaseModel):
-    """Structured LLM output for edit / research_propose modes."""
+    """Structured LLM output for edit mode."""
 
     resume: ResumeDocument
     detail: str = Field(
         description="Short human-readable summary of what changed (1–3 sentences)."
     )
+
+
+class ResumeAskModel(BaseModel):
+    """Structured LLM output for ask mode (web research + resume, no mutation)."""
+
+    answer: str = Field(
+        description="Clear answer using resume + research; do not emit a ResumeDocument."
+    )
     confidence: float | None = Field(
         default=None,
-        description="0–1 confidence when research_propose; omit for plain edit.",
+        description="0–1 confidence in the answer given research quality.",
     )
     research_notes: str | None = Field(
         default=None,
-        description="Brief notes on what research supported (research_propose).",
-    )
-
-
-class ResumeAdviseModel(BaseModel):
-    """Structured LLM output for advise mode (no document mutation)."""
-
-    answer: str = Field(
-        description="Clear advice answering the user; do not emit a ResumeDocument."
+        description="Brief notes on what research supported or could not verify.",
     )
 
 

@@ -118,8 +118,7 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
                 ),
                 const SizedBox(height: AppSpacing.grid * 1.5),
                 Text(
-                  'Onboarding is complete. Your career profile is the source of '
-                  'truth for every tailored resume from here on.',
+                  'Your profile is used for every tailored resume.',
                   style: type.bodyMedium?.copyWith(
                     color: colors.muted,
                     height: 1.45,
@@ -150,7 +149,7 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.grid * 2),
                     child: Text(
-                      'Hard gate cleared — you can enter Tailor.',
+                      'You’re all set to tailor.',
                       style: type.bodyMedium?.copyWith(color: scheme.primary),
                     ),
                   ),
