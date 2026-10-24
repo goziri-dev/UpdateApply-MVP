@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UpdateApply — Applications prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app" data-view="list" data-state="list">
+      <header class="shell-top">
+        <div class="brand" aria-hidden="true" title="UpdateApply">
+          <span class="mark">
+            <span class="mark-letter">u</span><span class="mark-plus">+</span>
+          </span>
+          <span class="brand-name">UpdateApply</span>
+        </div>
+        <nav class="shell-nav" aria-label="Primary">
+          <button type="button" class="nav-link" data-dest="home">Home</button>
+          <button
+            type="button"
+            class="nav-link is-active"
+            data-dest="applications"
+            aria-current="page"
+          >
+            Applications
+          </button>
+        </nav>
+      </header>
+
+      <!-- HOME (shell context) — no "Home" H1; tabs already name the route -->
+      <main class="page" id="page-home" hidden>
+        <div class="page-inner page-inner-narrow">
+          <section class="master-block" aria-label="Master resume">
+            <p class="section-label">Your resume</p>
+            <button type="button" class="master-preview" id="open-master">
+              <div class="letter-mini" aria-hidden="true">
+                <span class="bar bar-lg"></span>
+                <span class="bar bar-sm"></span>
+                <span class="bar bar-md"></span>
+                <span class="bar bar-lg"></span>
+                <span class="bar bar-sm"></span>
+              </div>
+              <span class="master-hint">Tap to enlarge or download</span>
+            </button>
+            <p class="helper">
+              Paste a job description to generate a tailored resume from your
+              remade master profile.
+            </p>
+            <button type="button" class="btn btn-primary" data-dest="tailor">
+              Tailor to a job description
+            </button>
+          </section>
+        </div>
+      </main>
+
+      <!-- APPLICATIONS — no tab-name H1; list meta or empty copy only -->
+      <main class="page" id="page-applications">
+        <div class="page-inner">
+          <p class="list-meta" id="list-meta">4 saved</p>
+
+          <div
+            class="alert"
+            id="apps-error"
+            role="alert"
+            data-visible="false"
+          >
+            Couldn’t load applications. Check your connection and try again.
+            <button type="button" class="alert-action" id="retry-load">
+              Retry
+            </button>
+          </div>
+
+          <!-- Empty -->
+          <section
+            class="empty"
+            id="state-empty"
+            hidden
+            aria-labelledby="empty-title"
+          >
+            <div class="empty-illus" aria-hidden="true">
+              <div class="empty-stack">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <h2 class="empty-title" id="empty-title">No applications yet</h2>
+            <p class="empty-body">
+              Tailor your first job description. Drafts show up here with company,
+              role, and a short snippet so you can tell versions apart.
+            </p>
+            <button type="button" class="btn btn-primary" data-dest="tailor">
+              Tailor a job description
+            </button>
+          </section>
+
+          <!-- Loading -->
+          <section
+            class="list"
+            id="state-loading"
+            hidden
+            aria-busy="true"
+            aria-label="Loading applications"
+          >
+            <div class="row skeleton">
+              <div class="sk sk-title"></div>
+              <div class="sk sk-meta"></div>
+              <div class="sk sk-snip"></div>
+            </div>
+            <div class="row skeleton">
+              <div class="sk sk-title"></div>
+              <div class="sk sk-meta"></div>
+              <div class="sk sk-snip"></div>
+            </div>
+            <div class="row skeleton">
+              <div class="sk sk-title"></div>
+              <div class="sk sk-meta"></div>
+              <div class="sk sk-snip"></div>
+            </div>
+          </section>
+
+          <!-- List -->
+          <section
+            class="list"
+            id="state-list"
+            aria-label="Application versions"
+          >
+            <!-- rows injected / static for review -->
+            <article
+              class="row"
+              tabindex="0"
+              role="button"
+              data-app="stripe-v2"
+            >
+              <div class="row-top">
+                <h2 class="row-company">
+                  Stripe
+                  <span class="sep" aria-hidden="true">·</span>
+                  <span class="row-role">Product Designer</span>
+                </h2>
+                <span class="badge badge-draft">Draft</span>
+              </div>
+              <p class="row-meta">
+                <span class="version">v2</span>
+                <span class="dot" aria-hidden="true">·</span>
+                <span>Created 20 Oct 2026</span>
+              </p>
+              <p class="row-snip">
+                We’re hiring a product designer to own Checkout growth surfaces
+                and partner closely with research…
+              </p>
+            </article>
+
+            <article
+              class="row"
+              tabindex="0"
+              role="button"
+              data-app="stripe-v1"
+            >
+              <div class="row-top">
+                <h2 class="row-company">
+                  Stripe
+                  <span class="sep" aria-hidden="true">·</span>
+                  <span class="row-role">Product Designer</span>
+                </h2>
+                <span class="badge badge-applied">Applied 18 Oct</span>
+              </div>
+              <p class="row-meta">
+                <span class="version">v1</span>
+                <span class="dot" aria-hidden="true">·</span>
+                <span>Applied 18 Oct 2026</span>
+              </p>
+              <p class="row-snip">
+                Lead product design for Checkout — systems thinking, rapid
+                prototyping, and clear narrative for merchants…
+              </p>
+            </article>
+
+            <article
+              class="row"
+              tabindex="0"
+              role="button"
+              data-app="notion-v1"
+            >
+              <div class="row-top">
+                <h2 class="row-company">
+                  Notion
+                  <span class="sep" aria-hidden="true">·</span>
+                  <span class="row-role"
+                    >Senior Software Engineer, Infrastructure Platforms that
+                    Power Collaborative Editing at Global Scale</span
+                  >
+                </h2>
+                <span class="badge badge-draft">Draft</span>
+              </div>
+              <p class="row-meta">
+                <span class="version">v1</span>
+                <span class="dot" aria-hidden="true">·</span>
+                <span>Created 22 Oct 2026</span>
+              </p>
+              <p class="row-snip">
+                Build systems that power real-time collaboration. Strong
+                distributed systems background preferred…
+              </p>
+            </article>
+
+            <article
+              class="row"
+              tabindex="0"
+              role="button"
+              data-app="linear-v1"
+            >
+              <div class="row-top">
+                <h2 class="row-company">
+                  Linear
+                  <span class="sep" aria-hidden="true">·</span>
+                  <span class="row-role">Design Engineer</span>
+                </h2>
+                <span class="badge badge-applied">Applied 10 Oct</span>
+              </div>
+              <p class="row-meta">
+                <span class="version">v1</span>
+                <span class="dot" aria-hidden="true">·</span>
+                <span>Applied 10 Oct 2026</span>
+              </p>
+              <p class="row-snip">
+                Ship UI with taste and precision. React, motion, and a love for
+                craft over process theater…
+              </p>
+            </article>
+          </section>
+        </div>
+      </main>
+
+      <!-- DETAIL -->
+      <main class="page" id="page-detail" hidden>
+        <div class="page-inner page-inner-wide">
+          <button type="button" class="back" id="detail-back">
+            <span class="back-arrow" aria-hidden="true">←</span> Applications
+          </button>
+
+          <header class="detail-head">
+            <div class="detail-titles">
+              <p class="eyebrow" id="detail-version">Version 2 · Draft</p>
+              <h1 class="page-title" id="detail-title">
+                Stripe · Product Designer
+              </h1>
+              <p class="page-sub" id="detail-meta">Created 20 Oct 2026</p>
+            </div>
+            <div class="detail-actions">
+              <button type="button" class="btn btn-secondary" id="act-download">
+                Download
+              </button>
+              <button type="button" class="btn btn-secondary" id="act-applied">
+                Mark as applied
+              </button>
+              <button type="button" class="btn btn-primary" id="act-retailor">
+                Tailor again
+              </button>
+            </div>
+          </header>
+
+          <div class="detail-grid">
+            <section class="letter-panel" aria-label="Tailored resume preview">
+              <div class="letter">
+                <header class="letter-head">
+                  <p class="letter-name">Favour Akubuo</p>
+                  <p class="letter-contact">
+                    favour@updateapply.dev · Lagos · Portfolio
+                  </p>
+                </header>
+                <h2 class="letter-h">Summary</h2>
+                <p class="letter-p">
+                  Product designer focused on growth surfaces and checkout
+                  clarity. Partners with research and engineering to ship
+                  measurable improvements for merchants.
+                </p>
+                <h2 class="letter-h">Experience</h2>
+                <p class="letter-role">Product Designer — Acme</p>
+                <ul class="letter-list">
+                  <li>
+                    Led redesign of onboarding that lifted activation by aligning
+                    copy and progressive disclosure.
+                  </li>
+                  <li>
+                    Built a shared component language used across Checkout and
+                    Billing experiments.
+                  </li>
+                </ul>
+                <p class="letter-role">Design Engineer — Studio</p>
+                <ul class="letter-list">
+                  <li>
+                    Prototyped high-fidelity flows in code; shortened design–eng
+                    handoff cycles.
+                  </li>
+                </ul>
+                <h2 class="letter-h">Skills</h2>
+                <p class="letter-p muted">
+                  Product design · Prototyping · Systems · Research partnership
+                </p>
+              </div>
+            </section>
+
+            <aside class="jd-panel" aria-label="Job description snippet">
+              <p class="section-label">From the job description</p>
+              <p class="jd-snip" id="detail-jd">
+                We’re hiring a product designer to own Checkout growth surfaces
+                and partner closely with research…
+              </p>
+              <p class="helper">
+                Applied date is optional. Mark applied when you send it — drafts
+                stay here until then.
+              </p>
+            </aside>
+          </div>
+        </div>
+      </main>
+
+      <!-- TAILOR (stub shell) -->
+      <main class="page" id="page-tailor" hidden>
+        <div class="page-inner">
+          <header class="page-head">
+            <h1 class="page-title">Tailor</h1>
+            <p class="page-sub">
+              Prototype stub — paste a JD, generate, then land in Applications as
+              a draft. Use Demo → Draft saved to preview that confirmation.
+            </p>
+          </header>
+          <label class="field-label" for="jd">Job description</label>
+          <textarea
+            id="jd"
+            class="jd-input"
+            rows="8"
+            placeholder="Paste the job description…"
+          >We’re hiring a product designer to own Checkout growth surfaces and partner closely with research…</textarea>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="company">Company</label>
+              <input id="company" type="text" value="Stripe" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="role">Role</label>
+              <input id="role" type="text" value="Product Designer" />
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" id="fake-tailor">
+            Generate tailored resume
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <!-- Draft saved sheet -->
+    <div
+      class="sheet-backdrop"
+      id="sheet-backdrop"
+      hidden
+      data-open="false"
+    ></div>
+    <div
+      class="sheet"
+      id="draft-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sheet-title"
+      hidden
+      data-open="false"
+    >
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="sheet-icon" aria-hidden="true">✓</div>
+      <h2 class="sheet-title" id="sheet-title">Saved as draft</h2>
+      <p class="sheet-body">
+        Stripe · Product Designer · v2 is in Applications. Mark it applied when
+        you send it — or tailor again anytime.
+      </p>
+      <button type="button" class="btn btn-primary" id="sheet-view">
+        View in Applications
+      </button>
+      <button type="button" class="btn btn-ghost" id="sheet-dismiss">
+        Keep editing
+      </button>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <div class="demo-dock" role="group" aria-label="Prototype demos">
+      <span class="demo-label">Demo</span>
+      <button type="button" data-demo="empty">Empty</button>
+      <button type="button" data-demo="list" class="is-on">List</button>
+      <button type="button" data-demo="detail">Detail</button>
+      <button type="button" data-demo="draft">Draft saved</button>
+      <button type="button" data-demo="loading">Loading</button>
+      <button type="button" data-demo="error">Error</button>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -4,20 +4,32 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../applications/state/applications_state.dart';
 import '../../resume/widgets/resume_preview.dart';
 import '../services/tailor_service.dart';
 
+/// Optional prefill when opening Tailor from Applications “Tailor again”.
+class TailorLaunchArgs {
+  const TailorLaunchArgs({this.company, this.targetRole, this.jobDescription});
+
+  final String? company;
+  final String? targetRole;
+  final String? jobDescription;
+}
+
 class TailorScreen extends StatefulWidget {
-  const TailorScreen({super.key});
+  const TailorScreen({super.key, this.launchArgs});
+
+  final TailorLaunchArgs? launchArgs;
 
   @override
   State<TailorScreen> createState() => _TailorScreenState();
 }
 
 class _TailorScreenState extends State<TailorScreen> {
-  final _jdController = TextEditingController();
-  final _roleController = TextEditingController();
-  final _companyController = TextEditingController();
+  late final TextEditingController _jdController;
+  late final TextEditingController _roleController;
+  late final TextEditingController _companyController;
   final _service = TailorService();
 
   bool _busy = false;
@@ -25,6 +37,17 @@ class _TailorScreenState extends State<TailorScreen> {
   String? _detail;
   bool _stub = false;
   Map<String, dynamic>? _resume;
+  String? _applicationId;
+  int? _applicationVersion;
+
+  @override
+  void initState() {
+    super.initState();
+    final args = widget.launchArgs;
+    _jdController = TextEditingController(text: args?.jobDescription ?? '');
+    _roleController = TextEditingController(text: args?.targetRole ?? '');
+    _companyController = TextEditingController(text: args?.company ?? '');
+  }
 
   @override
   void dispose() {
@@ -47,6 +70,8 @@ class _TailorScreenState extends State<TailorScreen> {
       _resume = null;
       _detail = null;
       _stub = false;
+      _applicationId = null;
+      _applicationVersion = null;
     });
 
     try {
@@ -70,12 +95,30 @@ class _TailorScreenState extends State<TailorScreen> {
         return;
       }
 
+      final appId = data['application_id']?.toString();
+      final versionRaw = data['application_version'];
+      final version = versionRaw is int
+          ? versionRaw
+          : int.tryParse('$versionRaw');
+
       setState(() {
         _resume = resume;
         _stub = data['stub'] == true;
         _detail = data['detail'] as String?;
+        _applicationId = appId;
+        _applicationVersion = version;
         _busy = false;
       });
+
+      if (appId != null && appId.isNotEmpty) {
+        bumpApplicationsEpoch();
+        await _showDraftSavedSheet(
+          company: _companyController.text.trim(),
+          role: _roleController.text.trim(),
+          version: version ?? 1,
+          applicationId: appId,
+        );
+      }
     } on DioException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -89,6 +132,104 @@ class _TailorScreenState extends State<TailorScreen> {
         _busy = false;
       });
     }
+  }
+
+  Future<void> _showDraftSavedSheet({
+    required String company,
+    required String role,
+    required int version,
+    required String applicationId,
+  }) async {
+    final labelParts = <String>[
+      if (company.isNotEmpty) company else 'Untitled company',
+      if (role.isNotEmpty) role else 'Untitled role',
+      'v$version',
+    ];
+    final label = labelParts.join(' · ');
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        final type = Theme.of(sheetContext).textTheme;
+        final colors = sheetContext.appColors;
+        final scheme = Theme.of(sheetContext).colorScheme;
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.grid * 3,
+              AppSpacing.grid * 2,
+              AppSpacing.grid * 3,
+              AppSpacing.grid * 3,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: scheme.outline,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.grid * 3),
+                Center(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F2EE),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.grid * 1.5),
+                      child: Icon(Icons.check, color: scheme.primary, size: 28),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.grid * 2),
+                Text(
+                  'Saved as draft',
+                  textAlign: TextAlign.center,
+                  style: type.headlineMedium?.copyWith(fontSize: 22),
+                ),
+                const SizedBox(height: AppSpacing.grid * 1.5),
+                Text(
+                  '$label is in Applications. Mark it applied when you send '
+                  'it — or tailor again anytime.',
+                  textAlign: TextAlign.center,
+                  style: type.bodyMedium?.copyWith(
+                    color: colors.muted,
+                    height: 1.45,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.grid * 3),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go('/applications/$applicationId');
+                  },
+                  child: const Text('View in Applications'),
+                ),
+                const SizedBox(height: AppSpacing.grid),
+                TextButton(
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  child: const Text('Keep editing'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   String _dioMessage(DioException error) {
@@ -143,7 +284,13 @@ class _TailorScreenState extends State<TailorScreen> {
 
     final result = _resume == null
         ? null
-        : _TailorResult(resume: _resume!, stub: _stub, detail: _detail);
+        : _TailorResult(
+            resume: _resume!,
+            stub: _stub,
+            detail: _detail,
+            applicationId: _applicationId,
+            applicationVersion: _applicationVersion,
+          );
 
     return Scaffold(
       backgroundColor: scheme.surface,
@@ -159,7 +306,13 @@ class _TailorScreenState extends State<TailorScreen> {
               child: Row(
                 children: [
                   TextButton(
-                    onPressed: () => context.go('/'),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/');
+                      }
+                    },
                     style: TextButton.styleFrom(
                       foregroundColor: scheme.onSurface,
                     ),
@@ -378,11 +531,15 @@ class _TailorResult extends StatelessWidget {
     required this.resume,
     required this.stub,
     required this.detail,
+    this.applicationId,
+    this.applicationVersion,
   });
 
   final Map<String, dynamic> resume;
   final bool stub;
   final String? detail;
+  final String? applicationId;
+  final int? applicationVersion;
 
   @override
   Widget build(BuildContext context) {
@@ -404,6 +561,18 @@ class _TailorResult extends StatelessWidget {
           headline.isNotEmpty ? headline : 'Tailored resume',
           style: type.titleMedium,
         ),
+        if (applicationId != null) ...[
+          const SizedBox(height: AppSpacing.grid),
+          Text(
+            'Saved as draft'
+            '${applicationVersion != null ? ' · v$applicationVersion' : ''}'
+            ' in Applications.',
+            style: type.bodySmall?.copyWith(
+              color: scheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
         if (detail != null) ...[
           const SizedBox(height: AppSpacing.grid),
           Text(
@@ -458,6 +627,13 @@ class _TailorResult extends StatelessWidget {
           onPressed: () => showResumePreviewModal(context, resume: resume),
           child: const Text('Open larger preview'),
         ),
+        if (applicationId != null) ...[
+          const SizedBox(height: AppSpacing.grid),
+          TextButton(
+            onPressed: () => context.go('/applications/$applicationId'),
+            child: const Text('View in Applications'),
+          ),
+        ],
       ],
     );
   }

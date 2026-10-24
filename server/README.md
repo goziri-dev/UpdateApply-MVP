@@ -34,6 +34,20 @@ Primary vectors come from the **approved remade master profile** (bullets, summa
 - Embedding model: `openai/text-embedding-3-small` (1536 dims). Override: `OPENROUTER_MODEL_EMBEDDING`.
 - Table: `profile_chunk` (Alembic `b2c3d4e5f6a7`). Re-index replaces prior chunks for the user on onboarding `complete`, onboarding profile PUT (review edits), and `PUT /api/v1/profile`.
 - `POST /api/v1/tailor` embeds the pasted JD, retrieves top-k chunks, and runs `AgentTask.RESUME_TAILOR` → validated `ResumeDocument`. Stub only when `ALLOW_STUB_PARSE` and no OpenRouter key.
+- On success, tailor **always inserts a new** `application` draft row (JSONB `resume_document`; PDFs not stored). Same company+role can appear many times as separate versions. Response includes `application_id` + `application_version`.
+
+## Applications (tailored history)
+
+Table: `application` (Alembic `c3d4e5f6a7b8`). Auth required (`DbUser`). Newest first on list.
+
+| Method | Path | Notes |
+|--------|------|--------|
+| `GET` | `/api/v1/applications` | List summaries (company, role, status, version, JD snippet, dates) |
+| `GET` | `/api/v1/applications/{id}` | Detail + full `resume` document |
+| `POST` | `/api/v1/applications/{id}/mark-applied` | Sets `status=applied`, `applied_at` (optional body override) |
+| `PATCH` | `/api/v1/applications/{id}` | Optional company / role / status / applied_at |
+
+No unique constraint on company+role. Master remade profile stays on Home / profile routes — Applications only stores tailored versions.
 
 ## Resume preview + PDF export
 

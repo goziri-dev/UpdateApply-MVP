@@ -68,6 +68,9 @@ class TailorResponse(BaseModel):
     resume: ResumeDocument
     stub: bool = False
     detail: str | None = None
+    # Set when the tailored resume is auto-saved as an Applications draft.
+    application_id: str | None = None
+    application_version: int | None = None
 
 
 class ResumeTemplateInfo(BaseModel):

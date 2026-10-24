@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/applications/ui/application_detail_screen.dart';
+import '../../features/applications/ui/applications_list_screen.dart';
 import '../../features/auth/state/auth_state.dart';
 import '../../features/auth/ui/auth_screen.dart';
 import '../../features/home/ui/home_screen.dart';
@@ -10,6 +12,7 @@ import '../../features/onboarding/ui/parsing_screen.dart';
 import '../../features/onboarding/ui/review_screen.dart';
 import '../../features/onboarding/ui/upload_screen.dart';
 import '../../features/resume/ui/resume_reveal_screen.dart';
+import '../../features/shell/ui/app_shell.dart';
 import '../../features/tailor/ui/tailor_screen.dart';
 import 'auth_router_refresh.dart';
 
@@ -65,10 +68,46 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
       return null;
     },
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return AppShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/applications',
+                builder: (context, state) => const ApplicationsListScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':applicationId',
+                    builder: (context, state) {
+                      final id = state.pathParameters['applicationId'] ?? '';
+                      return ApplicationDetailScreen(applicationId: id);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+      // Tailor is not a shell tab — pushed/go from Home / Applications CTAs.
       GoRoute(
         path: '/tailor',
-        builder: (context, state) => const TailorScreen(),
+        builder: (context, state) {
+          final extra = state.extra;
+          final args = extra is TailorLaunchArgs ? extra : null;
+          return TailorScreen(launchArgs: args);
+        },
       ),
       GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
       GoRoute(

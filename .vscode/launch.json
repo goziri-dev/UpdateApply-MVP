@@ -2,32 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "UpdateApply",
-      "request": "launch",
-      "type": "dart",
-      "cwd": "${workspaceFolder}/app",
-      "program": "${workspaceFolder}/app/lib/main.dart",
-      "toolArgs": [
-        "--dart-define-from-file",
-        "${workspaceFolder}/app/.env"
-      ]
-    },
-    {
-      "name": "UpdateApply (Chrome)",
-      "request": "launch",
-      "type": "dart",
-      "cwd": "${workspaceFolder}/app",
-      "program": "${workspaceFolder}/app/lib/main.dart",
-      "deviceId": "chrome",
-      "toolArgs": [
-        "--dart-define-from-file",
-        "${workspaceFolder}/app/.env",
-        "--web-port",
-        "5173"
-      ]
-    },
-    {
-      "name": "UpdateApply (Chrome, no debug — F5-safe)",
+      "name": "UpdateApply (Chrome) — recommended",
       "request": "launch",
       "type": "dart",
       "cwd": "${workspaceFolder}/app",
@@ -39,6 +14,31 @@
         "${workspaceFolder}/app/.env",
         "--web-port",
         "5173"
+      ]
+    },
+    {
+      "name": "UpdateApply (Chrome + debugger)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "${workspaceFolder}/app",
+      "program": "${workspaceFolder}/app/lib/main.dart",
+      "deviceId": "chrome",
+      "toolArgs": [
+        "--dart-define-from-file",
+        "${workspaceFolder}/app/.env",
+        "--web-port",
+        "5173"
+      ]
+    },
+    {
+      "name": "UpdateApply",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "${workspaceFolder}/app",
+      "program": "${workspaceFolder}/app/lib/main.dart",
+      "toolArgs": [
+        "--dart-define-from-file",
+        "${workspaceFolder}/app/.env"
       ]
     },
     {

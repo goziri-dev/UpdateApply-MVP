@@ -6,9 +6,9 @@ import 'package:scoped_deps/scoped_deps.dart';
 import 'core/routing/app_router.dart';
 import 'core/routing/auth_router_refresh.dart';
 import 'core/theme/app_theme.dart';
+import 'features/applications/state/applications_state.dart';
 import 'features/auth/services/supabase_bootstrap.dart';
 import 'features/auth/state/auth_state.dart';
-import 'features/home/state/home_state.dart';
 import 'features/onboarding/state/onboarding_state.dart';
 import 'services/api_client.dart';
 
@@ -32,7 +32,6 @@ Future<void> main() async {
       }
     },
     values: {
-      homeMessageRef,
       authRepositoryRef,
       authBusyRef,
       authErrorRef,
@@ -45,6 +44,7 @@ Future<void> main() async {
       onboardingBusyRef,
       onboardingErrorRef,
       onboardingInfoRef,
+      applicationsEpochRef,
     },
   );
 }
