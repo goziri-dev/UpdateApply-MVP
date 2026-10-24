@@ -18,6 +18,7 @@ from app.schemas.onboarding import (
     OnboardingCompleteResponse,
     OnboardingParseResponse,
     OnboardingProfileUpdate,
+    OnboardingResetResponse,
     OnboardingStatusResponse,
     OnboardingUploadResponse,
     ReviewGenerateResponse,
@@ -584,6 +585,27 @@ def update_onboarding_profile(
         "status": user.onboarding_status,
         "data": svc.profile_public(merged),
     }
+
+
+@router.post("/reset", response_model=OnboardingResetResponse)
+def reset_onboarding(
+    user: DbUser,
+    session: SessionDep,
+) -> OnboardingResetResponse:
+    """Wipe master profile path and re-lock the onboarding hard gate.
+
+    Clears: ``profile.data``, ``profile_chunk`` vectors, stored resume PDF.
+    Preserves: Applications (tailored ResumeDocument history) — they are
+    independent snapshots and remain useful after a re-onboard.
+    """
+    svc.reset_master_profile(session, user)
+    try:
+        ResumeStorage().delete(user.id)
+    except OSError:
+        # Profile/gate already reset; PDF cleanup is best-effort.
+        pass
+    get_profile_index_service().clear_user_chunks(session, user.id)
+    return OnboardingResetResponse(status="not_started")
 
 
 @router.post("/complete", response_model=OnboardingCompleteResponse)

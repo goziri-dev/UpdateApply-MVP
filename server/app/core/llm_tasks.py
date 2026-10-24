@@ -17,6 +17,7 @@ class AgentTask(StrEnum):
     INTERVIEW_QUESTIONS = "interview_questions"
     PROFILE_REVIEW = "profile_review"
     RESUME_TAILOR = "resume_tailor"
+    RESUME_EDIT = "resume_edit"
     # Embeddings use EmbeddingsClient (HTTP /embeddings), not ChatOpenRouter.
     EMBEDDING = "embedding"
 
@@ -24,10 +25,16 @@ class AgentTask(StrEnum):
 # Cheap + capable OpenRouter slugs. Prefer Gemini Flash for extract / Q-gen
 # (matches local OPENROUTER_MODEL). Review + tailor use gpt-4o-mini for a bit
 # more judgment / writing quality while staying inexpensive.
+#
+# RESUME_EDIT: bumped from gpt-4o-mini → gemini-2.5-flash for stronger
+# format-following (dates/minimal diffs) at similar cost to extract — not a
+# premium model. Override with OPENROUTER_MODEL_RESUME_EDIT (e.g. gpt-4o)
+# when you want heavier judgment.
 DEFAULT_MODEL_BY_TASK: dict[AgentTask, str] = {
     AgentTask.RESUME_EXTRACT: "google/gemini-2.5-flash",
     AgentTask.INTERVIEW_QUESTIONS: "google/gemini-2.5-flash",
     AgentTask.PROFILE_REVIEW: "openai/gpt-4o-mini",
     AgentTask.RESUME_TAILOR: "openai/gpt-4o-mini",
+    AgentTask.RESUME_EDIT: "google/gemini-2.5-flash",
     AgentTask.EMBEDDING: "openai/text-embedding-3-small",
 }

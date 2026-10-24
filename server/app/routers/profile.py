@@ -46,9 +46,12 @@ def put_profile(
 
     existing: dict[str, Any] = dict(profile.data or {})
     meta = existing.get("_onboarding")
+    deepen = existing.get("_deepen")
     merged = dict(body.data)
     if isinstance(meta, dict):
         merged["_onboarding"] = meta
+    if isinstance(deepen, dict):
+        merged["_deepen"] = deepen
     onboarding_svc.save_profile_data(session, profile, merged)
     # Remade content changed — replace prior pgvector chunks for this user.
     get_profile_index_service().reindex_user_best_effort(session, user.id)

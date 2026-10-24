@@ -34,4 +34,25 @@ class ApplicationsService {
     );
     return response.data ?? {};
   }
+
+  /// Partial update — pass [resume] for hybrid manual/agentic edits.
+  Future<Map<String, dynamic>> patch(
+    String id, {
+    Map<String, dynamic>? resume,
+    String? company,
+    String? targetRole,
+    String? status,
+  }) async {
+    final body = <String, dynamic>{
+      'resume': ?resume,
+      'company': ?company,
+      'target_role': ?targetRole,
+      'status': ?status,
+    };
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/api/v1/applications/$id',
+      data: body,
+    );
+    return response.data ?? {};
+  }
 }

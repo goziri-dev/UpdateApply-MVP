@@ -121,9 +121,9 @@ Prototype uses a compact top nav (web-first). Bottom tabs remain an open questio
 for smaller viewports.
 
 **Flutter note (2026-10-24):** Home no longer hosts debug/session chrome (Verify
-session, Sign out, status strips). Account actions live in a lightweight shell
-header menu (email + Sign out) — not a full Settings product; not shown in the
-HTML prototype demo dock.
+session, Sign out, status strips). Account menu is email + Settings + Sign out.
+Reset / re-onboard lives on Settings (`/settings`); Edit master resume lives in
+the Home resume preview modal under Download — not in the Home body column.
 
 ## Edge-case checklist
 

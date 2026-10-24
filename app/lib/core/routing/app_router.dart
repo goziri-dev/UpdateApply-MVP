@@ -11,7 +11,10 @@ import '../../features/onboarding/ui/interview_screen.dart';
 import '../../features/onboarding/ui/parsing_screen.dart';
 import '../../features/onboarding/ui/review_screen.dart';
 import '../../features/onboarding/ui/upload_screen.dart';
+import '../../features/resume/ui/resume_deepen_screen.dart';
+import '../../features/resume/ui/resume_edit_screen.dart';
 import '../../features/resume/ui/resume_reveal_screen.dart';
+import '../../features/settings/ui/settings_screen.dart';
 import '../../features/shell/ui/app_shell.dart';
 import '../../features/tailor/ui/tailor_screen.dart';
 import 'auth_router_refresh.dart';
@@ -93,6 +96,18 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
                       final id = state.pathParameters['applicationId'] ?? '';
                       return ApplicationDetailScreen(applicationId: id);
                     },
+                    routes: [
+                      GoRoute(
+                        path: 'edit',
+                        builder: (context, state) {
+                          final id =
+                              state.pathParameters['applicationId'] ?? '';
+                          return ResumeEditScreen.application(
+                            applicationId: id,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -108,6 +123,24 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
           final args = extra is TailorLaunchArgs ? extra : null;
           return TailorScreen(launchArgs: args);
         },
+      ),
+      GoRoute(
+        path: '/resume/edit',
+        builder: (context, state) => const ResumeEditScreen.master(),
+      ),
+      GoRoute(
+        path: '/resume/deepen',
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is! ResumeDeepenArgs) {
+            return const ResumeEditScreen.master();
+          }
+          return ResumeDeepenScreen(args: extra);
+        },
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
       GoRoute(

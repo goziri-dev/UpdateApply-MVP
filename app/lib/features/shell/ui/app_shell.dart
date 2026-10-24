@@ -9,7 +9,7 @@ import '../widgets/shell_account_menu.dart';
 /// Post-onboarding chrome: brand + centered Home | Applications tabs.
 ///
 /// Tailor is intentionally not a shell tab — reached via CTAs only.
-/// Account actions (sign out) live in the header menu, not on Home.
+/// Account menu: Settings + Sign out. Reset / re-onboard lives in Settings.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 

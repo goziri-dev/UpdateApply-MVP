@@ -399,6 +399,18 @@ def set_user_onboarding_status(
     return user
 
 
+def reset_master_profile(session: Session, user: User) -> Profile:
+    """Clear remade master profile JSON and flip gate to ``not_started``.
+
+    Does **not** touch Applications rows — those store independent
+    ``ResumeDocument`` snapshots. Caller clears pgvector chunks + stored PDF.
+    """
+    profile = get_or_create_profile(session, user.id)
+    save_profile_data(session, profile, {})
+    set_user_onboarding_status(session, user, "not_started")
+    return profile
+
+
 def merge_onboarding_meta(data: dict[str, Any], **updates: Any) -> dict[str, Any]:
     out = deepcopy(data)
     meta = dict(out.get("_onboarding") or {})
@@ -408,9 +420,10 @@ def merge_onboarding_meta(data: dict[str, Any], **updates: Any) -> dict[str, Any
 
 
 def profile_public(data: dict[str, Any]) -> dict[str, Any]:
-    """Strip internal ``_onboarding`` for client review payloads when desired."""
+    """Strip internal ``_onboarding`` / ``_deepen`` for client review payloads."""
     out = deepcopy(data)
     out.pop("_onboarding", None)
+    out.pop("_deepen", None)
     return out
 
 

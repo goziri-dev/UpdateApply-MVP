@@ -8,7 +8,8 @@ import '../../resume/widgets/resume_preview.dart';
 /// Master resume + Tailor CTA — matches `prototypes/applications/` Home state.
 ///
 /// Shell tabs already say Home; body leads with the resume composition, not a
-/// redundant "Home" page title.
+/// redundant "Home" page title. Edit master lives in the resume preview modal;
+/// reset / re-onboard lives in Settings.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -32,7 +33,7 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'YOUR RESUME',
+                  'MASTER RESUME',
                   style: type.bodySmall?.copyWith(
                     color: colors.label,
                     letterSpacing: 0.02 * 13,
@@ -43,11 +44,12 @@ class HomeScreen extends StatelessWidget {
                 ResumePreview(
                   mode: ResumePreviewMode.mini,
                   viewTypePrefix: 'resume-home-mini',
-                  onTap: () => showResumePreviewModal(context),
+                  onTap: () =>
+                      showResumePreviewModal(context, showEditMaster: true),
                 ),
                 const SizedBox(height: AppSpacing.grid * 1.5),
                 Text(
-                  'Tap to enlarge or download',
+                  'Tap to enlarge, download, or edit',
                   style: type.bodySmall?.copyWith(
                     color: colors.muted,
                     fontWeight: FontWeight.w500,

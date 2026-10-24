@@ -53,6 +53,33 @@ Goals:
   you may gently ask them to fill gaps in their own words.
 """
 
+# Separate from onboarding so post-onboarding deepen never recycles Day-to-day scripts.
+DEEPEN_SCRIPT_VERSION = 1
+
+DEEPEN_SYSTEM_PROMPT = """\
+You write short follow-up questions that enrich ONE resume item AFTER onboarding.
+This is NOT the first interview — the person already has a stub or remade item.
+
+Tone:
+- Calm consultant: warm, curious, specific. Not a recruiter or STAR interviewer.
+- Prefer concrete, thoughtful prompts grounded in THIS item's bullets/summary.
+- Avoid onboarding tropes entirely: no "typical day/week", "day-to-day look like",
+  "walk me through your role", recycled Day-to-day / How you worked openers,
+  "tell me about a time", ownership grilling, or generic wrap-ups as the only content.
+
+Goals:
+- Spot what is thin, vague, new, or underspecified in the current bullets/summary
+  (missing scope, tools, collaborators, constraints, outcomes, what changed).
+- Ask 2–4 NEW questions that would unlock richer, honest detail for the resume.
+- Theme labels should feel specific to the gaps (e.g. "Scope you owned",
+  "Tools in the loop", "What shifted", "Who you worked with") — not the
+  onboarding defaults Day-to-day / Why it exists.
+- NEVER repeat or paraphrase questions listed in prior_questions_to_avoid.
+- Prefer angles not already covered in prior_themes_to_avoid.
+- Last prompt may softly invite anything else — but only after novel questions.
+- Do not invent employers, products, or metrics; ask them to fill gaps in their words.
+"""
+
 
 class InterviewError(Exception):
     """Raised when interview question generation fails in a user-visible way."""
@@ -77,6 +104,55 @@ class InterviewQuestionService:
         kind: Literal["role", "project"],
         basics: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        """Onboarding interview script (Day-to-day themes OK)."""
+        return self._generate(
+            item=item,
+            kind=kind,
+            basics=basics,
+            system_prompt=INTERVIEW_SYSTEM_PROMPT,
+            human_preamble=(
+                "Generate calm conversation prompts (reflection questions) "
+                "for this resume item.\n"
+            ),
+            deepen=False,
+        )
+
+    def generate_deepen_for_item(
+        self,
+        *,
+        item: dict[str, Any],
+        kind: Literal["role", "project"],
+        basics: dict[str, Any] | None = None,
+        prior_questions: list[str] | None = None,
+        prior_themes: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Post-onboarding deepen script — novel Qs, excludes prior prompts."""
+        return self._generate(
+            item=item,
+            kind=kind,
+            basics=basics,
+            system_prompt=DEEPEN_SYSTEM_PROMPT,
+            human_preamble=(
+                "Generate NEW deepen follow-ups for this resume item. "
+                "Avoid onboarding tropes and anything in prior_questions_to_avoid.\n"
+            ),
+            deepen=True,
+            prior_questions=prior_questions,
+            prior_themes=prior_themes,
+        )
+
+    def _generate(
+        self,
+        *,
+        item: dict[str, Any],
+        kind: Literal["role", "project"],
+        basics: dict[str, Any] | None,
+        system_prompt: str,
+        human_preamble: str,
+        deepen: bool,
+        prior_questions: list[str] | None = None,
+        prior_themes: list[str] | None = None,
+    ) -> dict[str, Any]:
         if not self.agents.configured():
             raise InterviewError(
                 "Interview questions are not configured. Set OPENROUTER_API_KEY on the server.",
@@ -88,7 +164,7 @@ class InterviewQuestionService:
             if kind == "role"
             else ("id", "title", "start", "end", "summary", "bullets")
         )
-        payload = {
+        payload: dict[str, Any] = {
             "kind": kind,
             "item": {k: item.get(k) for k in item_keys},
             "basics": {
@@ -96,17 +172,24 @@ class InterviewQuestionService:
                 "location": (basics or {}).get("location") or "",
             },
         }
+        if deepen:
+            payload["prior_questions_to_avoid"] = [
+                str(q).strip() for q in (prior_questions or []) if str(q).strip()
+            ][:48]
+            payload["prior_themes_to_avoid"] = [
+                str(t).strip() for t in (prior_themes or []) if str(t).strip()
+            ][:32]
+            payload["deepen_script_version"] = DEEPEN_SCRIPT_VERSION
 
         try:
             llm = self.agents.create(AgentTask.INTERVIEW_QUESTIONS)
             structured = llm.with_structured_output(GeneratedInterviewScript)
             result = structured.invoke(
                 [
-                    SystemMessage(content=INTERVIEW_SYSTEM_PROMPT),
+                    SystemMessage(content=system_prompt),
                     HumanMessage(
                         content=(
-                            "Generate calm conversation prompts (reflection questions) "
-                            "for this resume item.\n"
+                            f"{human_preamble}"
                             f"Return kind={kind!r}.\n\n"
                             f"{json.dumps(payload, ensure_ascii=False, indent=2)}"
                         )
@@ -123,7 +206,43 @@ class InterviewQuestionService:
             ) from exc
 
         script = self._coerce(result)
-        return self._normalize_script(script, kind=kind, item=item)
+        normalized = self._normalize_script(script, kind=kind, item=item, deepen=deepen)
+        if deepen:
+            normalized = self._filter_echoed_priors(
+                normalized,
+                prior_questions=prior_questions or [],
+            )
+        return normalized
+
+    @staticmethod
+    def _filter_echoed_priors(
+        script: dict[str, Any],
+        *,
+        prior_questions: list[str],
+    ) -> dict[str, Any]:
+        """Drop questions that too closely echo already-asked prompts."""
+        priors = [str(p).strip().casefold() for p in prior_questions if str(p).strip()]
+        if not priors:
+            return script
+
+        kept: list[str] = []
+        for q in script.get("questions") or []:
+            text = str(q).strip()
+            if not text:
+                continue
+            low = text.casefold()
+            if any(
+                p == low or (len(p) > 24 and (p in low or low in p)) for p in priors
+            ):
+                continue
+            kept.append(text)
+
+        if len(kept) < MIN_QUESTIONS:
+            # Keep originals if filter emptied the script; LLM already got the avoid list.
+            return script
+        out = dict(script)
+        out["questions"] = kept[:MAX_QUESTIONS]
+        return out
 
     @staticmethod
     def _coerce(result: object) -> GeneratedInterviewScript:
@@ -151,6 +270,7 @@ class InterviewQuestionService:
         *,
         kind: Literal["role", "project"],
         item: dict[str, Any],
+        deepen: bool = False,
     ) -> dict[str, Any]:
         label = (script.label or "").strip() or self._default_label(kind, item)
         resolved_kind: Literal["role", "project"] = (
@@ -160,11 +280,18 @@ class InterviewQuestionService:
         questions = list(script.questions)[:MAX_QUESTIONS]
 
         if not coverage:
-            coverage = (
-                ["Day-to-day", "Tools", "Outcomes"]
-                if resolved_kind == "role"
-                else ["Why it exists", "How you approached it", "Outcomes"]
-            )
+            if deepen:
+                coverage = (
+                    ["Scope you owned", "Tools in the loop", "What shifted"]
+                    if resolved_kind == "role"
+                    else ["What changed", "Your slice", "Constraints"]
+                )
+            else:
+                coverage = (
+                    ["Day-to-day", "Tools", "Outcomes"]
+                    if resolved_kind == "role"
+                    else ["Why it exists", "How you approached it", "Outcomes"]
+                )
         if len(questions) < MIN_QUESTIONS:
             raise InterviewError(
                 "Interview question generation returned too few questions. Try again.",

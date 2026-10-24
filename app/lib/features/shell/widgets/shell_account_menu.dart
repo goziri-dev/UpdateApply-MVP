@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/state/auth_state.dart';
 
-enum _AccountMenuAction { signOut }
+enum _AccountMenuAction { settings, signOut }
 
-/// Compact account control for the shell header (email + Sign out).
+/// Compact account control for the shell header (email, Settings, Sign out).
 class ShellAccountMenu extends StatelessWidget {
   const ShellAccountMenu({super.key});
 
@@ -31,8 +32,11 @@ class ShellAccountMenu extends StatelessWidget {
       ),
       color: scheme.surface,
       onSelected: (action) async {
-        if (action == _AccountMenuAction.signOut) {
-          await signOut();
+        switch (action) {
+          case _AccountMenuAction.settings:
+            context.push('/settings');
+          case _AccountMenuAction.signOut:
+            await signOut();
         }
       },
       itemBuilder: (context) => [
@@ -50,6 +54,13 @@ class ShellAccountMenu extends StatelessWidget {
           ),
         ),
         const PopupMenuDivider(height: 1),
+        PopupMenuItem<_AccountMenuAction>(
+          value: _AccountMenuAction.settings,
+          child: Text(
+            'Settings',
+            style: type.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
         PopupMenuItem<_AccountMenuAction>(
           value: _AccountMenuAction.signOut,
           child: Text(

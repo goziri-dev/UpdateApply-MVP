@@ -200,6 +200,7 @@ class ApplicationService:
         target_role: str | None = None,
         status: str | None = None,
         applied_at: datetime | None = None,
+        resume: ResumeDocument | None = None,
     ) -> ApplicationDetail:
         row = self.get_for_user(
             session,
@@ -230,6 +231,15 @@ class ApplicationService:
             row.applied_at = when
             if row.status != "applied":
                 row.status = "applied"
+        if resume is not None:
+            resume_data = resume.model_dump()
+            meta = resume_data.get("meta")
+            if isinstance(meta, dict):
+                # Keep meta aligned with the application row.
+                meta["company"] = row.company
+                meta["target_role"] = row.target_role
+                meta["version"] = row.version
+            row.resume_document = resume_data
         row.updated_at = now
         session.add(row)
         session.commit()

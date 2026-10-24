@@ -98,3 +98,19 @@ class ReviewGenerateResponse(BaseModel):
 class OnboardingCompleteResponse(BaseModel):
     status: OnboardingStatus
     detail: str = "Onboarding complete. Hard gate cleared."
+
+
+class OnboardingResetResponse(BaseModel):
+    """Clears master profile path so the hard gate re-applies.
+
+    Applications (tailored history) are intentionally left intact — they are
+    independent ResumeDocument snapshots, not dependent on the live master
+    profile JSON or pgvector chunks.
+    """
+
+    status: OnboardingStatus = "not_started"
+    detail: str = (
+        "Profile reset. Upload a new resume to rebuild your master profile. "
+        "Application history was kept."
+    )
+    applications_preserved: bool = True

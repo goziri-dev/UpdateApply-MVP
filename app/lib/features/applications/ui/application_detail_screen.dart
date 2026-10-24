@@ -231,6 +231,17 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                       OutlinedButton(
                         onPressed: resumeMap == null
                             ? null
+                            : () async {
+                                await context.push(
+                                  '/applications/${widget.applicationId}/edit',
+                                );
+                                if (mounted) await _load();
+                              },
+                        child: const Text('Edit resume'),
+                      ),
+                      OutlinedButton(
+                        onPressed: resumeMap == null
+                            ? null
                             : () =>
                                   downloadResumePdf(context, resume: resumeMap),
                         child: const Text('Download'),

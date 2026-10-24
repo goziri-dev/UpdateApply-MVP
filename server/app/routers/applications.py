@@ -104,6 +104,7 @@ def patch_application(
             target_role=body.target_role,
             status=body.status,
             applied_at=body.applied_at,
+            resume=body.resume,
         )
     except ApplicationError as exc:
         if exc.code == "not_found":

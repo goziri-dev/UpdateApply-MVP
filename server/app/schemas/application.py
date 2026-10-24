@@ -39,6 +39,8 @@ class ApplicationPatchRequest(BaseModel):
         description="draft | applied",
     )
     applied_at: datetime | None = None
+    # Full tailored ResumeDocument when saving manual/agent edits.
+    resume: ResumeDocument | None = None
 
 
 class ApplicationListResponse(BaseModel):

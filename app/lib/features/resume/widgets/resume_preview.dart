@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
@@ -297,10 +298,14 @@ Future<void> downloadResumePdf(
 }
 
 /// Larger preview + download in a modal (dashboard mini tap).
+///
+/// When [showEditMaster] is true (Home master mini), an Edit master resume
+/// control sits under Download and opens `/resume/edit`.
 Future<void> showResumePreviewModal(
   BuildContext context, {
   Map<String, dynamic>? resume,
   String templateId = ResumeService.defaultTemplateId,
+  bool showEditMaster = false,
 }) {
   return showDialog<void>(
     context: context,
@@ -353,6 +358,16 @@ Future<void> showResumePreviewModal(
                   ),
                   child: const Text('Download PDF'),
                 ),
+                if (showEditMaster) ...[
+                  const SizedBox(height: AppSpacing.grid),
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      context.push('/resume/edit');
+                    },
+                    child: const Text('Edit master resume'),
+                  ),
+                ],
               ],
             ),
           ),

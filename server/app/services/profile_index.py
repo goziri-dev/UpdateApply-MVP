@@ -124,6 +124,13 @@ class ProfileIndexService:
             logger.exception("Profile reindex failed for user %s", user_id)
             return 0
 
+    def clear_user_chunks(self, session: Session, user_id: UUID) -> None:
+        """Delete all pgvector chunks for ``user_id`` (e.g. onboarding reset)."""
+        session.execute(
+            delete(ProfileChunk).where(col(ProfileChunk.user_id) == user_id)
+        )
+        session.commit()
+
     def retrieve_for_jd(
         self,
         session: Session,

@@ -144,4 +144,12 @@ class OnboardingService {
     );
     return response.data ?? {};
   }
+
+  /// Wipe master profile + vectors; re-lock hard gate. Applications kept.
+  Future<Map<String, dynamic>> reset() async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/onboarding/reset',
+    );
+    return response.data ?? {};
+  }
 }
