@@ -1,51 +1,39 @@
-# UpdateApply API on Fly.io
-# Placeholder app name — create/rename with: fly apps create updateapply-api
-# (or change `app` below after `fly launch`). Do not hardcode org here.
+# fly.toml app configuration file generated for updateapply-mvp on 2026-10-25T18:13:44Z
 #
-# Deploy from this directory:
-#   cd server && fly deploy
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "updateapply-api"
-primary_region = "iad"
+app = 'updateapply-mvp'
+primary_region = 'fra'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
-# Run Alembic once before Machines get the new image (preferred over migrate-on-start).
 [deploy]
-  release_command = "uv run alembic upgrade head"
+  release_command = 'uv run alembic upgrade head'
 
 [env]
-  APP_NAME = "UpdateApply"
-  APP_HOST = "0.0.0.0"
-  APP_PORT = "8000"
-  # Prefer OS cron / separate Machine for catalog daily; leave false unless you want in-process.
-  ENABLE_DAILY_JOB_RUNNER = "false"
+  APP_HOST = '0.0.0.0'
+  APP_NAME = 'UpdateApply'
+  APP_PORT = '8000'
+  ENABLE_DAILY_JOB_RUNNER = 'false'
 
 [http_service]
-  internal_port = 8000
+  internal_port = 8080
   force_https = true
-  # Keep one warm Machine in the primary region so auth/API aren't cold-started every request.
-  # Excess capacity can still stop when idle. Set auto_stop_machines = "off" for always-on.
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 1
 
   [[http_service.checks]]
-    interval = "15s"
-    timeout = "5s"
-    grace_period = "20s"
-    method = "GET"
-    path = "/health"
-
-# Optional: persist onboarding resume PDFs across deploys.
-#   fly volumes create updateapply_uploads --region iad --size 1
-# Then uncomment:
-# [[mounts]]
-#   source = "updateapply_uploads"
-#   destination = "/app/data/uploads"
+    interval = '15s'
+    timeout = '5s'
+    grace_period = '20s'
+    method = 'GET'
+    path = '/health'
 
 [[vm]]
-  memory = "512mb"
-  cpu_kind = "shared"
+  memory = '512mb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 256
