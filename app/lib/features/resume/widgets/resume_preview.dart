@@ -32,6 +32,7 @@ class ResumePreview extends StatefulWidget {
     this.viewTypePrefix = 'resume-preview',
     this.maxWidth,
     this.showBorder = true,
+    this.platformViewActive = true,
   });
 
   final ResumePreviewMode mode;
@@ -46,6 +47,10 @@ class ResumePreview extends StatefulWidget {
   final String viewTypePrefix;
   final double? maxWidth;
   final bool showBorder;
+
+  /// When false, skip [HtmlElementView] and dispose any live iframe.
+  /// Defense-in-depth for shell tab switches / offstage cases on web.
+  final bool platformViewActive;
 
   @override
   State<ResumePreview> createState() => _ResumePreviewState();
@@ -86,6 +91,11 @@ class _ResumePreviewState extends State<ResumePreview> {
   @override
   void didUpdateWidget(covariant ResumePreview oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.platformViewActive && !widget.platformViewActive) {
+      // Tear down DOM iframe immediately — unmount alone can leave a ghost
+      // platform view that freezes sibling shell tabs on Flutter web.
+      disposeResumeHtmlFrame(_viewType);
+    }
     if (oldWidget.templateId != widget.templateId ||
         oldWidget.resume != widget.resume) {
       _load();
@@ -176,7 +186,12 @@ class _ResumePreviewState extends State<ResumePreview> {
               ?.copyWith(color: colors.muted),
         ),
       );
+    } else if (!widget.platformViewActive) {
+      // Keep letter aspect without a live iframe (pointer-safe placeholder).
+      body = const _StateBox(child: SizedBox.shrink());
     } else {
+      // Live HTML preview (mini + modal). Shell purges platform views when
+      // leaving Home so Jobs stays interactive on Flutter web.
       body = LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth.isFinite

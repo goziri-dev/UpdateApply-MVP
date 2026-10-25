@@ -59,8 +59,8 @@ class ResumeEditScreen extends StatefulWidget {
 class _ResumeEditScreenState extends State<ResumeEditScreen> {
   final _resumeService = ResumeService();
   final _applicationsService = ApplicationsService();
-  final _formKey = GlobalKey<ResumeDocumentFormState>();
   final _instruction = TextEditingController();
+  ResumeDocumentFormState? _formState;
 
   bool _loading = true;
   bool _saving = false;
@@ -73,6 +73,17 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
   String? _pendingOutcome;
   _HarnessMode _mode = _HarnessMode.edit;
   final List<_HistoryEntry> _history = [];
+  int _formGen = 0;
+
+  /// Remount the form via [ValueKey] (not GlobalKey — regenerating GlobalKey
+  /// left an empty form slot / broke hit-testing on Flutter web).
+  void _replaceFormDocument(Map<String, dynamic> doc) {
+    _document = doc;
+    _formGen++;
+    _formState = null;
+  }
+
+  ResumeDocumentFormState? get _form => _formState;
 
   @override
   void initState() {
@@ -112,11 +123,8 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
       }
       if (!mounted) return;
       setState(() {
-        _document = doc;
+        _replaceFormDocument(doc);
         _loading = false;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _formKey.currentState?.applyDocument(doc);
       });
     } on DioException catch (e) {
       if (!mounted) return;
@@ -158,12 +166,11 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
       }
       if (!mounted) return;
       setState(() {
-        _document = saved;
+        _replaceFormDocument(saved);
         _banner = null;
         _baselineBeforeProposal = null;
         _saving = false;
       });
-      _formKey.currentState?.applyDocument(saved);
       if (widget.target == ResumeEditTarget.master) {
         bumpMasterResumeEpoch();
       }
@@ -192,7 +199,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
   }
 
   Future<void> _save() async {
-    final form = _formKey.currentState;
+    final form = _form;
     if (form == null) return;
     await _persist(form.toDocument());
   }
@@ -218,7 +225,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
   }
 
   Future<void> _propose() async {
-    final form = _formKey.currentState;
+    final form = _form;
     if (form == null) return;
     final instruction = _instruction.text.trim();
     if (instruction.isEmpty) {
@@ -285,14 +292,11 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
         _banner = null;
         if (applied) {
           _baselineBeforeProposal = current;
-          _document = doc;
+          _replaceFormDocument(doc);
         } else {
           _baselineBeforeProposal = null;
         }
       });
-      if (applied) {
-        _formKey.currentState?.applyDocument(doc);
-      }
       _instruction.clear();
     } on DioException catch (e) {
       if (!mounted) return;
@@ -323,11 +327,10 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
     if (baseline == null) return;
     setState(() {
       _pendingOutcome = 'rejected';
-      _document = baseline;
+      _replaceFormDocument(baseline);
       _baselineBeforeProposal = null;
       _banner = 'Proposal discarded — form restored. Continue or try again.';
     });
-    _formKey.currentState?.applyDocument(baseline);
   }
 
   void _goBack() {
@@ -344,7 +347,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
   }
 
   Future<void> _deepen({required String section, required int index}) async {
-    final form = _formKey.currentState;
+    final form = _form;
     if (form == null) return;
     final current = form.toDocument();
     final result = await context.push<Map<String, dynamic>>(
@@ -353,12 +356,11 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
     );
     if (!mounted || result == null) return;
     setState(() {
-      _document = result;
+      _replaceFormDocument(result);
       _banner = 'Added to the form. Review, then save.';
       _error = null;
       _baselineBeforeProposal = null;
     });
-    _formKey.currentState?.applyDocument(result);
   }
 
   String get _helperCopy => switch (_mode) {
@@ -585,13 +587,16 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                               horizontal: AppSpacing.grid * 2,
                               vertical: AppSpacing.grid,
                             ),
-                            child: Row(
+                            // Row + FilledButton under ListView can see
+                            // w=Infinity on web (same freeze class as Jobs).
+                            child: Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: AppSpacing.grid,
+                              runSpacing: AppSpacing.grid / 2,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    'Proposal is in the form below',
-                                    style: type.bodySmall,
-                                  ),
+                                Text(
+                                  'Proposal is in the form below',
+                                  style: type.bodySmall,
                                 ),
                                 TextButton(
                                   onPressed: _proposing || _saving
@@ -639,9 +644,10 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                       const SizedBox(height: AppSpacing.grid * 3),
                       if (_document != null)
                         ResumeDocumentForm(
-                          key: _formKey,
+                          key: ValueKey<int>(_formGen),
                           initialDocument: _document!,
                           enableDeepen: isMaster,
+                          onState: (state) => _formState = state,
                           onDeepenExperience: isMaster
                               ? (i) => _deepen(section: 'experience', index: i)
                               : null,

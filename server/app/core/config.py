@@ -47,6 +47,26 @@ class Settings(BaseSettings):
     # Offline click-through only. When false (default), parse never returns demo data.
     allow_stub_parse: bool = False
 
+    # ATS ingest (Phase 1) — per-host politeness; no user id involved.
+    # Pause between HTTP calls to the same host (seconds).
+    ingest_host_pause_seconds: float = 0.75
+    # Non-404 failures before quarantining a board as unavailable.
+    ingest_failure_threshold: int = 3
+    # Plain-text JD body cap; longer bodies set description_truncated=true.
+    ingest_description_max_chars: int = 50_000
+    # HTTP timeout for ATS list/detail requests (seconds).
+    ingest_http_timeout_seconds: float = 30.0
+
+    # Phase 3 — daily run + notify (Decision: cap 3, floor 0.35, in-app + optional webhook).
+    # Prefer OS cron → ``uv run updateapply-catalog daily``. In-process runner is optional.
+    enable_daily_job_runner: bool = False
+    daily_job_runner_hour_utc: int = 6
+    notify_daily_cap: int = 3
+    notify_similarity_floor: float = 0.35
+    # Optional outbound webhook (Slack/email bridge). Empty → in-app log only.
+    notify_webhook_url: str = ""
+    notify_webhook_timeout_seconds: float = 10.0
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

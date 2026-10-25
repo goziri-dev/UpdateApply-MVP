@@ -48,6 +48,7 @@ Future<void> main() async {
       onboardingInfoRef,
       applicationsEpochRef,
       jobsForYouEpochRef,
+      jobsForYouCacheRef,
       masterResumeEpochRef,
     },
   );

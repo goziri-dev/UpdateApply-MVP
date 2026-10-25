@@ -24,3 +24,5 @@ Widget buildResumeHtmlFrame({
 }
 
 void disposeResumeHtmlFrame(String viewType) {}
+
+void clearAllResumeHtmlFrames() {}

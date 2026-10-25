@@ -1,6 +1,8 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/applications/ui/application_detail_screen.dart';
+import '../../features/resume/widgets/resume_html_frame.dart';
 import '../../features/applications/ui/applications_list_screen.dart';
 import '../../features/auth/state/auth_state.dart';
 import '../../features/auth/ui/auth_screen.dart';
@@ -73,9 +75,25 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
       return null;
     },
     routes: [
-      StatefulShellRoute.indexedStack(
+      // Active-branch only — NOT IndexedStack. Offstage HtmlElementView
+      // (Home resume iframe) stays in the DOM on Flutter web and steals
+      // pointer events on Jobs / Applications, freezing those tabs.
+      StatefulShellRoute(
         builder: (context, state, navigationShell) {
           return AppShell(navigationShell: navigationShell);
+        },
+        navigatorContainerBuilder: (context, navigationShell, children) {
+          final i = navigationShell.currentIndex;
+          assert(i >= 0 && i < children.length);
+          if (i != 0) {
+            // Jobs mounts while Home resume iframe can still sit in the DOM
+            // and steal hits — clear tracked frames on leave-Home.
+            clearAllResumeHtmlFrames();
+          }
+          // IndexedStack expands children to the shell viewport. Returning the
+          // bare branch navigator does not — on web that yields a collapsed /
+          // overlapping paint (Jobs looks scrambled + non-hit-testable).
+          return SizedBox.expand(child: children[i]);
         },
         branches: [
           StatefulShellBranch(

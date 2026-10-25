@@ -4,8 +4,8 @@ import 'package:signals/signals_flutter.dart';
 /// Bumped after a successful master-resume save so Home (and other master
 /// previews) refetch HTML.
 ///
-/// Home lives in a [StatefulShellRoute] indexed stack; its [ResumePreview]
-/// only loads in initState unless this epoch changes.
+/// Home remounts on tab switch (active-branch shell). Epoch still refreshes
+/// previews that stay mounted under a pushed route (e.g. after /resume/edit).
 final masterResumeEpochRef = create(() => signal(0));
 
 Signal<int>? _masterResumeEpochFallback;

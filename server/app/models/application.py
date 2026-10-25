@@ -15,6 +15,8 @@ class Application(SQLModel, table=True):
     company: str = Field(default="", index=True)
     target_role: str = Field(default="", index=True)
     job_description: str = Field(default="", sa_column=Column(Text, nullable=False))
+    # Employer apply URL when tailor started from a stored posting (Phase 2).
+    apply_url: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     # Full ResumeDocument JSON — PDFs are regenerated on demand, not stored.
     resume_document: dict[str, Any] = Field(
         default_factory=dict,

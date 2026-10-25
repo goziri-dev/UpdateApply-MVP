@@ -1,0 +1,50 @@
+[
+  {
+    "vendor": "greenhouse",
+    "slug": "discord",
+    "company_name": "Discord",
+    "verified_list_url": "https://boards-api.greenhouse.io/v1/boards/discord/jobs",
+    "verified_at": "2026-10-25",
+    "notes": "List returns jobs without body; detail at /jobs/{id}."
+  },
+  {
+    "vendor": "greenhouse",
+    "slug": "10alabs",
+    "company_name": "10a Labs",
+    "verified_list_url": "https://boards-api.greenhouse.io/v1/boards/10alabs/jobs",
+    "verified_at": "2026-10-25",
+    "notes": "Smaller Greenhouse board for polite Phase 1 ingest."
+  },
+  {
+    "vendor": "lever",
+    "slug": "canvasmedical",
+    "company_name": "Canvas Medical",
+    "verified_list_url": "https://api.lever.co/v0/postings/canvasmedical?mode=json",
+    "verified_at": "2026-10-25",
+    "notes": "List payload includes descriptionPlain."
+  },
+  {
+    "vendor": "lever",
+    "slug": "scaleway",
+    "company_name": "Scaleway",
+    "verified_list_url": "https://api.lever.co/v0/postings/scaleway?mode=json",
+    "verified_at": "2026-10-25",
+    "notes": "List payload includes descriptionPlain."
+  },
+  {
+    "vendor": "ashby",
+    "slug": "linear",
+    "company_name": "Linear",
+    "verified_list_url": "https://api.ashbyhq.com/posting-api/job-board/linear",
+    "verified_at": "2026-10-25",
+    "notes": "List payload includes descriptionPlain / descriptionHtml."
+  },
+  {
+    "vendor": "ashby",
+    "slug": "hivemq",
+    "company_name": "HiveMQ",
+    "verified_list_url": "https://api.ashbyhq.com/posting-api/job-board/hivemq",
+    "verified_at": "2026-10-25",
+    "notes": "Small Ashby board for polite Phase 1 ingest."
+  }
+]

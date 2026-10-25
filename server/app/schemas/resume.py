@@ -71,6 +71,9 @@ class TailorRequest(BaseModel):
     company: str | None = None
     # Optional override; otherwise server loads persisted profile.
     profile: dict[str, Any] | None = None
+    # When set, server copies job_posting.apply_url onto the draft (never trust
+    # a client-supplied apply URL).
+    posting_id: str | None = None
 
 
 class TailorResponse(BaseModel):

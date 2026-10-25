@@ -8,13 +8,21 @@ import '../../applications/state/applications_state.dart';
 import '../../resume/widgets/resume_preview.dart';
 import '../services/tailor_service.dart';
 
-/// Optional prefill when opening Tailor from Applications “Tailor again”.
+/// Optional prefill when opening Tailor from Applications or Jobs For You.
 class TailorLaunchArgs {
-  const TailorLaunchArgs({this.company, this.targetRole, this.jobDescription});
+  const TailorLaunchArgs({
+    this.company,
+    this.targetRole,
+    this.jobDescription,
+    this.postingId,
+  });
 
   final String? company;
   final String? targetRole;
   final String? jobDescription;
+
+  /// When set, tailor copies ``job_posting.apply_url`` onto the draft.
+  final String? postingId;
 }
 
 class TailorScreen extends StatefulWidget {
@@ -79,6 +87,7 @@ class _TailorScreenState extends State<TailorScreen> {
         jobDescription: jd,
         targetRole: _roleController.text,
         company: _companyController.text,
+        postingId: widget.launchArgs?.postingId,
       );
       if (!mounted) return;
 

@@ -10,6 +10,9 @@ import '../../resume/widgets/resume_preview.dart';
 /// Shell tabs already say Home; body leads with the resume composition, not a
 /// redundant "Home" page title. Edit master lives in the resume preview modal;
 /// reset / re-onboard lives in Settings.
+///
+/// The shell mounts only the active branch (not IndexedStack), so this screen
+/// — and its resume [HtmlElementView] — fully dispose when leaving Home.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -68,35 +71,6 @@ class HomeScreen extends StatelessWidget {
                 FilledButton(
                   onPressed: () => context.push('/tailor'),
                   child: const Text('Tailor to a job description'),
-                ),
-                const SizedBox(height: AppSpacing.grid * 3),
-                Text.rich(
-                  TextSpan(
-                    style: type.bodyMedium?.copyWith(
-                      color: colors.muted,
-                      height: 1.45,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    children: [
-                      const TextSpan(text: 'Looking for roles that fit? '),
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.baseline,
-                        baseline: TextBaseline.alphabetic,
-                        child: GestureDetector(
-                          onTap: () => context.go('/jobs'),
-                          child: Text(
-                            'Open Jobs For You',
-                            style: type.bodyMedium?.copyWith(
-                              color: colors.link,
-                              fontWeight: FontWeight.w600,
-                              decoration: TextDecoration.underline,
-                              decorationColor: colors.link,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),

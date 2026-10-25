@@ -14,6 +14,7 @@ class ResumeDocumentForm extends StatefulWidget {
     this.enableDeepen = false,
     this.onDeepenExperience,
     this.onDeepenProject,
+    this.onState,
   });
 
   final Map<String, dynamic> initialDocument;
@@ -23,6 +24,9 @@ class ResumeDocumentForm extends StatefulWidget {
 
   final void Function(int index)? onDeepenExperience;
   final void Function(int index)? onDeepenProject;
+
+  /// Parent holds a soft reference after ValueKey remounts (no GlobalKey).
+  final ValueChanged<ResumeDocumentFormState>? onState;
 
   @override
   State<ResumeDocumentForm> createState() => ResumeDocumentFormState();
@@ -80,13 +84,16 @@ class ResumeDocumentFormState extends State<ResumeDocumentForm> {
   void initState() {
     super.initState();
     applyDocument(widget.initialDocument);
+    widget.onState?.call(this);
   }
 
   @override
   void didUpdateWidget(covariant ResumeDocumentForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.initialDocument, widget.initialDocument)) {
-      applyDocument(widget.initialDocument);
+    // Parent remounts via ValueKey when the document is replaced — never
+    // dispose controllers here.
+    if (oldWidget.onState != widget.onState) {
+      widget.onState?.call(this);
     }
   }
 

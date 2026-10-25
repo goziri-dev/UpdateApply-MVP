@@ -56,7 +56,7 @@ class MatchPreferencesUpsert(BaseModel):
 
 
 class JobsForYouItem(BaseModel):
-    """Phase 2 will fill these from job_posting + match ledger."""
+    """Ranked shortlist row from job_posting + match ledger (Phase 2)."""
 
     posting_id: UUID
     title: str
@@ -66,6 +66,8 @@ class JobsForYouItem(BaseModel):
     score: float | None = None
     reason: str
     matched_title: str | None = None
+    # Stored description for tailor prefill (not a live ATS fetch).
+    description_text: str | None = None
 
 
 class JobsForYouResponse(BaseModel):
@@ -73,3 +75,40 @@ class JobsForYouResponse(BaseModel):
     empty_reason: EmptyReason | None = None
     cap: int
     cap_is_default: bool = True
+
+
+class JobsForYouOpenResponse(BaseModel):
+    posting_id: UUID
+    opened_at: datetime
+
+
+class CareersUrlRequest(BaseModel):
+    url: str = Field(min_length=1)
+
+
+class CareersUrlResponse(BaseModel):
+    vendor: str
+    slug: str
+    company_name: str
+    status: str
+    source: str
+    created: bool
+    reactivated: bool
+    message: str
+
+
+class MatchNotificationItem(BaseModel):
+    id: UUID
+    posting_id: UUID
+    title: str
+    company: str
+    reason: str
+    score: float | None = None
+    channel: str
+    read_at: datetime | None = None
+    created_at: datetime
+
+
+class MatchNotificationsResponse(BaseModel):
+    items: list[MatchNotificationItem]
+    unread_count: int

@@ -11,6 +11,15 @@ const double _kLetterCssHeight = _kLetterCssWidth * 11 / 8.5;
 
 final Map<String, web.HTMLIFrameElement> _iframes = {};
 
+/// Drop all tracked resume iframes (shell left Home — DOM may already be purged).
+void clearAllResumeHtmlFrames() {
+  final keys = _iframes.keys.toList(growable: false);
+  for (final key in keys) {
+    disposeResumeHtmlFrame(key);
+  }
+  _iframes.clear();
+}
+
 Widget buildResumeHtmlFrame({
   required String viewType,
   required String html,
@@ -28,6 +37,7 @@ Widget buildResumeHtmlFrame({
       ..style.transform = 'scale($scale)'
       ..style.transformOrigin = 'top left'
       ..style.backgroundColor = '#ffffff'
+      ..style.display = 'block'
       // Platform views sit above Flutter hit-testing; disable when the parent
       // owns taps (e.g. mini preview → modal).
       ..style.pointerEvents = interactive ? 'auto' : 'none'
@@ -53,6 +63,14 @@ Widget buildResumeHtmlFrame({
   );
 }
 
+/// Drop the iframe from the DOM so it cannot steal pointer events after the
+/// [HtmlElementView] leaves the Flutter tree (shell tab switch / dispose).
 void disposeResumeHtmlFrame(String viewType) {
-  _iframes.remove(viewType);
+  final iframe = _iframes.remove(viewType);
+  if (iframe == null) return;
+  iframe
+    ..style.pointerEvents = 'none'
+    ..style.display = 'none'
+    ..removeAttribute('srcdoc');
+  iframe.remove();
 }

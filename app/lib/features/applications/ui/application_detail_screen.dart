@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
@@ -170,6 +171,23 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
     }
   }
 
+  Future<void> _openApplyUrl(String raw) async {
+    final uri = Uri.tryParse(raw.trim());
+    if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t open that apply link')),
+      );
+      return;
+    }
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t open that apply link')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final type = Theme.of(context).textTheme;
@@ -181,6 +199,7 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
     final status = (d?['status'] as String?)?.trim() ?? 'draft';
     final version = d?['version'] as int? ?? 1;
     final jd = (d?['job_description'] as String?)?.trim() ?? '';
+    final applyUrl = (d?['apply_url'] as String?)?.trim() ?? '';
     final applied = status == 'applied';
     final appliedAt = _parseDate(d?['applied_at']);
     final createdAt = _parseDate(d?['created_at']);
@@ -324,6 +343,11 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                                   downloadResumePdf(context, resume: resumeMap),
                         child: const Text('Download'),
                       ),
+                      if (applyUrl.isNotEmpty)
+                        OutlinedButton(
+                          onPressed: () => _openApplyUrl(applyUrl),
+                          child: const Text('Apply on their site'),
+                        ),
                       OutlinedButton(
                         onPressed: applied || _marking ? null : _markApplied,
                         child: _marking

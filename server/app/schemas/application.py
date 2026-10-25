@@ -23,6 +23,8 @@ class ApplicationSummary(BaseModel):
 class ApplicationDetail(ApplicationSummary):
     job_description: str
     resume: ResumeDocument
+    # Set when tailor ran from a Jobs For You posting; null for paste-a-JD.
+    apply_url: str | None = None
 
 
 class ApplicationMarkAppliedRequest(BaseModel):

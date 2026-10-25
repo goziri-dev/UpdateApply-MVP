@@ -11,6 +11,57 @@ uv run app
 
 Listens on `0.0.0.0:8000` by default. Copy `.env` from your secrets (never commit).
 
+## Job discovery (Phases 0–3)
+
+Shared ATS ingest — **no user id**. A new user does **not** increase ATS HTTP traffic. Matching and notify are **per user** against shared `job_posting` + that user's Job preferences and `profile_chunk` embeddings. Tailor runs only when the user opens a posting (`POST /api/v1/tailor`). Tavily stays Ask-mode only.
+
+```bash
+cd server
+uv run alembic upgrade head
+uv run updateapply-catalog seed-boards             # bounded JSON seed
+uv run updateapply-catalog import-directory --download   # full CC-BY-4.0 directory (~10k)
+uv run updateapply-catalog ingest                  # active boards → job_posting
+uv run updateapply-catalog ingest --slug linear    # optional single board
+uv run updateapply-catalog normalize-locations
+uv run updateapply-catalog embed-postings          # needs OPENROUTER_API_KEY
+uv run updateapply-catalog notify                  # strong matches → in-app log
+uv run updateapply-catalog daily                   # locked: ingest → normalize → embed → notify
+```
+
+### Daily ingest
+
+Prefer **OS cron** (or launchd) calling the same CLI — smallest clock, no queue framework:
+
+```cron
+0 6 * * * cd /path/to/UpdateApply/server && uv run updateapply-catalog daily
+```
+
+Overlapping runs share a file lock under `data/locks/daily_job_run.lock`. Optional in-process loop: `ENABLE_DAILY_JOB_RUNNER=true` + `DAILY_JOB_RUNNER_HOUR_UTC=6` (still uses the same locked `run_daily`).
+
+### Routes
+
+| Route | Role |
+|-------|------|
+| `GET/PUT/DELETE /api/v1/match-preferences` | Job preferences (per user) |
+| `GET /api/v1/jobs-for-you` | Ranked shortlist (labeled default cap) |
+| `POST /api/v1/jobs-for-you/{id}/open` | Mark opened |
+| `POST /api/v1/company-boards/from-url` | Detect Greenhouse/Lever/Ashby URL → `company_board` (next ingest fetches; no scrape) |
+| `GET /api/v1/match-notifications` | In-app notify log |
+
+### Notify (Decision)
+
+- Cap **3**/user/day · similarity floor **0.35** · channel **in-app log** (+ optional `NOTIFY_WEBHOOK_URL`)
+- Stamps `match_ledger.notified_at`; unique `(user_id, posting_id)` prevents repeats
+- Copy must not claim a job was “posted yesterday” as fact (vendor timestamps are approximate)
+
+### Catalog notes
+
+- Tables: `company_board`, `job_posting`, `match_ledger`, `match_notification`
+- Bounded seed JSON under `data/seeds/`; full directory is CC-BY-4.0 — see `data/ATTRIBUTION-ats-company-directory.md`
+- Ingest upserts on `(vendor, external_job_id)`; JD text only when new/changed; Greenhouse detail: `…/boards/{slug}/jobs/{id}`
+- 404 / repeated failures → `company_board.status = unavailable`. Pause: `INGEST_HOST_PAUSE_SECONDS` (default `0.75`)
+- **Not built:** Fantastic.jobs fetcher, Workday, applicant counts, LinkedIn/Indeed, Apify, TheirStack
+
 ## Onboarding conversation
 
 `InterviewQuestionService` generates **calm consultant** prompts per role/project (`INTERVIEW_SYSTEM_PROMPT` in `app/services/interview_questions.py`).

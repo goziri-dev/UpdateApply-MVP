@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 
 export 'resume_html_frame_stub.dart'
     if (dart.library.js_interop) 'resume_html_frame_web.dart'
-    show disposeResumeHtmlFrame;
+    show clearAllResumeHtmlFrames, disposeResumeHtmlFrame;
 
 Widget buildResumeHtmlFrame({
   required String viewType,

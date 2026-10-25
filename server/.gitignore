@@ -14,3 +14,7 @@ __pycache__/
 
 # Uploaded resume PDFs (PII) — never commit
 data/uploads/
+
+# Runtime catalog artifacts (locks, ingest logs, pid files)
+data/locks/
+data/logs/

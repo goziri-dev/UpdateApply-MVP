@@ -17,22 +17,34 @@ Prefer **UpdateApply (Chrome) — recommended** in `.vscode/launch.json` (`noDeb
 
 ## Shell (post-onboarding)
 
-After onboarding, authenticated routes use a `StatefulShellRoute` with two tabs:
+After onboarding, authenticated routes use a `StatefulShellRoute` with three tabs:
 
 | Tab | Path | Role |
 |-----|------|------|
 | Home | `/` | Master remade resume preview + **Tailor to a job description** CTA |
+| Jobs For You | `/jobs-for-you` | Ranked shortlist from shared ATS ingest + your Job preferences |
 | Applications | `/applications` | Tailored-version history (list → detail) |
 
-**Tailor** (`/tailor`) is **not** a shell tab — opened from Home CTA, Applications empty CTA, or detail “Tailor again” (optional `TailorLaunchArgs` via `GoRouter` extra).
+**Tailor** (`/tailor`) is **not** a shell tab — opened from Home CTA, a Jobs For You card, Applications empty CTA, or detail “Tailor again” (optional `TailorLaunchArgs` via `GoRouter` extra).
 
 Shell header **account menu**: email → **Settings** → Sign out. Home stays mini preview + Tailor only (no reset chrome).
 
 | Route | Role |
 |-------|------|
 | `/settings` | Account settings; **Start over** (reset / re-onboard) |
+| `/settings/match-preferences` | Job preferences (titles, place, seniority) — also linked from Jobs For You |
 | `/resume/edit` | Hybrid edit (master or tailored via `extra`) |
 | `/resume/deepen` | Optional guided / journal deepen for one role or project |
+
+### Jobs For You
+
+1. Set **Job preferences** under Settings (suggested titles from the profile; you confirm).
+2. Open the **Jobs For You** tab — ranked cards from `GET /api/v1/jobs-for-you` (empty reasons `no_preferences` / `no_matches`). Cap is a labeled default.
+3. Open a card → tailor screen prefills with the stored description; tailor sends `posting_id` so the draft gets `apply_url` from the server (never a client-supplied URL).
+4. Paste a Greenhouse / Lever / Ashby careers URL on the shortlist to add a board **for everyone**. Jobs appear after the next shared ingest — not instantly. Unrecognized hosts show the server 400 in the form.
+5. Strong-match pings land in the in-app notification log (banner when unread). The app does not auto-tailor or auto-apply.
+
+UpdateApply is not a job board and does not apply for you. Deferred sources (Fantastic.jobs, Workday, etc.) are not wired in the client.
 
 ## Living master + edit harness
 
@@ -49,7 +61,7 @@ Settings → confirm **Start over** → `POST /api/v1/onboarding/reset`. Clears 
 
 1. Tailor succeeds → server always inserts a new `application` draft; Flutter shows “Saved as draft · vN” + **View in Applications**.
 2. List (`ApplicationsListScreen`) — newest first; same company+role can appear many times as separate versions.
-3. Detail (`/applications/:id`) — tailored preview, download PDF, edit tailored resume, mark applied, tailor again.
+3. Detail (`/applications/:id`) — tailored preview, download PDF, **apply on employer site** when `apply_url` is present (from a Jobs For You posting), edit tailored resume, mark applied, tailor again.
 4. Empty state — single CTA into `/tailor`.
 
 Prototype (approved, then implemented): `prototypes/applications/`.

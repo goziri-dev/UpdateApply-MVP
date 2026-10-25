@@ -63,4 +63,36 @@ class JobDiscoveryService {
     );
     return response.data ?? {};
   }
+
+  /// Marks a shortlist row opened so it drops off "new" on the next load.
+  Future<void> markOpened(String postingId) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/api/v1/jobs-for-you/$postingId/open',
+    );
+  }
+
+  /// Paste a Greenhouse / Lever / Ashby careers URL → shared company_board.
+  Future<Map<String, dynamic>> addBoardFromUrl(String url) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/company-boards/from-url',
+      data: {'url': url},
+    );
+    return response.data ?? {};
+  }
+
+  Future<Map<String, dynamic>> matchNotifications({
+    bool unreadOnly = false,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/match-notifications',
+      queryParameters: {'unread_only': unreadOnly},
+    );
+    return response.data ?? {};
+  }
+
+  Future<void> markNotificationRead(String notificationId) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/api/v1/match-notifications/$notificationId/read',
+    );
+  }
 }

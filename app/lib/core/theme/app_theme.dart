@@ -84,7 +84,11 @@ class AppTheme {
       useMaterial3: true,
       visualDensity: VisualDensity.adaptivePlatformDensity,
       scaffoldBackgroundColor: Colors.white,
+      // Keep MaterialIcons as the icon font — assigning GoogleFonts styles into
+      // textTheme alone is fine; never set ThemeData.fontFamily to Source Sans
+      // or Icons render as tofu boxes on Flutter web.
       textTheme: textTheme,
+      iconTheme: const IconThemeData(color: _ink, size: 24),
       extensions: const [AppColors.light],
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

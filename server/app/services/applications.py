@@ -54,6 +54,7 @@ def _detail(row: Application) -> ApplicationDetail:
         **base.model_dump(),
         job_description=row.job_description or "",
         resume=resume,
+        apply_url=row.apply_url,
     )
 
 
@@ -89,6 +90,7 @@ class ApplicationService:
         target_role: str,
         job_description: str,
         resume: ResumeDocument,
+        apply_url: str | None = None,
     ) -> Application:
         company_clean = (company or "").strip()
         role_clean = (target_role or "").strip()
@@ -107,12 +109,14 @@ class ApplicationService:
             meta["version"] = version
 
         now = datetime.now(UTC)
+        apply_clean = (apply_url or "").strip() or None
         row = Application(
             id=uuid4(),
             user_id=user_id,
             company=company_clean,
             target_role=role_clean,
             job_description=job_description.strip(),
+            apply_url=apply_clean,
             resume_document=resume_data,
             status="draft",
             version=version,

@@ -17,6 +17,7 @@ class TailorService {
     required String jobDescription,
     String? targetRole,
     String? company,
+    String? postingId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/tailor',
@@ -26,6 +27,8 @@ class TailorService {
           'target_role': targetRole.trim(),
         if (company != null && company.trim().isNotEmpty)
           'company': company.trim(),
+        if (postingId != null && postingId.trim().isNotEmpty)
+          'posting_id': postingId.trim(),
       },
       options: Options(
         connectTimeout: _connectTimeout,
