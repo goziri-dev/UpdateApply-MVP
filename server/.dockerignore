@@ -1,0 +1,34 @@
+# Local Python env / caches
+.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyrefly/
+
+# Secrets — never bake into the image
+.env
+.env.*
+!.env.example
+
+# Runtime / PII / ephemeral catalog artifacts
+data/uploads/
+data/locks/
+data/logs/
+
+# Keep data/seeds/ (company_boards.json + directory CSV for catalog CLI)
+# Keep data/ATTRIBUTION-ats-company-directory.md
+
+# Tests and local tooling (not needed at runtime)
+tests/
+.git/
+.gitignore
+.python-version
+DEPLOY-FLY.md
+fly.toml
+Dockerfile
+.dockerignore
+# README.md is required by pyproject.toml (readme = "README.md") during uv sync
