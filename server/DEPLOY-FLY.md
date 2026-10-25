@@ -11,7 +11,7 @@ fly auth login
 cd server
 
 # Create the app (or: fly launch --no-deploy and accept/edit fly.toml)
-fly apps create updateapply-api
+fly apps create updateapply-mvp
 # Optional: fly regions set iad   # match primary_region in fly.toml
 
 # Required secrets (from .env.example — use your real values)
@@ -30,14 +30,16 @@ fly secrets set \
 fly deploy
 ```
 
-App URL: `https://updateapply-api.fly.dev` (or your custom domain).
+App URL: `https://updateapply-mvp.fly.dev` (or your custom domain).
+
+If the Machine is OOM-killed (`Process appears to have been OOM killed!`), bump RAM without waiting for a full redeploy: `fly scale memory 1024 -a updateapply-mvp` (or `512` as a floor).
 
 ## Local smoke-test (no Fly account)
 
 ```bash
 cd server
-docker build -t updateapply-api .
-docker run --rm -p 8000:8000 --env-file .env updateapply-api
+docker build -t updateapply-mvp .
+docker run --rm -p 8000:8000 --env-file .env updateapply-mvp
 # curl -sS http://localhost:8000/health
 ```
 

@@ -1,11 +1,11 @@
 # UpdateApply API on Fly.io
-# Placeholder app name — create/rename with: fly apps create updateapply-api
+# Live app: updateapply-mvp. Create with: fly apps create updateapply-mvp
 # (or change `app` below after `fly launch`). Do not hardcode org here.
 #
 # Deploy from this directory:
 #   cd server && fly deploy
 
-app = "updateapply-api"
+app = "updateapply-mvp"
 primary_region = "iad"
 
 [build]
@@ -45,7 +45,9 @@ primary_region = "iad"
 #   source = "updateapply_uploads"
 #   destination = "/app/data/uploads"
 
+# FastAPI + LangChain + PyMuPDF + embedding deps need headroom beyond a
+# lean ASGI baseline; 256mb OOMs under load. Prefer 1024mb for personal MVP.
 [[vm]]
-  memory = "512mb"
+  memory = "1024mb"
   cpu_kind = "shared"
   cpus = 1
