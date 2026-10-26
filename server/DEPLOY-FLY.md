@@ -69,6 +69,7 @@ After deploy, seed/ingest once if the shared catalog is empty (`seed-boards`, `i
 
 ## Flutter / Supabase
 
-- Set the app’s API base URL to the Fly hostname.
+- Set the app’s API base URL to the Fly hostname (`https://updateapply-mvp.fly.dev`).
+- On **Vercel**, that is the project env var `API_BASE_URL` (build-time dart-define). After setting it, **Redeploy** — a prior bundle with `localhost:8000` will keep failing until rebuilt. See `app/README.md` → Vercel.
 - Add that origin (and any Flutter web origins) to `CORS_ORIGINS`.
 - Supabase Auth redirect URLs / site URL must allow your Flutter clients; JWT verification still uses the secrets above.

@@ -11,6 +11,22 @@ flutter run -d chrome --dart-define-from-file=.env
 
 Required `--dart-define` keys (see `.env.example` if present): `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Optional: `SUPABASE_AUTH_REDIRECT_URL`.
 
+### Vercel (Flutter web)
+
+Root Directory: `app`. Build Command: `bash vercel-build.sh` (see `vercel-build.sh`).
+
+`API_BASE_URL` is baked in at **build** time via `--dart-define`. Auth can work (Supabase in the browser) while the API still fails if the define was missing — the client then defaults to `http://localhost:8000`.
+
+In the Vercel project → **Settings → Environment Variables**, set for Production (and Preview if used):
+
+| Name | Value |
+|------|--------|
+| `API_BASE_URL` | `https://updateapply-mvp.fly.dev` |
+| `SUPABASE_URL` | (same as local / Fly) |
+| `SUPABASE_ANON_KEY` | (anon / publishable key) |
+
+Then **Redeploy** (Deployments → … → Redeploy). A new build is required; changing env alone does not rewrite the old JS. `vercel-build.sh` fails the build if `API_BASE_URL` is empty or localhost.
+
 ### VS Code / Cursor launch tip
 
 Prefer **UpdateApply (Chrome) — recommended** in `.vscode/launch.json` (`noDebug: true`, Chrome, `--web-port=5173`). Plain F5 debug on Flutter web often hangs on breakpoints / DWDS; use **UpdateApply (Chrome + debugger)** only when you need the debugger.
