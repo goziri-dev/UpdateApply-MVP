@@ -26,6 +26,16 @@ const title = "UpdateApply — Tailor your resume to each job";
 const description =
   "Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist. Signing up does not open the app.";
 
+const ogDescription =
+  "Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist.";
+
+const ogImage = {
+  url: "/assets/hero-tailor.jpg",
+  width: 1024,
+  height: 613,
+  alt: "UpdateApply tailor screen — resume draft beside a job posting",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title,
@@ -37,21 +47,35 @@ export const metadata: Metadata = {
     siteName: "UpdateApply",
     url: "/",
     title,
-    description:
-      "Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist.",
+    description: ogDescription,
+    images: [ogImage],
   },
   twitter: {
     card: "summary_large_image",
     title,
-    description:
-      "Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist.",
+    description: ogDescription,
+    images: [ogImage.url],
   },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "UpdateApply",
+  url: siteUrl,
+  description: ogDescription,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${sourceSans.variable} ${newsreader.variable}`}>
-      <body>{children}</body>
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
