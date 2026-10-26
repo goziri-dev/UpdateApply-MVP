@@ -13,19 +13,19 @@ Required `--dart-define` keys (see `.env.example` if present): `API_BASE_URL`, `
 
 ### Vercel (Flutter web)
 
-Root Directory: `app`. Build Command: `bash vercel-build.sh` (see `vercel-build.sh`).
+Root Directory: `app`. Prefer Build Command `bash vercel-build.sh` (also set in `vercel.json` with Output `build/web`, Install `echo skip`).
 
-`API_BASE_URL` is baked in at **build** time via `--dart-define`. Auth can work (Supabase in the browser) while the API still fails if the define was missing — the client then defaults to `http://localhost:8000`.
+`API_BASE_URL` is baked in at **build** time via `--dart-define`. Auth can work (Supabase in the browser) while the API still fails if the define was missing or still `http://localhost:8000` from a copied `.env`.
 
 In the Vercel project → **Settings → Environment Variables**, set for Production (and Preview if used):
 
 | Name | Value |
 |------|--------|
-| `API_BASE_URL` | `https://updateapply-mvp.fly.dev` |
+| `API_BASE_URL` | `https://updateapply-mvp.fly.dev` (script remaps empty/localhost to this) |
 | `SUPABASE_URL` | (same as local / Fly) |
 | `SUPABASE_ANON_KEY` | (anon / publishable key) |
 
-Then **Redeploy** (Deployments → … → Redeploy). A new build is required; changing env alone does not rewrite the old JS. `vercel-build.sh` fails the build if `API_BASE_URL` is empty or localhost.
+Then **Redeploy** (Deployments → … → Redeploy, without stale cache if offered). A new build is required; changing env alone does not rewrite the old JS.
 
 ### VS Code / Cursor launch tip
 
