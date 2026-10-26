@@ -52,10 +52,11 @@ export default function Home() {
               <Image
                 className="shot shot-hero"
                 src="/assets/hero-tailor.jpg"
-                width={1024}
-                height={613}
+                width={2400}
+                height={1439}
                 alt=""
                 priority
+                quality={90}
                 sizes="(max-width: 1120px) 100vw, 1120px"
               />
             </div>
@@ -75,9 +76,10 @@ export default function Home() {
               <Image
                 className="shot shot-feature"
                 src="/assets/feature-application.jpg"
-                width={1024}
-                height={632}
+                width={2400}
+                height={1482}
                 alt="Application detail with tailored resume preview and job description context"
+                quality={90}
                 sizes="(max-width: 1120px) 100vw, 1040px"
               />
             </div>
@@ -124,9 +126,10 @@ export default function Home() {
               <Image
                 className="shot shot-support"
                 src="/assets/feature-edit-agent.jpg"
-                width={1024}
-                height={554}
+                width={1800}
+                height={974}
                 alt="Edit tailored resume with an agent that proposes changes you can keep or discard"
+                quality={90}
                 sizes="(max-width: 760px) 100vw, 760px"
               />
               <figcaption>

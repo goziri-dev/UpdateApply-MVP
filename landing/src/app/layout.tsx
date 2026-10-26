@@ -31,8 +31,8 @@ const ogDescription =
 
 const ogImage = {
   url: "/assets/hero-tailor.jpg",
-  width: 1024,
-  height: 613,
+  width: 2400,
+  height: 1439,
   alt: "UpdateApply tailor screen — resume draft beside a job posting",
 };
 
