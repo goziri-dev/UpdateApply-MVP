@@ -21,9 +21,11 @@ In the Vercel project → **Settings → Environment Variables**, set for Produc
 
 | Name | Value |
 |------|--------|
-| `API_BASE_URL` | `https://updateapply-mvp.fly.dev` (script remaps empty/localhost to this) |
+| `API_BASE_URL` | `https://api.updateapply.com` (script remaps empty/localhost to this) |
 | `SUPABASE_URL` | (same as local / Fly) |
 | `SUPABASE_ANON_KEY` | (anon / publishable key) |
+
+Production web host: **`https://app.updateapply.com`** (Vercel project `updateapply-mvp-app`). Keep `www` / apex on the project only until the SEO landing cutover; do not treat them as the long-term app origin.
 
 Then **Redeploy** (Deployments → … → Redeploy, without stale cache if offered). A new build is required; changing env alone does not rewrite the old JS.
 
@@ -100,8 +102,12 @@ In **Supabase Dashboard → Authentication → URL Configuration**, confirm:
 |-------|---------------|--------|
 | Site URL | `http://localhost:5000` | Prefer the pinned `--web-port` origin |
 | Redirect URLs | `http://localhost:5000` | Same origin; add production origins too |
-| Redirect URLs | `https://www.updateapply.com` | Production (and apex `https://updateapply.com` if used) |
+| Redirect URLs | `https://app.updateapply.com` | Production Flutter web (primary) |
+| Redirect URLs | `https://www.updateapply.com` | Keep during cutover / bookmarks |
+| Redirect URLs | `https://updateapply.com` | Apex if OAuth ever hits it |
 | Redirect URLs | `io.updateapply.app://login-callback/` | Native deep link (when shipping mobile) |
+
+Also set **Site URL** to `https://app.updateapply.com` once that host is live.
 
 Optional dart-define `SUPABASE_AUTH_REDIRECT_URL` overrides the redirect; on web leave it empty so the app uses `Uri.base.origin` (must still be allow-listed). Enable providers under **Authentication → Providers** (Google, GitHub, Notion, Email).
 

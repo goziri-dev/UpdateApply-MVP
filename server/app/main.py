@@ -14,6 +14,7 @@ from app.routers import (
     profile,
     resume,
     tailor,
+    waitlist,
 )
 from app.services.daily_scheduler import start_daily_scheduler, stop_daily_scheduler
 
@@ -42,6 +43,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(auth.router)
+app.include_router(waitlist.router)
 app.include_router(onboarding.router)
 app.include_router(profile.router)
 app.include_router(resume.router)

@@ -24,7 +24,7 @@ trim_env() {
 
 # Production API host for this MVP. If Vercel still has localhost from a copied
 # .env, remap instead of failing the build — otherwise Redeploy loops forever.
-DEFAULT_API_BASE_URL="https://updateapply-mvp.fly.dev"
+DEFAULT_API_BASE_URL="https://api.updateapply.com"
 
 normalize_api_base_url() {
   local value

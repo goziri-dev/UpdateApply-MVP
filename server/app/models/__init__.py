@@ -9,6 +9,7 @@ from app.models.match_preference import MatchPreference
 from app.models.profile import Profile
 from app.models.profile_chunk import ProfileChunk
 from app.models.user import User
+from app.models.waitlist_signup import WaitlistSignup
 
 __all__ = [
     "Application",
@@ -20,4 +21,5 @@ __all__ = [
     "Profile",
     "ProfileChunk",
     "User",
+    "WaitlistSignup",
 ]

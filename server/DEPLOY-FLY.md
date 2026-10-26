@@ -22,7 +22,7 @@ fly secrets set \
   SUPABASE_SERVICE_ROLE_KEY='…' \
   SUPABASE_JWT_SECRET='…' \
   OPENROUTER_API_KEY='…' \
-  CORS_ORIGINS='https://your-flutter-web-origin,http://localhost:5000'
+  CORS_ORIGINS='https://app.updateapply.com,https://www.updateapply.com,https://updateapply.com,http://localhost:5000'
 
 # Optional
 # fly secrets set TAVILY_API_KEY='…' NOTIFY_WEBHOOK_URL='…'
@@ -69,7 +69,7 @@ After deploy, seed/ingest once if the shared catalog is empty (`seed-boards`, `i
 
 ## Flutter / Supabase
 
-- Set the app’s API base URL to the Fly hostname (`https://updateapply-mvp.fly.dev`).
+- Set the app’s API base URL to `https://api.updateapply.com` (Fly custom domain; `https://updateapply-mvp.fly.dev` still works).
 - On **Vercel**, that is the project env var `API_BASE_URL` (build-time dart-define). After setting it, **Redeploy** — a prior bundle with `localhost:8000` will keep failing until rebuilt. See `app/README.md` → Vercel.
-- Add that origin (and any Flutter web origins) to `CORS_ORIGINS`.
-- Supabase Auth redirect URLs / site URL must allow your Flutter clients; JWT verification still uses the secrets above.
+- Add Flutter web origins to `CORS_ORIGINS` (must include `https://app.updateapply.com`).
+- Supabase Auth redirect URLs / site URL must allow `https://app.updateapply.com`; JWT verification still uses the secrets above.

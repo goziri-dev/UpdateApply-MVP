@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UpdateApply — Tailor your resume to each job</title>
+    <meta
+      name="description"
+      content="Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist. Signing up does not open the app."
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://updateapply.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="UpdateApply" />
+    <meta property="og:url" content="https://updateapply.com/" />
+    <meta
+      property="og:title"
+      content="UpdateApply — Tailor your resume to each job"
+    />
+    <meta
+      property="og:description"
+      content="Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="UpdateApply — Tailor your resume to each job"
+    />
+    <meta
+      name="twitter:description"
+      content="Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500;1,6..72,600&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#waitlist">Skip to the waitlist</a>
+
+    <header class="nav">
+      <div class="nav-inner">
+        <a class="brand" href="#top">
+          <span class="mark" aria-hidden="true">
+            <span class="mark-letter">u</span><span class="mark-plus">+</span>
+          </span>
+          <span class="brand-name">UpdateApply</span>
+        </a>
+        <nav class="nav-links" aria-label="Page">
+          <a class="nav-text" href="#how">How it works</a>
+          <a class="nav-cta" href="#waitlist">Join the waitlist</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="headline">
+        <div class="hero-copy">
+          <p class="eyebrow">Private beta</p>
+          <h1 id="headline">
+            Tailor a resume for the job you’re
+            <em>actually</em> applying to.
+          </h1>
+          <p class="lede">
+            Keep one honest profile. Paste a job description, edit the draft,
+            download a PDF — then apply on their site.
+          </p>
+
+          <form class="waitlist waitlist-hero" id="waitlist" novalidate>
+            <div
+              class="alert"
+              id="form-alert"
+              role="alert"
+              hidden
+            ></div>
+
+            <div class="fields" id="form-fields">
+              <label class="sr-only" for="email">Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                inputmode="email"
+                autocomplete="email"
+                maxlength="254"
+                placeholder="you@example.com"
+                aria-describedby="privacy-note"
+              />
+              <button class="btn" id="submit" type="submit">
+                <span class="btn-label">Join the waitlist</span>
+                <span class="spinner" hidden aria-hidden="true"></span>
+              </button>
+            </div>
+
+            <div class="confirm" id="form-confirm" hidden>
+              <p class="confirm-title" id="confirm-title"></p>
+              <p class="confirm-body">
+                We’ll write to this address when a spot opens.
+              </p>
+              <p class="confirm-email" id="confirm-email"></p>
+              <p class="confirm-extra" id="confirm-extra"></p>
+              <button class="btn btn-quiet" id="reset" type="button">
+                Use a different email
+              </button>
+            </div>
+
+            <p class="privacy" id="privacy-note">
+              We store your email only to tell you when a spot opens. We don’t
+              sell it. Joining does not create an account or open the app.
+            </p>
+          </form>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-stage">
+            <img
+              class="shot shot-hero"
+              src="assets/hero-tailor.jpg"
+              width="1024"
+              height="613"
+              alt=""
+              decoding="async"
+              fetchpriority="high"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="feature" id="how" aria-labelledby="feature-title">
+        <div class="section-inner feature-inner">
+          <h2 id="feature-title" class="display">
+            Your draft, the job, and a clear next step.
+          </h2>
+          <p class="section-lede">
+            Each tailored resume lives with the posting you pasted — so you can
+            edit, download, and mark applied when you’ve sent it.
+          </p>
+          <div class="feature-stage">
+            <img
+              class="shot shot-feature"
+              src="assets/feature-application.jpg"
+              width="1024"
+              height="632"
+              alt="Application detail with tailored resume preview and job description context"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="points" aria-labelledby="points-title">
+        <div class="section-inner">
+          <h2 id="points-title" class="display">What you actually do</h2>
+          <div class="points-grid">
+            <article>
+              <h3>Keep one profile</h3>
+              <p>
+                Roles, projects, and skills stay in one place — the source of
+                truth for every tailor.
+              </p>
+            </article>
+            <article>
+              <h3>Paste the job</h3>
+              <p>
+                UpdateApply writes a draft from what you already kept. It does
+                not invent experience you didn’t have.
+              </p>
+            </article>
+            <article>
+              <h3>Edit in plain language</h3>
+              <p>
+                Ask for changes — keep one degree, tighten a summary — then keep
+                or discard the proposal.
+              </p>
+            </article>
+            <article>
+              <h3>Download, then apply</h3>
+              <p>
+                Export a PDF and apply on the employer’s site. UpdateApply does
+                not submit applications for you.
+              </p>
+            </article>
+          </div>
+
+          <figure class="support-shot">
+            <img
+              class="shot shot-support"
+              src="assets/feature-edit-agent.jpg"
+              width="1024"
+              height="554"
+              alt="Edit tailored resume with an agent that proposes changes you can keep or discard"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              Describe a change. Review the proposal. Keep what’s honest.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="close" aria-labelledby="close-title">
+        <div class="section-inner close-inner">
+          <h2 id="close-title" class="display">
+            The app isn’t open yet. The waitlist is.
+          </h2>
+          <p class="section-lede">
+            Leave your email. We’ll write when a spot opens — this still doesn’t
+            create an account or grant access.
+          </p>
+          <a class="btn btn-close" href="#waitlist">Join the waitlist</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <p class="footer-brand">UpdateApply</p>
+        <p>
+          We’ll store your email so we can tell you when a spot opens. We don’t
+          sell it.
+        </p>
+        <p>
+          Already invited?
+          <a href="https://app.updateapply.com">Open the app</a>. Access is
+          checked after you sign in. A waitlist email is not enough.
+        </p>
+      </div>
+    </footer>
+
+    <details class="review">
+      <summary>Prototype states — not part of the public page</summary>
+      <div class="review-row">
+        <button type="button" data-preview="idle">Empty form</button>
+        <button type="button" data-preview="invalid">Invalid email</button>
+        <button type="button" data-preview="loading">Joining…</button>
+        <button type="button" data-preview="error">Couldn’t save</button>
+        <button type="button" data-preview="success">On the list</button>
+        <button type="button" data-preview="duplicate">Already listed</button>
+        <button type="button" data-preview="long">Long email</button>
+      </div>
+      <p class="review-note">
+        In the form itself: a normal email joins the list, submitting it again
+        says you’re already on it, and
+        <code>fail@updateapply.test</code> shows the save error. Nothing is
+        sent to a server.
+      </p>
+    </details>
+
+    <script src="script.js"></script>
+  </body>
+</html>
