@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  // Next 16 defaults qualities to [75] only; allow 90 for sharp UI screenshots.
+  images: {
+    qualities: [75, 90],
+  },
   async redirects() {
     return [
       {
