@@ -3,5 +3,13 @@
   "installCommand": "echo skip",
   "buildCommand": "bash vercel-build.sh",
   "outputDirectory": "build/web",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    }
+  ],
+  "rewrites": [{ "source": "/((?!robots\\.txt).*)", "destination": "/index.html" }]
 }

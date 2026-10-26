@@ -1,0 +1,12 @@
+# UpdateApply
+
+> Tailor a resume for each job from one honest work profile. Private beta — join the waitlist at the marketing site. Signing up does not open the app.
+
+## Site
+
+- Homepage / waitlist: https://updateapply.com
+- Product app (private beta, not for public indexing): https://app.updateapply.com
+
+## Product
+
+UpdateApply keeps one work profile, drafts a tailored resume from a pasted job description, lets you edit the draft, and downloads a PDF so you can apply on the employer’s site.

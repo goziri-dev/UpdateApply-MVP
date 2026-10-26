@@ -1,0 +1,3 @@
+# Private beta app — do not index. Marketing site: https://updateapply.com
+User-agent: *
+Disallow: /

@@ -7,7 +7,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     {
-      url: `${site}/`,
+      // Match layout canonical (no trailing slash).
+      url: site,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,

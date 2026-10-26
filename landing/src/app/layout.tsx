@@ -60,10 +60,25 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: "UpdateApply",
-  url: siteUrl,
-  description: ogDescription,
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "UpdateApply",
+      url: siteUrl,
+      logo: `${siteUrl}/favicon.ico`,
+      description: ogDescription,
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      name: "UpdateApply",
+      url: siteUrl,
+      description: ogDescription,
+      publisher: { "@id": `${siteUrl}/#organization` },
+      inLanguage: "en",
+    },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
