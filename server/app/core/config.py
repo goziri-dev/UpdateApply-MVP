@@ -76,6 +76,8 @@ class Settings(BaseSettings):
     resend_from_email: str = "UpdateApply <noreply@updateapply.com>"
     admin_notify_email: str = ""
     app_public_url: str = "https://app.updateapply.com"
+    # Public API base for signed waitlist Approve/Reject email links.
+    api_public_url: str = "https://api.updateapply.com"
     # Optional Slack/Discord webhook for new waitlist signups (in addition to Resend).
     waitlist_notify_webhook_url: str = ""
 

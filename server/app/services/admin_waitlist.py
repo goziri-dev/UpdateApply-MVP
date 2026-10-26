@@ -74,6 +74,11 @@ def reject_waitlist(
     reviewed_by: str | None = None,
     note: str | None = None,
 ) -> WaitlistSignup:
+    """Mark waitlist rejected and revoke any active allowlist row for that email.
+
+    Reject does not delete the waitlist row (re-join stays a duplicate) and does
+    not ban Supabase Auth — the product gate is ``app_allowlist`` after sign-in.
+    """
     row = session.get(WaitlistSignup, signup_id)
     if row is None:
         raise AdminWaitlistError("not_found", "Waitlist signup not found.")
@@ -85,4 +90,7 @@ def reject_waitlist(
     session.add(row)
     session.commit()
     session.refresh(row)
+
+    # Symmetric with approve → upsert allowlist: reject removes app access.
+    allowlist_svc.revoke_allowlist(session, row.email)
     return row

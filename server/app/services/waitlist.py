@@ -72,6 +72,7 @@ def capture_email(
     session.add(row)
     try:
         session.commit()
+        session.refresh(row)
     except IntegrityError:
         session.rollback()
         return WaitlistResult(email=normalized, duplicate=True)
@@ -80,7 +81,12 @@ def capture_email(
     try:
         from app.services.email_notify import notify_favour_new_waitlist
 
-        notify_favour_new_waitlist(email=normalized, source=src)
+        notify_favour_new_waitlist(
+            email=normalized,
+            source=src,
+            signup_id=row.id,
+            created_at=row.created_at,
+        )
     except (OSError, RuntimeError, ValueError) as exc:
         logger.warning("Waitlist notify failed for %s: %s", normalized, exc)
 
