@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/data/auth_repository.dart';
+import '../../features/auth/state/allowlist_state.dart';
 import '../../features/auth/state/auth_state.dart';
 import '../../features/onboarding/state/onboarding_state.dart';
 import '../../services/api_client.dart';
@@ -42,6 +43,7 @@ class AuthRouterRefresh extends ChangeNotifier {
 
     if (!authRepository.isSignedIn) {
       onboardingGate.value = OnboardingGate.unknown;
+      allowlistGate.value = AllowlistGate.unknown;
       onboardingGateSyncing.value = false;
       onboardingGateSyncError.value = null;
       if (generation == _syncGeneration) notifyListeners();
@@ -55,17 +57,19 @@ class AuthRouterRefresh extends ChangeNotifier {
     try {
       final me = await apiClient.authMe();
       if (generation != _syncGeneration) return;
-      _applyStatus(me['onboarding_status']);
+      allowlistGate.value = allowlistFromMe(me);
+      if (allowlistGate.value == AllowlistGate.denied) {
+        onboardingGate.value = OnboardingGate.unknown;
+        onboardingGateSyncError.value = null;
+      } else {
+        _applyStatus(me['onboarding_status']);
+      }
     } on Object {
-      try {
-        final status = await onboardingService.status();
-        if (generation != _syncGeneration) return;
-        _applyStatus(status['status']);
-      } on Object {
-        if (generation != _syncGeneration) return;
-        if (onboardingGate.value == OnboardingGate.unknown) {
-          onboardingGateSyncError.value = _unreachableMessage;
-        }
+      // Onboarding status API is allowlist-gated; do not use it as a
+      // fallback for /auth/me (would 403 for denied users).
+      if (generation != _syncGeneration) return;
+      if (allowlistGate.value == AllowlistGate.unknown) {
+        onboardingGateSyncError.value = _unreachableMessage;
       }
     } finally {
       if (generation == _syncGeneration) {

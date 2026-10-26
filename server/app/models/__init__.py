@@ -1,5 +1,6 @@
 """SQLModel table modules — import here so Alembic sees metadata."""
 
+from app.models.app_allowlist import AppAllowlist
 from app.models.application import Application
 from app.models.company_board import CompanyBoard
 from app.models.job_posting import JobPosting
@@ -12,6 +13,7 @@ from app.models.user import User
 from app.models.waitlist_signup import WaitlistSignup
 
 __all__ = [
+    "AppAllowlist",
     "Application",
     "CompanyBoard",
     "JobPosting",

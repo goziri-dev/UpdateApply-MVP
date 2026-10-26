@@ -1,12 +1,19 @@
 """Auth routes — OAuth is handled by Supabase on the Flutter client; API verifies JWTs."""
 
-from fastapi import APIRouter
+from typing import Annotated
 
-from app.core.auth import CurrentUser, DbUser
+from fastapi import APIRouter, Depends
+from sqlmodel import Session
+
+from app.core.auth import CurrentUser, DbUserAny
 from app.core.config import get_settings
+from app.core.database import get_session
 from app.schemas.auth import AuthMeResponse, AuthProviderInfo, AuthProvidersResponse
+from app.services import allowlist as allowlist_svc
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 # Auth UI OAuth order: Google → GitHub → Notion (email/password via Supabase client).
 _PROVIDERS = ("google", "github", "notion")
@@ -33,8 +40,19 @@ def list_providers() -> AuthProvidersResponse:
 
 
 @router.get("/me", response_model=AuthMeResponse)
-def me(user: DbUser, auth: CurrentUser) -> AuthMeResponse:
-    """Upsert + return the persisted app ``User`` for the Bearer JWT."""
+def me(
+    user: DbUserAny,
+    auth: CurrentUser,
+    session: SessionDep,
+) -> AuthMeResponse:
+    """Upsert + return app ``User``. Does not 403 when not allowlisted (UX gate)."""
+    allowed = allowlist_svc.is_email_allowlisted(session, auth.email or user.email)
+    if allowed:
+        allowlist_svc.bind_user_id_if_missing(
+            session,
+            email=auth.email or user.email,
+            user_id=user.id,
+        )
     return AuthMeResponse(
         id=user.id,
         email=user.email,
@@ -43,6 +61,7 @@ def me(user: DbUser, auth: CurrentUser) -> AuthMeResponse:
         oauth_subject=user.oauth_subject,
         onboarding_status=user.onboarding_status,
         role=auth.role,
+        allowlisted=allowed,
         created_at=user.created_at,
         updated_at=user.updated_at,
     )

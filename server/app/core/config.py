@@ -67,6 +67,18 @@ class Settings(BaseSettings):
     notify_webhook_url: str = ""
     notify_webhook_timeout_seconds: float = 10.0
 
+    # Admin API (waitlist list/approve/reject + allowlist CRUD). Header: X-Admin-Key.
+    admin_api_key: str = ""
+
+    # Resend transactional email (waitlist notify Favour + optional "you're in").
+    # Empty RESEND_API_KEY → notify is logged/stubbed; signup still succeeds.
+    resend_api_key: str = ""
+    resend_from_email: str = "UpdateApply <noreply@updateapply.com>"
+    admin_notify_email: str = ""
+    app_public_url: str = "https://app.updateapply.com"
+    # Optional Slack/Discord webhook for new waitlist signups (in addition to Resend).
+    waitlist_notify_webhook_url: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
@@ -79,6 +91,14 @@ class Settings(BaseSettings):
     @property
     def openrouter_configured(self) -> bool:
         return bool(self.openrouter_api_key.strip())
+
+    @property
+    def admin_configured(self) -> bool:
+        return bool(self.admin_api_key.strip())
+
+    @property
+    def resend_configured(self) -> bool:
+        return bool(self.resend_api_key.strip() and self.admin_notify_email.strip())
 
 
 @lru_cache

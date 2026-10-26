@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../features/applications/ui/application_detail_screen.dart';
 import '../../features/resume/widgets/resume_html_frame.dart';
 import '../../features/applications/ui/applications_list_screen.dart';
+import '../../features/auth/state/allowlist_state.dart';
 import '../../features/auth/state/auth_state.dart';
 import '../../features/auth/ui/auth_screen.dart';
+import '../../features/auth/ui/waiting_screen.dart';
 import '../../features/home/ui/home_screen.dart';
 import '../../features/jobs_for_you/ui/jobs_for_you_screen.dart';
 import '../../features/jobs_for_you/ui/match_preferences_screen.dart';
@@ -46,6 +48,28 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
 
       if (!signedIn) {
         return onAuth ? null : '/auth';
+      }
+
+      final onWaiting = location == '/waiting';
+      final allow = allowlistGate.value;
+
+      // Allowlist not loaded yet — hold on /boot (same as onboarding unknown).
+      if (allow == AllowlistGate.unknown) {
+        if (onboardingGateSyncError.value != null && !onBoot) {
+          return '/boot';
+        }
+        return onBoot ? null : '/boot';
+      }
+
+      if (allow == AllowlistGate.denied) {
+        return onWaiting ? null : '/waiting';
+      }
+
+      // Allowed: leave /waiting if they were stuck there.
+      if (onWaiting) {
+        if (gate == OnboardingGate.complete) return '/';
+        if (gate == OnboardingGate.unknown) return '/boot';
+        return '/onboarding/upload';
       }
 
       // Status not loaded yet (or API unreachable) — never invent "needs
@@ -184,6 +208,10 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
         ],
       ),
       GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
+      GoRoute(
+        path: '/waiting',
+        builder: (context, state) => const WaitingScreen(),
+      ),
       GoRoute(
         path: '/boot',
         builder: (context, state) => GateLoadingScreen(authRefresh: refresh),

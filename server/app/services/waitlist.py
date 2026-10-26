@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 
@@ -9,6 +10,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.models.waitlist_signup import WaitlistSignup
+
+logger = logging.getLogger(__name__)
 
 EMAIL_MAX = 254
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -64,6 +67,7 @@ def capture_email(
         source=src,
         ip=ip_val,
         user_agent=ua,
+        status="pending",
     )
     session.add(row)
     try:
@@ -71,5 +75,13 @@ def capture_email(
     except IntegrityError:
         session.rollback()
         return WaitlistResult(email=normalized, duplicate=True)
+
+    # Best-effort notify Favour — never fail the signup path.
+    try:
+        from app.services.email_notify import notify_favour_new_waitlist
+
+        notify_favour_new_waitlist(email=normalized, source=src)
+    except (OSError, RuntimeError, ValueError) as exc:
+        logger.warning("Waitlist notify failed for %s: %s", normalized, exc)
 
     return WaitlistResult(email=normalized, duplicate=False)

@@ -6,7 +6,8 @@
 #   cd server && fly deploy
 
 app = "updateapply-mvp"
-primary_region = "iad"
+# Must match the live Machine region; min_machines_running only counts primary_region.
+primary_region = "fra"
 
 [build]
   dockerfile = "Dockerfile"
@@ -25,9 +26,9 @@ primary_region = "iad"
 [http_service]
   internal_port = 8000
   force_https = true
-  # Keep one warm Machine in the primary region so auth/API aren't cold-started every request.
-  # Excess capacity can still stop when idle. Set auto_stop_machines = "off" for always-on.
-  auto_stop_machines = "stop"
+  # Always-on: disable idle autostop so auth/API never cold-start (~7s).
+  # Keep min_machines_running = 1 aligned with primary_region for capacity logic.
+  auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
 

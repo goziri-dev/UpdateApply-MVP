@@ -258,5 +258,35 @@ async def get_user(
     return upsert_user_from_auth(session, auth)
 
 
+async def get_allowlisted_user(
+    auth: Annotated[AuthUser, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
+) -> User:
+    """JWT + upsert, then require an active ``app_allowlist`` row for the email."""
+    from app.services import allowlist as allowlist_svc
+
+    if not allowlist_svc.is_email_allowlisted(session, auth.email):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": "not_allowlisted",
+                "message": (
+                    "This account is not approved for the private beta yet. "
+                    "Join the waitlist at https://updateapply.com — "
+                    "waitlist signup does not grant access by itself."
+                ),
+            },
+        )
+    user = upsert_user_from_auth(session, auth)
+    allowlist_svc.bind_user_id_if_missing(
+        session,
+        email=auth.email,
+        user_id=user.id,
+    )
+    return user
+
+
 CurrentUser = Annotated[AuthUser, Depends(get_current_user)]
-DbUser = Annotated[User, Depends(get_user)]
+DbUser = Annotated[User, Depends(get_allowlisted_user)]
+# JWT + upsert without allowlist (e.g. /auth/me status for blocked UX).
+DbUserAny = Annotated[User, Depends(get_user)]
