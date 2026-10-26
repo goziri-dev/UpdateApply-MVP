@@ -86,6 +86,8 @@ Prototype (approved, then implemented): `prototypes/applications/`.
 
 Sign-in uses **same-tab** redirect (PKCE). The IdP returns to the current origin; you should end with **one** UpdateApply tab, not a leftover original + callback tab.
 
+The web app uses **path URLs** (`/auth`, `/boot`, …) via `usePathUrlStrategy()` — not hash (`/#/auth`). Vercel `vercel.json` rewrites unknown paths to `index.html` so deep links and OAuth returns work.
+
 Pin a stable web origin when developing so Supabase allow-lists match:
 
 ```bash
@@ -98,9 +100,12 @@ In **Supabase Dashboard → Authentication → URL Configuration**, confirm:
 |-------|---------------|--------|
 | Site URL | `http://localhost:5000` | Prefer the pinned `--web-port` origin |
 | Redirect URLs | `http://localhost:5000` | Same origin; add production origins too |
+| Redirect URLs | `https://www.updateapply.com` | Production (and apex `https://updateapply.com` if used) |
 | Redirect URLs | `io.updateapply.app://login-callback/` | Native deep link (when shipping mobile) |
 
 Optional dart-define `SUPABASE_AUTH_REDIRECT_URL` overrides the redirect; on web leave it empty so the app uses `Uri.base.origin` (must still be allow-listed). Enable providers under **Authentication → Providers** (Google, GitHub, Notion, Email).
+
+OAuth returns as `https://<origin>/?code=…` (path strategy). Same-origin allow-list is enough — no `/#/` redirect entries needed.
 
 ## Onboarding tone
 

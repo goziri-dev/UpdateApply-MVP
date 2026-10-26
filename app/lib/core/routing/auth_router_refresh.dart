@@ -24,40 +24,55 @@ class AuthRouterRefresh extends ChangeNotifier {
   }
 
   StreamSubscription<AuthState>? _subscription;
+  int _syncGeneration = 0;
 
   static const _unreachableMessage = "Can't reach the server.";
 
   Future<void> retryGateSync() => _syncGateAndNotify();
 
   Future<void> _syncGateAndNotify() async {
+    final generation = ++_syncGeneration;
+
+    // ReplaySubject may emit initialSession(null) before signedIn; never treat
+    // that as a final signed-out redirect until bootstrap marked auth ready.
+    if (!authHydrated.value) {
+      notifyListeners();
+      return;
+    }
+
     if (!authRepository.isSignedIn) {
       onboardingGate.value = OnboardingGate.unknown;
       onboardingGateSyncing.value = false;
       onboardingGateSyncError.value = null;
-      notifyListeners();
+      if (generation == _syncGeneration) notifyListeners();
       return;
     }
 
     onboardingGateSyncing.value = true;
     onboardingGateSyncError.value = null;
-    notifyListeners();
+    if (generation == _syncGeneration) notifyListeners();
 
     try {
       final me = await apiClient.authMe();
+      if (generation != _syncGeneration) return;
       _applyStatus(me['onboarding_status']);
     } on Object {
       try {
         final status = await onboardingService.status();
+        if (generation != _syncGeneration) return;
         _applyStatus(status['status']);
       } on Object {
+        if (generation != _syncGeneration) return;
         if (onboardingGate.value == OnboardingGate.unknown) {
           onboardingGateSyncError.value = _unreachableMessage;
         }
       }
     } finally {
-      onboardingGateSyncing.value = false;
+      if (generation == _syncGeneration) {
+        onboardingGateSyncing.value = false;
+      }
     }
-    notifyListeners();
+    if (generation == _syncGeneration) notifyListeners();
   }
 
   void _applyStatus(Object? raw) {

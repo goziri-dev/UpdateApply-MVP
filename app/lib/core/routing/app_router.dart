@@ -37,6 +37,13 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
       final onOnboarding = _isOnboardingPath(location);
       final gate = onboardingGate.value;
 
+      // Hold on /boot until Supabase finishes PKCE / session restore. Otherwise
+      // an OAuth return with `?code=` briefly looks signed-out and lands on
+      // /auth until the user clicks the provider again.
+      if (!authHydrated.value) {
+        return onBoot ? null : '/boot';
+      }
+
       if (!signedIn) {
         return onAuth ? null : '/auth';
       }

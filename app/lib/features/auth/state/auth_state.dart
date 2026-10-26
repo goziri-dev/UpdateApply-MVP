@@ -17,12 +17,19 @@ final authErrorRef = create(() => signal<String?>(null));
 
 final authNoticeRef = create(() => signal<String?>(null));
 
+/// False until [bootstrapSupabase] finishes initial session / OAuth URL recovery.
+///
+/// GoRouter must not send users to `/auth` while this is false — otherwise a
+/// PKCE `?code=` return looks signed-out on the first frame.
+final authHydratedRef = create(() => signal(false));
+
 // Hot reload recreates ScopedRef keys without re-running main()/runScoped.
 // Fallbacks keep getters working until a full hot restart.
 AuthRepository? _authRepositoryFallback;
 Signal<AuthBusyTarget>? _authBusyFallback;
 Signal<String?>? _authErrorFallback;
 Signal<String?>? _authNoticeFallback;
+Signal<bool>? _authHydratedFallback;
 
 AuthRepository get authRepository => read(
   authRepositoryRef,
@@ -43,6 +50,16 @@ Signal<String?> get authNotice => read(
   authNoticeRef,
   orElse: () => _authNoticeFallback ??= signal<String?>(null),
 );
+
+Signal<bool> get authHydrated => read(
+  authHydratedRef,
+  // Hot reload skips main()/bootstrap — assume already past OAuth hydrate.
+  orElse: () => _authHydratedFallback ??= signal(true),
+);
+
+void markAuthHydrated() {
+  authHydrated.value = true;
+}
 
 bool get isAuthBusy => authBusy.value != AuthBusyTarget.idle;
 

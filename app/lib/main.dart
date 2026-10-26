@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:scoped_deps/scoped_deps.dart';
 
@@ -15,6 +16,9 @@ import 'features/resume/state/master_resume_state.dart';
 import 'services/api_client.dart';
 
 Future<void> main() async {
+  // Path URLs (`/auth`) instead of hash (`/#/auth`) — must run before binding.
+  usePathUrlStrategy();
+
   // Binding + runApp must share the same zone (Flutter zone-mismatch rules).
   // ensureInitialized outside runScoped made GoRouter redirects resolve
   // onboardingGate via orElse fallbacks while auth sync wrote the scoped
@@ -24,12 +28,19 @@ Future<void> main() async {
       WidgetsFlutterBinding.ensureInitialized();
 
       try {
-        await bootstrapSupabase();
+        try {
+          await bootstrapSupabase();
+        } finally {
+          // Always release the auth gate — even if Supabase init fails we still
+          // show the error app / auth UI rather than hang on /boot.
+          markAuthHydrated();
+        }
         final refresh = AuthRouterRefresh();
         final router = createAppRouter(refresh);
         runApp(UpdateApplyApp(routerConfig: router, authRefresh: refresh));
       } on Object catch (error, stackTrace) {
         debugPrint('UpdateApply bootstrap failed: $error\n$stackTrace');
+        markAuthHydrated();
         runApp(_BootstrapErrorApp(error: error, stackTrace: stackTrace));
       }
     },
@@ -38,6 +49,7 @@ Future<void> main() async {
       authBusyRef,
       authErrorRef,
       authNoticeRef,
+      authHydratedRef,
       apiClientRef,
       onboardingServiceRef,
       onboardingGateRef,
