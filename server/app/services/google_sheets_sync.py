@@ -92,7 +92,8 @@ def append_waitlist_row(
     payload: dict[str, Any] = {
         "connected_account_id": account_id,
         "arguments": {
-            "spreadsheet_id": sheet_id,
+            # Composio GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND schema (camelCase).
+            "spreadsheetId": sheet_id,
             "range": range_a1,
             "values": values,
             "valueInputOption": "USER_ENTERED",
