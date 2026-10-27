@@ -66,7 +66,7 @@ const jsonLd = {
       "@id": `${siteUrl}/#organization`,
       name: "UpdateApply",
       url: siteUrl,
-      logo: `${siteUrl}/favicon.ico`,
+      logo: `${siteUrl}/icon.png`,
       description: ogDescription,
     },
     {
