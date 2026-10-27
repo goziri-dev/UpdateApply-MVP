@@ -81,6 +81,12 @@ class Settings(BaseSettings):
     # Optional Slack/Discord webhook for new waitlist signups (in addition to Resend).
     waitlist_notify_webhook_url: str = ""
 
+    # Waitlist → Google Sheet sync via Composio (best-effort; empty → skip).
+    waitlist_google_sheet_id: str = ""
+    waitlist_google_sheet_range: str = "Sheet1!A:H"
+    composio_api_key: str = ""
+    composio_google_sheets_account_id: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

@@ -10,8 +10,14 @@ import {
 } from "react";
 
 import {
+  CAREER_STAGES,
   normalizeEmail,
+  normalizeName,
+  validateCareerStage,
+  validateChallenges,
   validateEmail,
+  validateName,
+  type CareerStage,
   type WaitlistErrorBody,
   type WaitlistSuccess,
 } from "@/lib/waitlist";
@@ -20,19 +26,27 @@ type Phase = "form" | "confirm";
 type ConfirmKind = "success" | "duplicate";
 
 export function WaitlistForm() {
+  const nameId = useId();
   const emailId = useId();
+  const stageId = useId();
+  const challengesId = useId();
   const privacyId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [careerStage, setCareerStage] = useState<CareerStage | "">("");
+  const [challenges, setChallenges] = useState("");
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("form");
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>("success");
   const [confirmEmail, setConfirmEmail] = useState("");
 
-  const focusEmail = useCallback(() => {
+  const focusFirst = useCallback(() => {
     window.setTimeout(() => {
-      if (phase === "form") inputRef.current?.focus();
+      if (phase === "form") nameRef.current?.focus();
     }, 280);
   }, [phase]);
 
@@ -40,11 +54,11 @@ export function WaitlistForm() {
     const onHashFocus = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
       const anchor = target?.closest?.('a[href="#waitlist"]');
-      if (anchor) focusEmail();
+      if (anchor) focusFirst();
     };
     document.addEventListener("click", onHashFocus);
     return () => document.removeEventListener("click", onHashFocus);
-  }, [focusEmail]);
+  }, [focusFirst]);
 
   function showForm() {
     setLoading(false);
@@ -60,14 +74,32 @@ export function WaitlistForm() {
     setPhase("confirm");
   }
 
-  async function submitEmail(raw: string) {
-    const normalized = normalizeEmail(raw);
+  async function submitSignup() {
+    const normalizedName = normalizeName(name);
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedChallenges = challenges.trim();
     setAlert(null);
 
-    const clientError = validateEmail(normalized);
-    if (clientError) {
-      setAlert(clientError);
-      inputRef.current?.focus();
+    const nameError = validateName(normalizedName);
+    if (nameError) {
+      setAlert(nameError);
+      nameRef.current?.focus();
+      return;
+    }
+    const emailError = validateEmail(normalizedEmail);
+    if (emailError) {
+      setAlert(emailError);
+      emailRef.current?.focus();
+      return;
+    }
+    const stageError = validateCareerStage(careerStage);
+    if (stageError) {
+      setAlert(stageError);
+      return;
+    }
+    const challengesError = validateChallenges(normalizedChallenges);
+    if (challengesError) {
+      setAlert(challengesError);
       return;
     }
 
@@ -76,7 +108,13 @@ export function WaitlistForm() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: normalized, source: "landing" }),
+        body: JSON.stringify({
+          name: normalizedName,
+          email: normalizedEmail,
+          career_stage: careerStage,
+          job_search_challenges: normalizedChallenges || undefined,
+          source: "landing",
+        }),
       });
 
       const data = (await res.json().catch(() => null)) as
@@ -95,24 +133,27 @@ export function WaitlistForm() {
           : "We couldn’t save that just now. Try again in a moment.";
       setLoading(false);
       setAlert(message);
-      inputRef.current?.focus();
+      nameRef.current?.focus();
     } catch {
       setLoading(false);
       setAlert("We couldn’t save that just now. Try again in a moment.");
-      inputRef.current?.focus();
+      nameRef.current?.focus();
     }
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading) return;
-    void submitEmail(email);
+    void submitSignup();
   }
 
   function onReset() {
+    setName("");
     setEmail("");
+    setCareerStage("");
+    setChallenges("");
     showForm();
-    inputRef.current?.focus();
+    nameRef.current?.focus();
   }
 
   return (
@@ -121,26 +162,88 @@ export function WaitlistForm() {
         {alert}
       </div>
 
-      <div className="fields" id="form-fields" hidden={phase !== "form"}>
-        <label className="sr-only" htmlFor={emailId}>
-          Email
-        </label>
-        <input
-          ref={inputRef}
-          id={emailId}
-          name="email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          maxLength={254}
-          placeholder="you@example.com"
-          aria-describedby={privacyId}
-          aria-invalid={alert ? true : undefined}
-          value={email}
-          disabled={loading}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <button className="btn" type="submit" disabled={loading} aria-busy={loading}>
+      <div className="fields fields-stack" id="form-fields" hidden={phase !== "form"}>
+        <div className="field">
+          <label className="field-label" htmlFor={nameId}>
+            Name
+          </label>
+          <input
+            ref={nameRef}
+            id={nameId}
+            name="name"
+            type="text"
+            autoComplete="name"
+            maxLength={120}
+            placeholder="Your name"
+            aria-invalid={alert ? true : undefined}
+            value={name}
+            disabled={loading}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label className="field-label" htmlFor={emailId}>
+            Email
+          </label>
+          <input
+            ref={emailRef}
+            id={emailId}
+            name="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            maxLength={254}
+            placeholder="you@example.com"
+            aria-describedby={privacyId}
+            aria-invalid={alert ? true : undefined}
+            value={email}
+            disabled={loading}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label className="field-label" htmlFor={stageId}>
+            Career stage
+          </label>
+          <select
+            id={stageId}
+            name="career_stage"
+            value={careerStage}
+            disabled={loading}
+            aria-invalid={alert ? true : undefined}
+            onChange={(e) => setCareerStage(e.target.value as CareerStage | "")}
+          >
+            <option value="" disabled>
+              Select one
+            </option>
+            {CAREER_STAGES.map((stage) => (
+              <option key={stage.value} value={stage.value}>
+                {stage.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field">
+          <label className="field-label" htmlFor={challengesId}>
+            What’s hardest about your job search?{" "}
+            <span className="optional">(optional)</span>
+          </label>
+          <textarea
+            id={challengesId}
+            name="job_search_challenges"
+            rows={3}
+            maxLength={1000}
+            placeholder="Tailoring resumes, finding roles, staying organized…"
+            value={challenges}
+            disabled={loading}
+            onChange={(e) => setChallenges(e.target.value)}
+          />
+        </div>
+
+        <button className="btn btn-submit" type="submit" disabled={loading} aria-busy={loading}>
           <span className="btn-label">
             {loading ? "Joining…" : "Join the waitlist"}
           </span>
@@ -155,7 +258,8 @@ export function WaitlistForm() {
             : "You’re on the list."}
         </p>
         <p className="confirm-body">
-          We’ll write to this address when a spot opens.
+          Check your inbox for a short welcome note. We’ll write again when a
+          spot opens.
         </p>
         <p className="confirm-email" title={confirmEmail}>
           {confirmEmail}
@@ -171,8 +275,9 @@ export function WaitlistForm() {
       </div>
 
       <p className="privacy" id={privacyId}>
-        We store your email only to tell you when a spot opens. We don’t sell
-        it. Joining does not create an account or open the app.
+        We store your name, email, and career stage to run the waitlist — and
+        any note you share about job-search challenges. We don’t sell it.
+        Joining does not create an account or open the app.
       </p>
     </form>
   );

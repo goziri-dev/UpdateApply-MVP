@@ -314,20 +314,45 @@ h1 em {
   animation: swap 200ms var(--ease-out) both;
 }
 
+.fields-stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+  gap: calc(var(--space) * 2);
+  text-align: left;
+}
+
 .fields[hidden],
 .confirm[hidden],
 .alert[hidden] {
   display: none !important;
 }
 
-.fields input {
-  flex: 0 1 280px;
+.field {
+  display: grid;
+  gap: calc(var(--space) * 0.75);
+}
+
+.field-label {
+  font-size: var(--label-size);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.field-label .optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.fields input,
+.fields select,
+.fields textarea {
   width: 100%;
-  max-width: 320px;
-  min-height: 48px;
-  height: 48px;
   padding: 0 calc(var(--space) * 2.5);
-  border-radius: var(--pill);
+  border-radius: 14px;
   border: 1.5px solid var(--line);
   background: var(--surface);
   color: var(--ink);
@@ -335,18 +360,56 @@ h1 em {
   font-weight: 500;
 }
 
-.fields input::placeholder {
+.fields input,
+.fields select {
+  min-height: 48px;
+  height: 48px;
+}
+
+.fields select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size:
+    6px 6px,
+    6px 6px;
+  background-repeat: no-repeat;
+  padding-right: calc(var(--space) * 5);
+}
+
+.fields textarea {
+  min-height: 96px;
+  padding-top: calc(var(--space) * 1.75);
+  padding-bottom: calc(var(--space) * 1.75);
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.fields input::placeholder,
+.fields textarea::placeholder {
   color: var(--hint);
   font-weight: 400;
 }
 
-.fields input:focus {
+.fields input:focus,
+.fields select:focus,
+.fields textarea:focus {
   outline: none;
   border-color: var(--accent);
 }
 
-.fields input[aria-invalid="true"] {
+.fields input[aria-invalid="true"],
+.fields select[aria-invalid="true"],
+.fields textarea[aria-invalid="true"] {
   border-color: var(--danger);
+}
+
+.fields .btn-submit {
+  width: 100%;
+  margin-top: calc(var(--space) * 0.5);
 }
 
 .btn {
