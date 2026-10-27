@@ -49,6 +49,21 @@ Rules:
 - Honesty: do NOT invent employers, metrics, degrees, tools, titles, or
   achievements that are not supported by master_resume or retrieved_chunks.
 - Prefer concrete wording from the master; tighten for the JD without lying.
+- Experience bullets must carry a meaningful WHY, not just what was done.
+  For each bullet, make clear why the work mattered for that role/company and
+  how it helped (scope, problem solved, decision rationale, or business/
+  product impact). Example shape: skill/action + why it was needed here +
+  what changed for the team/company. Avoid hollow lists of tools with no
+  purpose (e.g. do not stop at "Used HTML/CSS/JS" — explain why those were
+  the right tools for this product and what that enabled).
+- Aim for 4–6 strong bullets per kept experience entry. Expand thin roles
+  by splitting/rephrasing supported facts from master_resume/retrieved_chunks
+  into distinct why/impact bullets. Do not invent facts just to hit the
+  count; if the source truly cannot support 4, keep as many honest bullets
+  as possible and prefer depth over filler. Drop a bullet only when it is
+  clearly irrelevant to the JD.
+- Projects: prefer the same why/impact bar; typically 3–6 bullets when the
+  source supports it.
 - meta.target_role / meta.company: use request hints when provided, else infer
   lightly from the JD title/company if obvious, else leave empty.
 - Keep experience/project entries that still matter; drop weak bullets only when

@@ -7,6 +7,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../applications/services/applications_service.dart';
+import '../../onboarding/services/interview_audio.dart';
+import '../../onboarding/state/onboarding_state.dart';
+import '../../onboarding/widgets/interview_recording_indicator.dart';
 import '../services/resume_service.dart';
 import '../state/master_resume_state.dart';
 import '../widgets/resume_document_form.dart';
@@ -60,13 +63,20 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
   final _resumeService = ResumeService();
   final _applicationsService = ApplicationsService();
   final _instruction = TextEditingController();
+  final _audio = InterviewAudio();
   ResumeDocumentFormState? _formState;
 
   bool _loading = true;
   bool _saving = false;
   bool _proposing = false;
+  bool _recording = false;
+  bool _transcribing = false;
+  bool _micDenied = false;
+  bool _audioUnsupported = false;
+  String _seedBeforeRecord = '';
   String? _error;
   String? _banner;
+  String? _voiceInfo;
   Map<String, dynamic>? _document;
   Map<String, dynamic>? _baselineBeforeProposal;
   String? _sessionId;
@@ -88,6 +98,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
   @override
   void initState() {
     super.initState();
+    _audioUnsupported = !_audio.isSupported;
     _load();
   }
 
@@ -98,6 +109,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
       // Best-effort; do not block dispose.
       unawaited(_resumeService.clearEditSession(sid));
     }
+    _audio.dispose();
     _instruction.dispose();
     super.dispose();
   }
@@ -224,9 +236,134 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
     });
   }
 
+  Future<void> _toggleMic() async {
+    if (_transcribing || _proposing || _saving) return;
+
+    if (_recording) {
+      await _stopAndTranscribe();
+      return;
+    }
+
+    if (_micDenied) {
+      setState(
+        () => _error =
+            'Microphone permission was denied. Type your ${_mode == _HarnessMode.ask ? 'question' : 'instruction'} instead.',
+      );
+      return;
+    }
+
+    if (_audioUnsupported || !_audio.isSupported) {
+      setState(() {
+        _audioUnsupported = true;
+        _error =
+            'Voice isn’t available here. Type your ${_mode == _HarnessMode.ask ? 'question' : 'instruction'} instead.';
+      });
+      return;
+    }
+
+    setState(() {
+      _error = null;
+      _voiceInfo = null;
+    });
+    _seedBeforeRecord = _instruction.text.trim();
+    final result = await _audio.start();
+    if (!mounted) return;
+
+    switch (result) {
+      case InterviewAudioStart.started:
+        setState(() {
+          _recording = true;
+          _micDenied = false;
+          _voiceInfo = 'Recording… tap stop when you’re done.';
+        });
+      case InterviewAudioStart.denied:
+        setState(() {
+          _micDenied = true;
+          _recording = false;
+          _error =
+              'Microphone permission was denied. Type your ${_mode == _HarnessMode.ask ? 'question' : 'instruction'} instead.';
+        });
+      case InterviewAudioStart.unsupported:
+        setState(() {
+          _audioUnsupported = true;
+          _recording = false;
+          _error =
+              'Voice isn’t available here. Type your ${_mode == _HarnessMode.ask ? 'question' : 'instruction'} instead.';
+        });
+      case InterviewAudioStart.failed:
+        setState(() {
+          _recording = false;
+          _error =
+              'Couldn’t start the mic. Type your ${_mode == _HarnessMode.ask ? 'question' : 'instruction'} instead.';
+        });
+    }
+  }
+
+  Future<void> _stopAndTranscribe() async {
+    if (!_recording) return;
+    setState(() {
+      _recording = false;
+      _transcribing = true;
+      _voiceInfo = 'Transcribing…';
+      _error = null;
+    });
+
+    InterviewAudioClip? clip;
+    try {
+      clip = await _audio.stop();
+    } on Object {
+      clip = null;
+    }
+
+    if (!mounted) return;
+
+    if (clip == null || clip.bytes.isEmpty) {
+      setState(() {
+        _transcribing = false;
+        _voiceInfo = null;
+        _error = 'No audio captured. Try again or type instead.';
+      });
+      return;
+    }
+
+    try {
+      final transcript = await onboardingService.transcribeAudio(
+        bytes: clip.bytes,
+        filename: clip.filename,
+      );
+      if (!mounted) return;
+      final merged = [
+        if (_seedBeforeRecord.isNotEmpty) _seedBeforeRecord,
+        transcript,
+      ].join(' ').trim();
+      _instruction.value = TextEditingValue(
+        text: merged,
+        selection: TextSelection.collapsed(offset: merged.length),
+      );
+      setState(() {
+        _voiceInfo = 'Transcript ready — edit if needed, then continue.';
+        _error = null;
+      });
+    } on DioException catch (e) {
+      setState(() {
+        _voiceInfo = null;
+        _error = '${_dioMessage(e)} You can type instead.';
+      });
+    } on Object catch (e) {
+      setState(() {
+        _voiceInfo = null;
+        _error = 'Transcription failed ($e). Type instead.';
+      });
+    } finally {
+      if (mounted) setState(() => _transcribing = false);
+    }
+  }
+
   Future<void> _propose() async {
     final form = _form;
     if (form == null) return;
+    if (_recording) await _stopAndTranscribe();
+    if (_transcribing) return;
     final instruction = _instruction.text.trim();
     if (instruction.isEmpty) {
       setState(
@@ -244,6 +381,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
     setState(() {
       _proposing = true;
       _error = null;
+      _voiceInfo = null;
     });
     try {
       final result = await _resumeService.proposeEdit(
@@ -365,14 +503,27 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
 
   String get _helperCopy => switch (_mode) {
     _HarnessMode.edit =>
-      'Describe a change to your resume. We won’t invent details.',
-    _HarnessMode.ask => 'Ask a question about your resume. Nothing changes until you switch to Edit.',
+      'Speak or type a change to your resume. We won’t invent details.',
+    _HarnessMode.ask => 'Speak or type a question about your resume. Nothing changes until you switch to Edit.',
   };
 
   String get _ctaLabel => switch (_mode) {
     _HarnessMode.edit => 'Propose edits',
     _HarnessMode.ask => 'Ask',
   };
+
+  String get _micHint {
+    if (_transcribing) return 'Transcribing…';
+    if (_recording) return 'Recording… tap to stop';
+    if (_micDenied) return 'Mic blocked — type instead';
+    if (_audioUnsupported) return 'Voice unavailable — type instead';
+    return _mode == _HarnessMode.ask
+        ? 'Tap to record your question'
+        : 'Tap to record your instruction';
+  }
+
+  bool get _micBusy => _proposing || _saving || _transcribing;
+  bool get _inputBusy => _proposing || _saving || _recording || _transcribing;
 
   @override
   Widget build(BuildContext context) {
@@ -502,9 +653,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                             child: Text('Agent', style: type.titleMedium),
                           ),
                           TextButton(
-                            onPressed: _proposing || _saving
-                                ? null
-                                : _resetSession,
+                            onPressed: _inputBusy ? null : _resetSession,
                             child: const Text('Reset chat'),
                           ),
                         ],
@@ -518,7 +667,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                             ChoiceChip(
                               label: Text(m.label),
                               selected: _mode == m,
-                              onSelected: _proposing || _saving
+                              onSelected: _inputBusy
                                   ? null
                                   : (selected) {
                                       if (selected) {
@@ -599,13 +748,13 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                                   style: type.bodySmall,
                                 ),
                                 TextButton(
-                                  onPressed: _proposing || _saving
+                                  onPressed: _inputBusy
                                       ? null
                                       : _rejectProposal,
                                   child: const Text('Discard'),
                                 ),
                                 FilledButton.tonal(
-                                  onPressed: _proposing || _saving
+                                  onPressed: _inputBusy
                                       ? null
                                       : _acceptProposal,
                                   child: const Text('Keep'),
@@ -616,13 +765,75 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                         ),
                       ],
                       const SizedBox(height: AppSpacing.grid),
+                      Row(
+                        children: [
+                          Material(
+                            color: _recording
+                                ? scheme.error
+                                : (_transcribing
+                                      ? colors.muted
+                                      : scheme.primary),
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: _micBusy ? null : _toggleMic,
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: _transcribing
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(14),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: scheme.onPrimary,
+                                        ),
+                                      )
+                                    : Icon(
+                                        _recording ? Icons.stop : Icons.mic,
+                                        color: Colors.white,
+                                      ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.grid * 1.5),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(_micHint, style: type.bodyMedium),
+                                const SizedBox(height: 2),
+                                if (_recording)
+                                  const InterviewRecordingIndicator(
+                                    active: true,
+                                  )
+                                else
+                                  Text(
+                                    _voiceInfo ?? 'Or type below.',
+                                    style: type.bodySmall?.copyWith(
+                                      color: colors.muted,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.grid),
                       TextField(
                         controller: _instruction,
                         maxLines: 3,
+                        readOnly: _recording || _transcribing,
                         decoration: InputDecoration(
                           labelText: _mode == _HarnessMode.ask
                               ? 'Question'
                               : 'Instruction',
+                          hintText: _recording
+                              ? 'Listening… tap stop when done'
+                              : (_transcribing
+                                    ? 'Transcribing…'
+                                    : (_mode == _HarnessMode.ask
+                                          ? 'Ask anything about this resume'
+                                          : 'Describe the change you want')),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -630,7 +841,11 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                       ),
                       const SizedBox(height: AppSpacing.grid),
                       OutlinedButton(
-                        onPressed: _proposing || _saving ? null : _propose,
+                        // Allow tap while recording — `_propose` stops +
+                        // transcribes first (same pattern as deepen).
+                        onPressed: (_proposing || _saving || _transcribing)
+                            ? null
+                            : _propose,
                         child: _proposing
                             ? const SizedBox(
                                 width: 18,
@@ -657,7 +872,7 @@ class _ResumeEditScreenState extends State<ResumeEditScreen> {
                         ),
                       const SizedBox(height: AppSpacing.grid * 3),
                       FilledButton(
-                        onPressed: _saving || _proposing ? null : _save,
+                        onPressed: _inputBusy ? null : _save,
                         child: _saving
                             ? SizedBox(
                                 width: 18,
