@@ -42,6 +42,9 @@ def _waitlist_item(row: object) -> WaitlistAdminItem:
     return WaitlistAdminItem(
         id=row.id,  # type: ignore[attr-defined]
         email=row.email,  # type: ignore[attr-defined]
+        name=getattr(row, "name", None),
+        career_stage=getattr(row, "career_stage", None),
+        job_search_challenges=getattr(row, "job_search_challenges", None),
         source=row.source,  # type: ignore[attr-defined]
         status=row.status,  # type: ignore[attr-defined]
         created_at=row.created_at,  # type: ignore[attr-defined]

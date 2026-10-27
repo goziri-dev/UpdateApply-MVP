@@ -5,13 +5,16 @@ from sqlmodel import Field, SQLModel
 
 
 class WaitlistSignup(SQLModel, table=True):
-    """Marketing waitlist email only — does not grant app access."""
+    """Marketing waitlist capture — does not grant app access."""
 
     # pyrefly: ignore[bad-override]
     __tablename__ = "waitlist_signup"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     email: str = Field(index=True, unique=True, max_length=254)
+    name: str | None = Field(default=None, max_length=120)
+    career_stage: str | None = Field(default=None, max_length=32)
+    job_search_challenges: str | None = Field(default=None, max_length=1000)
     source: str | None = Field(default=None, max_length=64)
     ip: str | None = Field(default=None, max_length=64)
     user_agent: str | None = Field(default=None, max_length=512)

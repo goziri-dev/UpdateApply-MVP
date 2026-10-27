@@ -126,12 +126,18 @@ def build_favour_waitlist_email(
     signup_id: UUID | None,
     created_at: datetime | None,
     settings: Settings,
+    name: str | None = None,
+    career_stage: str | None = None,
+    job_search_challenges: str | None = None,
 ) -> tuple[str, str, str | None]:
     """Return (subject, text, html) for Favour’s new-signup notify."""
     subject = f"[UpdateApply] New waitlist signup: {email}"
     src = source or "unknown"
     sid = str(signup_id) if signup_id is not None else "unknown"
     submitted = _format_submitted_at(created_at)
+    display_name = (name or "").strip() or "—"
+    stage = (career_stage or "").strip() or "—"
+    challenges = (job_search_challenges or "").strip() or "—"
 
     approve_url: str | None = None
     reject_url: str | None = None
@@ -143,7 +149,10 @@ def build_favour_waitlist_email(
     text_lines = [
         "New waitlist signup",
         "",
+        f"Name: {display_name}",
         f"Email: {email}",
+        f"Career stage: {stage}",
+        f"Job-search challenges: {challenges}",
         f"Source: {src}",
         f"Waitlist id: {sid}",
         f"Submitted at: {submitted}",
@@ -169,7 +178,10 @@ def build_favour_waitlist_email(
 
     text = "\n".join(text_lines)
 
+    e_name = escape(display_name)
     e_email = escape(email)
+    e_stage = escape(stage)
+    e_challenges = escape(challenges)
     e_src = escape(src)
     e_sid = escape(sid)
     e_submitted = escape(submitted)
@@ -200,8 +212,15 @@ def build_favour_waitlist_email(
         "line-height:1.5;color:#111'>"
         "<h2 style='font-size:18px;margin:0 0 12px'>New waitlist signup</h2>"
         "<table style='border-collapse:collapse;font-size:14px'>"
+        f"<tr><td style='padding:4px 12px 4px 0;color:#555'>Name</td>"
+        f"<td><strong>{e_name}</strong></td></tr>"
         f"<tr><td style='padding:4px 12px 4px 0;color:#555'>Email</td>"
         f"<td><strong>{e_email}</strong></td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;color:#555'>Career stage</td>"
+        f"<td>{e_stage}</td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;color:#555;vertical-align:top'>"
+        "Challenges</td>"
+        f"<td>{e_challenges}</td></tr>"
         f"<tr><td style='padding:4px 12px 4px 0;color:#555'>Source</td>"
         f"<td>{e_src}</td></tr>"
         f"<tr><td style='padding:4px 12px 4px 0;color:#555'>Waitlist id</td>"
@@ -222,6 +241,9 @@ def notify_favour_new_waitlist(
     source: str | None = None,
     signup_id: UUID | None = None,
     created_at: datetime | None = None,
+    name: str | None = None,
+    career_stage: str | None = None,
+    job_search_challenges: str | None = None,
     settings: Settings | None = None,
 ) -> dict[str, bool]:
     """Email Favour (and optional webhook) when someone joins the waitlist."""
@@ -231,6 +253,9 @@ def notify_favour_new_waitlist(
         source=source,
         signup_id=signup_id,
         created_at=created_at,
+        name=name,
+        career_stage=career_stage,
+        job_search_challenges=job_search_challenges,
         settings=settings,
     )
     email_ok = False
@@ -250,6 +275,9 @@ def notify_favour_new_waitlist(
     webhook_payload: dict[str, Any] = {
         "type": "waitlist_signup",
         "email": email,
+        "name": name,
+        "career_stage": career_stage,
+        "job_search_challenges": job_search_challenges,
         "source": source,
     }
     if signup_id is not None:
@@ -263,6 +291,46 @@ def notify_favour_new_waitlist(
         timeout=10.0,
     )
     return {"email": email_ok, "webhook": webhook_ok}
+
+
+def notify_user_welcome(
+    *,
+    email: str,
+    name: str | None = None,
+    settings: Settings | None = None,
+) -> bool:
+    """Send a welcome note as soon as someone joins the waitlist."""
+    settings = settings or get_settings()
+    first = (name or "").strip().split(" ", 1)[0] if name else ""
+    greeting = f"Hi {first}," if first else "Hi,"
+    subject = "You're on the UpdateApply waitlist"
+    text = (
+        f"{greeting}\n\n"
+        "Thanks for joining the UpdateApply waitlist.\n\n"
+        "We're opening private beta in small batches. You're on the list — "
+        "we'll email this address when a spot opens. Joining does not open "
+        "the app yet.\n\n"
+        "— UpdateApply\n"
+    )
+    e_greeting = escape(greeting)
+    html = (
+        "<div style='font-family:ui-sans-serif,system-ui,sans-serif;"
+        "line-height:1.5;color:#111'>"
+        f"<p>{e_greeting}</p>"
+        "<p>Thanks for joining the <strong>UpdateApply</strong> waitlist.</p>"
+        "<p>We're opening private beta in small batches. You're on the list — "
+        "we'll email this address when a spot opens. Joining does not open "
+        "the app yet.</p>"
+        "<p>— UpdateApply</p>"
+        "</div>"
+    )
+    return _send_resend(
+        settings,
+        to=email,
+        subject=subject,
+        text=text,
+        html=html,
+    )
 
 
 def notify_user_approved(

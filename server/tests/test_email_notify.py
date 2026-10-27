@@ -26,6 +26,9 @@ def test_email_includes_fields_and_action_links() -> None:
     settings = _settings()
     subject, text, html = build_favour_waitlist_email(
         email="person@example.com",
+        name="Ada Lovelace",
+        career_stage="early_career",
+        job_search_challenges="Tailoring resumes",
         source="landing",
         signup_id=SIGNUP_ID,
         created_at=CREATED,
@@ -33,7 +36,10 @@ def test_email_includes_fields_and_action_links() -> None:
     )
     assert "person@example.com" in subject
     assert "New waitlist signup" in subject
+    assert "Name: Ada Lovelace" in text
     assert "Email: person@example.com" in text
+    assert "Career stage: early_career" in text
+    assert "Job-search challenges: Tailoring resumes" in text
     assert "Source: landing" in text
     assert str(SIGNUP_ID) in text
     assert "Submitted at:" in text
@@ -44,7 +50,9 @@ def test_email_includes_fields_and_action_links() -> None:
     assert "curl" not in text.lower()
 
     assert html is not None
+    assert "Ada Lovelace" in html
     assert "person@example.com" in html
+    assert "early_career" in html
     assert "Approve" in html
     assert "Reject" in html
     assert f"/api/v1/admin/waitlist/{SIGNUP_ID}/approve?t=" in html

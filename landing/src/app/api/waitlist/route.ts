@@ -3,13 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   normalizeEmail,
+  normalizeName,
+  validateCareerStage,
+  validateChallenges,
   validateEmail,
+  validateName,
+  type CareerStage,
   type WaitlistErrorBody,
   type WaitlistSuccess,
 } from "@/lib/waitlist";
 
 /**
- * Waitlist capture (TSK-50):
+ * Waitlist capture:
  * 1. WAITLIST_API_URL → proxy to FastAPI `POST /api/v1/waitlist`
  * 2. SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY → server-side insert into
  *    `waitlist_signup` (service role only; never expose to the browser)
@@ -21,6 +26,13 @@ const stubEmails = new Set<string>();
 const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 60_000;
 const hits = new Map<string, number[]>();
+
+type SignupFields = {
+  name: string;
+  email: string;
+  career_stage: CareerStage;
+  job_search_challenges: string | null;
+};
 
 function clientKey(req: NextRequest): string {
   return (
@@ -63,8 +75,40 @@ function supabaseConfigured(): boolean {
   );
 }
 
+function parseBody(body: unknown): SignupFields | WaitlistErrorBody {
+  if (!body || typeof body !== "object") {
+    return {
+      error: "invalid_email",
+      message: "Enter your email to join the waitlist.",
+    };
+  }
+  const raw = body as Record<string, unknown>;
+  const name = normalizeName(String(raw.name ?? ""));
+  const email = normalizeEmail(String(raw.email ?? ""));
+  const career_stage = String(raw.career_stage ?? "").trim();
+  const challengesRaw = String(raw.job_search_challenges ?? "").trim();
+
+  const nameErr = validateName(name);
+  if (nameErr) return { error: "invalid_name", message: nameErr };
+  const emailErr = validateEmail(email);
+  if (emailErr) return { error: "invalid_email", message: emailErr };
+  const stageErr = validateCareerStage(career_stage);
+  if (stageErr) return { error: "invalid_career_stage", message: stageErr };
+  const challengesErr = validateChallenges(challengesRaw);
+  if (challengesErr) {
+    return { error: "invalid_name", message: challengesErr };
+  }
+
+  return {
+    name,
+    email,
+    career_stage: career_stage as CareerStage,
+    job_search_challenges: challengesRaw || null,
+  };
+}
+
 async function captureInSupabase(
-  email: string,
+  fields: SignupFields,
   req: NextRequest,
 ): Promise<NextResponse> {
   const url = process.env.SUPABASE_URL!.trim();
@@ -78,19 +122,28 @@ async function captureInSupabase(
   const userAgent = req.headers.get("user-agent")?.slice(0, 512) ?? null;
 
   const { error } = await supabase.from("waitlist_signup").insert({
-    email,
+    email: fields.email,
+    name: fields.name,
+    career_stage: fields.career_stage,
+    job_search_challenges: fields.job_search_challenges,
     source,
     ip: ip === "local" ? null : ip,
     user_agent: userAgent,
   });
 
   if (!error) {
-    return successJson({ status: "ok", email, duplicate: false }, 201);
+    return successJson(
+      { status: "ok", email: fields.email, duplicate: false },
+      201,
+    );
   }
 
   // Unique violation → already on the list (idempotent success).
   if (error.code === "23505") {
-    return successJson({ status: "ok", email, duplicate: true }, 200);
+    return successJson(
+      { status: "ok", email: fields.email, duplicate: true },
+      200,
+    );
   }
 
   console.error("waitlist supabase insert failed", error.code, error.message);
@@ -101,7 +154,7 @@ async function captureInSupabase(
 }
 
 async function proxyToFastApi(
-  email: string,
+  fields: SignupFields,
   req: NextRequest,
 ): Promise<NextResponse> {
   const base = process.env.WAITLIST_API_URL!.replace(/\/$/, "");
@@ -112,7 +165,13 @@ async function proxyToFastApi(
       "user-agent": req.headers.get("user-agent") ?? "updateapply-landing",
       "x-forwarded-for": clientKey(req),
     },
-    body: JSON.stringify({ email, source: "landing" }),
+    body: JSON.stringify({
+      name: fields.name,
+      email: fields.email,
+      career_stage: fields.career_stage,
+      job_search_challenges: fields.job_search_challenges,
+      source: "landing",
+    }),
   });
 
   const text = await upstream.text();
@@ -133,7 +192,8 @@ async function proxyToFastApi(
     return successJson(
       {
         status: "ok",
-        email: typeof parsed?.email === "string" ? parsed.email : email,
+        email:
+          typeof parsed?.email === "string" ? parsed.email : fields.email,
         duplicate,
       },
       duplicate ? 200 : 201,
@@ -141,13 +201,28 @@ async function proxyToFastApi(
   }
 
   if (upstream.status === 409) {
-    return successJson({ status: "ok", email, duplicate: true }, 200);
+    return successJson(
+      { status: "ok", email: fields.email, duplicate: true },
+      200,
+    );
   }
 
   if (upstream.status === 400) {
+    const parsed = data as Partial<WaitlistErrorBody> | null;
+    const err = parsed?.error;
+    const message =
+      typeof parsed?.message === "string"
+        ? parsed.message
+        : "That doesn’t look like we can save.";
+    if (err === "invalid_name" || err === "invalid_career_stage") {
+      return errorJson(400, { error: err, message });
+    }
     return errorJson(400, {
       error: "invalid_email",
-      message: "That doesn’t look like an email we can save.",
+      message:
+        typeof parsed?.message === "string"
+          ? parsed.message
+          : "That doesn’t look like an email we can save.",
     });
   }
 
@@ -164,21 +239,27 @@ async function proxyToFastApi(
   });
 }
 
-function stubCapture(email: string): NextResponse {
+function stubCapture(fields: SignupFields): NextResponse {
   // Prototype-compatible force-fail for local UI checks.
-  if (email.startsWith("fail@")) {
+  if (fields.email.startsWith("fail@")) {
     return errorJson(500, {
       error: "save_failed",
       message: "We couldn’t save that just now. Try again in a moment.",
     });
   }
 
-  if (stubEmails.has(email)) {
-    return successJson({ status: "ok", email, duplicate: true }, 200);
+  if (stubEmails.has(fields.email)) {
+    return successJson(
+      { status: "ok", email: fields.email, duplicate: true },
+      200,
+    );
   }
 
-  stubEmails.add(email);
-  return successJson({ status: "ok", email, duplicate: false }, 201);
+  stubEmails.add(fields.email);
+  return successJson(
+    { status: "ok", email: fields.email, duplicate: false },
+    201,
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -199,19 +280,14 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const raw =
-    body && typeof body === "object" && "email" in body
-      ? String((body as { email: unknown }).email ?? "")
-      : "";
-  const email = normalizeEmail(raw);
-  const invalid = validateEmail(email);
-  if (invalid) {
-    return errorJson(400, { error: "invalid_email", message: invalid });
+  const parsed = parseBody(body);
+  if ("error" in parsed) {
+    return errorJson(400, parsed);
   }
 
   if (process.env.WAITLIST_API_URL) {
     try {
-      return await proxyToFastApi(email, req);
+      return await proxyToFastApi(parsed, req);
     } catch {
       return errorJson(502, {
         error: "save_failed",
@@ -222,7 +298,7 @@ export async function POST(req: NextRequest) {
 
   if (supabaseConfigured()) {
     try {
-      return await captureInSupabase(email, req);
+      return await captureInSupabase(parsed, req);
     } catch {
       return errorJson(502, {
         error: "save_failed",
@@ -231,5 +307,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return stubCapture(email);
+  return stubCapture(parsed);
 }

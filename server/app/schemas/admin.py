@@ -7,6 +7,9 @@ from pydantic import BaseModel, Field
 class WaitlistAdminItem(BaseModel):
     id: UUID
     email: str
+    name: str | None = None
+    career_stage: str | None = None
+    job_search_challenges: str | None = None
     source: str | None = None
     status: str
     created_at: datetime
