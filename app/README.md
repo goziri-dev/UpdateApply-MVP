@@ -15,6 +15,8 @@ Required `--dart-define` keys (see `.env.example` if present): `API_BASE_URL`, `
 
 Root Directory: `app`. Prefer Build Command `bash vercel-build.sh` (also set in `vercel.json` with Output `build/web`, Install `echo skip`).
 
+**CLI deploy:** always from the monorepo root via `bash scripts/deploy-app-web.sh` (or `vercel --prod` while cwd is the repo root with the project linked). Do **not** run `vercel` from inside `app/` — the project Root Directory is already `app`, so that upload looks for `app/app` and fails with `The specified Root Directory "app" does not exist.`
+
 `API_BASE_URL` is baked in at **build** time via `--dart-define`. Auth can work (Supabase in the browser) while the API still fails if the define was missing or still `http://localhost:8000` from a copied `.env`.
 
 In the Vercel project → **Settings → Environment Variables**, set for Production (and Preview if used):
