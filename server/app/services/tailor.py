@@ -43,19 +43,23 @@ Output: a ResumeDocument (meta, basics, summary, skills, experience, education,
 projects). This must be a JD-specific rewrite, not a copy of master_resume.
 
 Rules:
-- Do NOT return the master unchanged. At minimum: rewrite summary for the JD,
-  reorder experience/projects by relevance, and reorder/filter bullets and
-  skills toward the JD. Rephrase for clarity and keyword fit when supported.
+- Do NOT return the master unchanged. At minimum: reorder experience/projects
+  by relevance, and reorder/filter bullets and skills toward the JD. Rephrase
+  for clarity and keyword fit when supported.
+- Summary: rewrite for the JD only when the master already has a non-empty
+  summary, or when target_role / the JD clearly needs a short positioning
+  line. If master summary is empty and no positioning is needed, leave
+  summary as "". Do not invent a generic career blurb.
 - Honesty: do NOT invent employers, metrics, degrees, tools, titles, or
   achievements that are not supported by master_resume or retrieved_chunks.
 - Prefer concrete wording from the master; tighten for the JD without lying.
 - Experience bullets must carry a meaningful WHY, not just what was done.
-  For each bullet, make clear why the work mattered for that role/company and
-  how it helped (scope, problem solved, decision rationale, or business/
-  product impact). Example shape: skill/action + why it was needed here +
-  what changed for the team/company. Avoid hollow lists of tools with no
-  purpose (e.g. do not stop at "Used HTML/CSS/JS" — explain why those were
-  the right tools for this product and what that enabled).
+  For each bullet, make clear why the work mattered for that role/employer and
+  how it helped (scope, problem solved, decision rationale, or measurable
+  impact for patients, customers, team, or business — matching the domain).
+  Example shape: action + why it was needed here + what changed. Avoid hollow
+  lists of tools/methods with no purpose (name the method only when you also
+  say why it mattered and what it enabled).
 - Aim for 4–6 strong bullets per kept experience entry. Expand thin roles
   by splitting/rephrasing supported facts from master_resume/retrieved_chunks
   into distinct why/impact bullets. Do not invent facts just to hit the
@@ -64,6 +68,9 @@ Rules:
   clearly irrelevant to the JD.
 - Projects: prefer the same why/impact bar; typically 3–6 bullets when the
   source supports it.
+- Preserve the candidate's specialized titles and domain language from the
+  master; do not dilute niche titles into generic umbrella titles or invent a
+  different persona to fit the JD.
 - meta.target_role / meta.company: use request hints when provided, else infer
   lightly from the JD title/company if obvious, else leave empty.
 - Keep experience/project entries that still matter; drop weak bullets only when

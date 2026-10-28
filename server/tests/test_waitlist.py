@@ -61,3 +61,9 @@ def test_validate_challenges_optional() -> None:
     assert validate_challenges(None) is None
     assert validate_challenges("  ") is None
     assert validate_challenges("  Finding roles  ") == "Finding roles"
+
+
+def test_validate_challenges_too_long() -> None:
+    with pytest.raises(WaitlistValidationError) as exc:
+        validate_challenges("x" * 1001)
+    assert exc.value.code == "invalid_challenges"

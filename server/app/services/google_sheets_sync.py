@@ -1,9 +1,11 @@
 """Best-effort waitlist → Google Sheet sync via Composio.
 
 Requires:
-  WAITLIST_GOOGLE_SHEET_ID — spreadsheet ID (from the shared sheet URL)
-  COMPOSIO_API_KEY — Composio API key
-  COMPOSIO_GOOGLE_SHEETS_ACCOUNT_ID — connected Google Sheets account id
+  WAITLIST_GOOGLE_SHEET_ID — spreadsheet ID (or full Sheets URL)
+  COMPOSIO_API_KEY — Composio API key from the *same* project as the
+    Google Sheets connection
+  COMPOSIO_GOOGLE_SHEETS_ACCOUNT_ID — connected account id
+  COMPOSIO_USER_ID — user id that owns the connected account
 
 Missing config → log stub and return False (never fail signup).
 """
@@ -11,6 +13,7 @@ Missing config → log stub and return False (never fail signup).
 from __future__ import annotations
 
 import logging
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -20,10 +23,13 @@ from app.core.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 
+# Prefer current REST API; v3 remains supported.
 COMPOSIO_EXECUTE_URL = (
-    "https://backend.composio.dev/api/v3/tools/execute/"
+    "https://backend.composio.dev/api/v3.1/tools/execute/"
     "GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND"
 )
+
+_SHEET_ID_RE = re.compile(r"/spreadsheets/d/([a-zA-Z0-9_-]+)")
 
 CAREER_STAGE_LABELS = {
     "student": "Student / recent grad",
@@ -33,6 +39,20 @@ CAREER_STAGE_LABELS = {
     "career_changer": "Career changer",
     "other": "Other",
 }
+
+
+def normalize_spreadsheet_id(raw: str) -> str:
+    """Accept a bare ID or a full docs.google.com spreadsheet URL."""
+    value = raw.strip().strip('"').strip("'")
+    if not value:
+        return ""
+    match = _SHEET_ID_RE.search(value)
+    if match:
+        return match.group(1)
+    # Bare id (no path separators).
+    if "/" not in value and " " not in value:
+        return value
+    return value
 
 
 def _format_submitted_at(created_at: datetime | None) -> str:
@@ -59,16 +79,22 @@ def append_waitlist_row(
 ) -> bool:
     """Append one waitlist signup row to the shared Google Sheet."""
     settings = settings or get_settings()
-    sheet_id = settings.waitlist_google_sheet_id.strip()
-    api_key = settings.composio_api_key.strip()
-    account_id = settings.composio_google_sheets_account_id.strip()
+    sheet_id = normalize_spreadsheet_id(settings.waitlist_google_sheet_id)
+    api_key = settings.composio_api_key.strip().strip('"').strip("'")
+    account_id = (
+        settings.composio_google_sheets_account_id.strip().strip('"').strip("'")
+    )
+    user_id = settings.composio_user_id.strip().strip('"').strip("'")
     range_a1 = settings.waitlist_google_sheet_range.strip() or "Sheet1!A:H"
 
-    if not sheet_id or not api_key or not account_id:
-        logger.info(
-            "google_sheets_sync stub (missing config): email=%s sheet=%s",
-            email,
+    if not sheet_id or not api_key or not account_id or not user_id:
+        logger.warning(
+            "google_sheets_sync skipped (missing config): "
+            "sheet=%s key=%s account=%s user=%s",
             bool(sheet_id),
+            bool(api_key),
+            bool(account_id),
+            bool(user_id),
         )
         return False
 
@@ -91,8 +117,8 @@ def append_waitlist_row(
 
     payload: dict[str, Any] = {
         "connected_account_id": account_id,
+        "user_id": user_id,
         "arguments": {
-            # Composio GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND schema (camelCase).
             "spreadsheetId": sheet_id,
             "range": range_a1,
             "values": values,
@@ -113,18 +139,21 @@ def append_waitlist_row(
             )
         if resp.status_code >= 400:
             logger.warning(
-                "Composio Sheets append failed status=%s body=%s",
+                "Composio Sheets append failed status=%s body=%s "
+                "(check COMPOSIO_API_KEY is from the same project as "
+                "COMPOSIO_GOOGLE_SHEETS_ACCOUNT_ID)",
                 resp.status_code,
-                resp.text[:300],
+                resp.text[:400],
             )
             return False
         body = resp.json() if resp.content else {}
         if isinstance(body, dict) and body.get("successful") is False:
             logger.warning(
                 "Composio Sheets append unsuccessful: %s",
-                str(body.get("error") or body)[:300],
+                str(body.get("error") or body)[:400],
             )
             return False
+        logger.info("google_sheets_sync ok sheet=%s", sheet_id)
         return True
     except (httpx.HTTPError, OSError, ValueError) as exc:
         logger.warning("Composio Sheets request error: %s", exc)

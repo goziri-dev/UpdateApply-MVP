@@ -86,6 +86,7 @@ class Settings(BaseSettings):
     waitlist_google_sheet_range: str = "Sheet1!A:H"
     composio_api_key: str = ""
     composio_google_sheets_account_id: str = ""
+    composio_user_id: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:

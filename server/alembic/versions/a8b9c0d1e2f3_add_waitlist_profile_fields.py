@@ -21,8 +21,7 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.execute(
-        "ALTER TABLE public.waitlist_signup "
-        "ADD COLUMN IF NOT EXISTS name text NULL"
+        "ALTER TABLE public.waitlist_signup ADD COLUMN IF NOT EXISTS name text NULL"
     )
     op.execute(
         "ALTER TABLE public.waitlist_signup "
@@ -65,10 +64,7 @@ def downgrade() -> None:
         "DROP CONSTRAINT IF EXISTS waitlist_signup_career_stage_chk"
     )
     op.execute(
-        "ALTER TABLE public.waitlist_signup "
-        "DROP COLUMN IF EXISTS job_search_challenges"
+        "ALTER TABLE public.waitlist_signup DROP COLUMN IF EXISTS job_search_challenges"
     )
-    op.execute(
-        "ALTER TABLE public.waitlist_signup DROP COLUMN IF EXISTS career_stage"
-    )
+    op.execute("ALTER TABLE public.waitlist_signup DROP COLUMN IF EXISTS career_stage")
     op.execute("ALTER TABLE public.waitlist_signup DROP COLUMN IF EXISTS name")

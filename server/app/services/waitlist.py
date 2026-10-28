@@ -86,7 +86,7 @@ def validate_challenges(challenges: str | None) -> str | None:
         return None
     if len(cleaned) > CHALLENGES_MAX:
         raise WaitlistValidationError(
-            "invalid_name",
+            "invalid_challenges",
             "Keep that answer under 1000 characters.",
         )
     return cleaned

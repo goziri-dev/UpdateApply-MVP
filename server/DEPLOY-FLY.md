@@ -27,6 +27,16 @@ fly secrets set \
 # Optional
 # fly secrets set TAVILY_API_KEY='…' NOTIFY_WEBHOOK_URL='…'
 
+# Waitlist → Google Sheets (all five are required for sheet sync).
+# Create the API key and Google Sheets connection in the same Composio
+# Platform project; a Connect MCP account ID is not interchangeable.
+fly secrets set \
+  WAITLIST_GOOGLE_SHEET_ID='1h3SpdJP8Zk03uSb5SZPBJz2AVeS9qcneW_iBk16C2XQ' \
+  WAITLIST_GOOGLE_SHEET_RANGE='Sheet1!A:H' \
+  COMPOSIO_API_KEY='…' \
+  COMPOSIO_GOOGLE_SHEETS_ACCOUNT_ID='…' \
+  COMPOSIO_USER_ID='…'
+
 fly deploy
 ```
 

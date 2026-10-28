@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 
-
 CAREER_STAGES = (
     "student",
     "early_career",
