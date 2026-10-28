@@ -69,7 +69,7 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
       if (onWaiting) {
         if (gate == OnboardingGate.complete) return '/';
         if (gate == OnboardingGate.unknown) return '/boot';
-        return '/onboarding/upload';
+        return onboardingEntryLocation();
       }
 
       // Status not loaded yet (or API unreachable) — never invent "needs
@@ -81,17 +81,22 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
       if (onBoot) {
         // Gate resolved — leave the loading screen.
         if (gate == OnboardingGate.complete) return '/';
-        return '/onboarding/upload';
+        return onboardingEntryLocation();
       }
 
       // Signed in: leave auth. Prefer onboarding until complete.
       if (onAuth) {
         if (gate == OnboardingGate.complete) return '/';
-        return '/onboarding/upload';
+        return onboardingEntryLocation();
       }
 
       if (gate != OnboardingGate.complete && !onOnboarding) {
-        return '/onboarding/upload';
+        return onboardingEntryLocation();
+      }
+
+      if (gate != OnboardingGate.complete && onOnboarding) {
+        // Resume mid-flow (e.g. refresh on /upload after interview+review).
+        return onboardingCatchUpLocation(location);
       }
 
       if (gate == OnboardingGate.complete && onOnboarding) {

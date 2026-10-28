@@ -43,6 +43,7 @@ class AuthRouterRefresh extends ChangeNotifier {
 
     if (!authRepository.isSignedIn) {
       onboardingGate.value = OnboardingGate.unknown;
+      applyOnboardingStep(null);
       allowlistGate.value = AllowlistGate.unknown;
       onboardingGateSyncing.value = false;
       onboardingGateSyncError.value = null;
@@ -60,9 +61,21 @@ class AuthRouterRefresh extends ChangeNotifier {
       allowlistGate.value = allowlistFromMe(me);
       if (allowlistGate.value == AllowlistGate.denied) {
         onboardingGate.value = OnboardingGate.unknown;
+        applyOnboardingStep(null);
         onboardingGateSyncError.value = null;
       } else {
         _applyStatus(me['onboarding_status']);
+        // Prefer /onboarding/status so resume step survives boot redirects.
+        try {
+          final st = await onboardingService.status();
+          if (generation != _syncGeneration) return;
+          if (st['status'] != null) {
+            _applyStatus(st['status']);
+          }
+          applyOnboardingStep(st['step']);
+        } on Object {
+          // Keep /auth/me status; step stays previous/null until next sync.
+        }
       }
     } on Object {
       // Onboarding status API is allowlist-gated; do not use it as a
