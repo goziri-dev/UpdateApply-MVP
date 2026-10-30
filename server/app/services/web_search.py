@@ -60,6 +60,20 @@ class WebSearchService:
                 response = client.post(_TAVILY_URL, json=payload)
                 response.raise_for_status()
                 data = response.json()
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            logger.exception("tavily search failed status=%s", status)
+            if status in {401, 403}:
+                raise WebSearchError(
+                    "Web research isn’t authorized. Check TAVILY_API_KEY on the "
+                    "server (expected a tvly-… key), or use Edit for changes "
+                    "that don’t need verification.",
+                    code="search_unauthorized",
+                ) from exc
+            raise WebSearchError(
+                "Web research failed. Try again in a moment.",
+                code="search_failed",
+            ) from exc
         except httpx.HTTPError as exc:
             logger.exception("tavily search failed")
             raise WebSearchError(

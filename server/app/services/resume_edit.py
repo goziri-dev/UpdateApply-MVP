@@ -78,8 +78,10 @@ Inputs (JSON):
 1. resume — current ResumeDocument (source of truth for what they did).
 2. instruction — the question.
 3. search_query — the grounded query that was sent to web search.
-4. research — search snippets (title, url, content). May be incomplete.
-5. prior_turns — session context.
+4. research — search snippets (title, url, content). May be empty/incomplete.
+5. research_warning — optional note when live search failed; treat research as
+   unavailable and keep confidence low for public company facts.
+6. prior_turns — session context.
 
 Output: ResumeAskModel with:
 - answer — clear, practical answer (short paragraphs; no JSON edits)
@@ -259,7 +261,23 @@ class ResumeEditService:
         instruction: str,
     ) -> ResumeEditResponse:
         query = self._build_search_query(resume, instruction)
-        hits = self.search.search(query)
+        research_warning: str | None = None
+        try:
+            hits = self.search.search(query)
+        except WebSearchError as exc:
+            # Unconfigured / empty query stay hard failures; live search
+            # outages must not brick the Ask turn — answer from the resume.
+            if exc.code in {"research_unavailable", "empty_query"}:
+                raise
+            logger.warning(
+                "ask web search failed code=%s; answering from resume only",
+                exc.code,
+            )
+            hits = []
+            research_warning = (
+                "Live web research was unavailable for this turn; answer is "
+                "based on the resume only."
+            )
         llm = self.agents.create(
             AgentTask.RESUME_EDIT,
             timeout=_EDIT_TIMEOUT_MS,
@@ -270,6 +288,7 @@ class ResumeEditService:
             "instruction": instruction,
             "search_query": query,
             "research": hits,
+            "research_warning": research_warning,
             "prior_turns": self.sessions.transcript_for_prompt(session),
         }
         result = structured.invoke(
@@ -282,6 +301,8 @@ class ResumeEditService:
         detail = answer.answer.strip()
         if answer.research_notes and answer.research_notes.strip():
             detail = f"{detail}\n\nResearch: {answer.research_notes.strip()}"
+        if research_warning:
+            detail = f"{detail}\n\n{research_warning}"
         response = ResumeEditResponse(
             resume=resume,
             stub=False,
