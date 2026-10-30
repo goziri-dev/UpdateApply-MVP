@@ -20,8 +20,8 @@ primary_region = "fra"
   APP_NAME = "UpdateApply"
   APP_HOST = "0.0.0.0"
   APP_PORT = "8000"
-  # Prefer OS cron / separate Machine for catalog daily; leave false unless you want in-process.
-  ENABLE_DAILY_JOB_RUNNER = "false"
+  # In-process daily ingest/notify (solo MVP). Prefer a separate Machine/cron if this OOMs.
+  ENABLE_DAILY_JOB_RUNNER = "true"
 
 [http_service]
   internal_port = 8000
