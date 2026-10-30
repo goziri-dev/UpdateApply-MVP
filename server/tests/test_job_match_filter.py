@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import unittest
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 from app.services.job_match import (
+    DEFAULT_LOOKBACK_HOURS,
+    MAX_STALE_LOOKBACK_HOURS,
     _title_prefilter_clause,
+    effective_lookback_hours,
     location_allows,
     seniority_allows,
     title_matches,
@@ -157,6 +162,51 @@ class LocationFilterTests(unittest.TestCase):
             parse_status="ok",
         )
         self.assertFalse(ok)
+
+
+class EffectiveLookbackTests(unittest.TestCase):
+    def _session(self, max_seen: datetime | None) -> MagicMock:
+        session = MagicMock()
+        session.exec.return_value.one.return_value = max_seen
+        return session
+
+    def test_fresh_catalog_keeps_configured(self) -> None:
+        now = datetime(2026, 10, 30, 12, 0, tzinfo=UTC)
+        max_seen = now - timedelta(hours=12)
+        hours = effective_lookback_hours(
+            self._session(max_seen),
+            configured=DEFAULT_LOOKBACK_HOURS,
+            now=now,
+        )
+        self.assertEqual(hours, DEFAULT_LOOKBACK_HOURS)
+
+    def test_stale_catalog_widens(self) -> None:
+        now = datetime(2026, 10, 30, 12, 0, tzinfo=UTC)
+        max_seen = now - timedelta(hours=120)  # 5 days
+        hours = effective_lookback_hours(
+            self._session(max_seen),
+            configured=DEFAULT_LOOKBACK_HOURS,
+            now=now,
+        )
+        self.assertEqual(hours, 120 + 24)
+        self.assertGreater(hours, DEFAULT_LOOKBACK_HOURS)
+
+    def test_stale_catalog_caps_at_max(self) -> None:
+        now = datetime(2026, 10, 30, 12, 0, tzinfo=UTC)
+        max_seen = now - timedelta(days=30)
+        hours = effective_lookback_hours(
+            self._session(max_seen),
+            configured=DEFAULT_LOOKBACK_HOURS,
+            now=now,
+        )
+        self.assertEqual(hours, MAX_STALE_LOOKBACK_HOURS)
+
+    def test_empty_catalog_keeps_configured(self) -> None:
+        hours = effective_lookback_hours(
+            self._session(None),
+            configured=DEFAULT_LOOKBACK_HOURS,
+        )
+        self.assertEqual(hours, DEFAULT_LOOKBACK_HOURS)
 
 
 if __name__ == "__main__":

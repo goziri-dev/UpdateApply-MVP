@@ -26,6 +26,9 @@ from app.services.location_normalize import country_code_for, normalize_location
 
 # Approximate — Greenhouse often exposes updated_at, not first published.
 DEFAULT_LOOKBACK_HOURS = 48
+# When daily ingest misses days, widen Pass-1 freshness so Jobs For You is not
+# empty solely because last_seen_at aged past the default window. Cap hard.
+MAX_STALE_LOOKBACK_HOURS = 14 * 24
 DEFAULT_SHORTLIST_CAP = 10
 # Request path must stay interactive; daily / backfill_embeddings owns vectors.
 MAX_REQUEST_PATH_EMBEDS = 0
@@ -403,6 +406,39 @@ def lookback_cutoff(
     if when.tzinfo is None:
         when = when.replace(tzinfo=UTC)
     return when - timedelta(hours=hours)
+
+
+def effective_lookback_hours(
+    session: Session,
+    *,
+    configured: int = DEFAULT_LOOKBACK_HOURS,
+    now: datetime | None = None,
+) -> int:
+    """Widen lookback when the shared catalog is older than ``configured``.
+
+    Pass 1 keys off ``greatest(vendor_*, last_seen_at)``. After a missed daily
+    ingest, every active row ages out of the default window and Jobs For You
+    returns ``no_matches`` even when titles still match. Expand just enough to
+    cover the freshest ``last_seen_at`` (+1 day buffer), capped at
+    ``MAX_STALE_LOOKBACK_HOURS``.
+    """
+    base = max(1, int(configured))
+    when = now or datetime.now(UTC)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+
+    max_seen = session.exec(select(sa_func.max(col(JobPosting.last_seen_at)))).one()
+    if max_seen is None:
+        return base
+    if max_seen.tzinfo is None:
+        max_seen = max_seen.replace(tzinfo=UTC)
+
+    age_hours = (when - max_seen).total_seconds() / 3600.0
+    if age_hours <= base:
+        return base
+    # +24h so borderline rows near max_seen stay inside the window.
+    widened = int(age_hours) + 24
+    return min(max(base, widened), MAX_STALE_LOOKBACK_HOURS)
 
 
 def _title_prefilter_clause(titles: list[str]) -> ColumnElement[bool] | None:
@@ -836,13 +872,18 @@ def shortlist_for_user(
     *,
     user_id: UUID,
     cap: int = DEFAULT_SHORTLIST_CAP,
-    lookback_hours: int = DEFAULT_LOOKBACK_HOURS,
+    lookback_hours: int | None = None,
     settings: Settings | None = None,
     embeddings: EmbeddingsClient | None = None,
 ) -> list[ScoredHit]:
     """Filter → score → omit opened → rank → cap. Upserts match ledger rows."""
-    _ = settings or get_settings()
-    eligible = filter_eligible(session, prefs, lookback_hours=lookback_hours)
+    cfg = settings or get_settings()
+    if lookback_hours is None:
+        configured = max(1, int(cfg.job_match_lookback_hours))
+    else:
+        configured = max(1, int(lookback_hours))
+    hours = effective_lookback_hours(session, configured=configured)
+    eligible = filter_eligible(session, prefs, lookback_hours=hours)
     scored = score_eligible(session, user_id, eligible, embeddings=embeddings)
 
     opened_ids = {

@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     # Prefer OS cron → ``uv run updateapply-catalog daily``. In-process runner is optional.
     enable_daily_job_runner: bool = False
     daily_job_runner_hour_utc: int = 6
+    # Jobs For You Pass-1 freshness window (hours). Stale catalogs auto-widen
+    # up to 14 days via job_match.effective_lookback_hours.
+    job_match_lookback_hours: int = 48
     notify_daily_cap: int = 3
     notify_similarity_floor: float = 0.35
     # Optional outbound webhook (Slack/email bridge). Empty → in-app log only.
