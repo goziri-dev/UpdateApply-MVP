@@ -13,9 +13,15 @@ class ResumeMeta(BaseModel):
 
 
 class ResumeBasics(BaseModel):
+    """Identity / contact header shown on the classic resume template."""
+
     name: str = ""
     email: str = ""
+    phone: str = ""
     location: str = ""
+    citizenship: str = ""
+    availability: str = ""
+    languages: list[str] = Field(default_factory=list)
     links: list[str] = Field(default_factory=list)
 
 

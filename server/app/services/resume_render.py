@@ -179,6 +179,7 @@ def render_resume_html(
     has_content = bool(
         basics.name
         or basics.email
+        or basics.phone
         or resume.summary
         or skills
         or experience
@@ -191,7 +192,11 @@ def render_resume_html(
         basics={
             "name": basics.name,
             "email": basics.email,
+            "phone": basics.phone,
             "location": basics.location,
+            "citizenship": basics.citizenship,
+            "availability": basics.availability,
+            "languages": basics.languages,
             "links": basics.links,
         },
         summary=resume.summary,

@@ -14,12 +14,12 @@ from app.schemas.resume import (
     EducationItem,
     ExperienceItem,
     ProjectItem,
-    ResumeBasics,
     ResumeDocument,
     ResumeMeta,
     SkillGroup,
 )
 from app.services.onboarding import profile_public
+from app.services.resume_basics import basics_from_raw, basics_to_profile_dict
 
 
 def profile_to_resume_document(profile: dict[str, Any] | None) -> ResumeDocument:
@@ -30,14 +30,7 @@ def profile_to_resume_document(profile: dict[str, Any] | None) -> ResumeDocument
     return ensure_resume_item_ids(
         ResumeDocument(
             meta=ResumeMeta(version=1),
-            basics=ResumeBasics(
-                name=str(basics_raw.get("name") or ""),
-                email=str(basics_raw.get("email") or ""),
-                location=str(basics_raw.get("location") or ""),
-                links=[
-                    str(x) for x in (basics_raw.get("links") or []) if str(x).strip()
-                ],
-            ),
+            basics=basics_from_raw(basics_raw),
             summary=str(data.get("summary") or ""),
             skills=_skill_groups(data.get("skills")),
             experience=_experience_items(data.get("experience")),
@@ -58,14 +51,7 @@ def resume_document_to_profile_data(resume: ResumeDocument) -> dict[str, Any]:
     dumped = ensured.model_dump()
     basics = dumped.get("basics") if isinstance(dumped.get("basics"), dict) else {}
     return {
-        "basics": {
-            "name": str(basics.get("name") or ""),
-            "email": str(basics.get("email") or ""),
-            "location": str(basics.get("location") or ""),
-            "links": [
-                str(x).strip() for x in (basics.get("links") or []) if str(x).strip()
-            ],
-        },
+        "basics": basics_to_profile_dict(basics),
         "summary": str(dumped.get("summary") or ""),
         "skills": dumped.get("skills") or [],
         "experience": dumped.get("experience") or [],

@@ -16,8 +16,19 @@
       <header class="header">
         <h1 class="name">{{ basics.name or "Your name" }}</h1>
         <p class="contact">
+          {% if basics.phone %}<span>{{ basics.phone }}</span>{% endif %}
           {% if basics.email %}<span>{{ basics.email }}</span>{% endif %}
-          {% if basics.location %}<span>{{ basics.location }}</span>{% endif %}
+          {% if basics.citizenship and basics.location %}
+          <span>{{ basics.citizenship }} in {{ basics.location }}</span>
+          {% elif basics.citizenship %}
+          <span>{{ basics.citizenship }}</span>
+          {% elif basics.location %}
+          <span>{{ basics.location }}</span>
+          {% endif %}
+          {% if basics.languages %}
+          <span>Languages: {{ basics.languages | join(", ") }}</span>
+          {% endif %}
+          {% if basics.availability %}<span>{{ basics.availability }}</span>{% endif %}
           {% for link in basics.links %}
           <span>{{ link }}</span>
           {% endfor %}

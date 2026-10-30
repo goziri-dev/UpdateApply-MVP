@@ -69,6 +69,9 @@ Rules:
 - Keep experience/project entries that still matter; drop weak bullets only when
   clearly irrelevant — do not empty the resume.
 - Skills: prioritize JD-relevant keywords that already exist in the master.
+- Basics / contact header: copy name, email, phone, location, citizenship,
+  availability, languages, and links from master_resume unchanged. Do not
+  invent or drop contact fields for the JD.
 - Education: the master may mix degrees and certificates in `education`.
   Keep formal degrees when they support the candidacy. Include a certificate
   only when it is clearly relevant to the JD; omit unrelated certs/credentials.
@@ -217,6 +220,9 @@ class TailorService:
             ) from exc
 
         resume = self._coerce_resume(result)
+        # Contact/header is identity — never let the JD rewrite drop phone,
+        # citizenship, availability, languages, or other master basics.
+        resume.basics = master_resume.basics
         # Prefer explicit request hints over model guesses when provided.
         if request.target_role:
             resume.meta.target_role = request.target_role

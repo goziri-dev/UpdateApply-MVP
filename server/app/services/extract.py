@@ -23,8 +23,15 @@ Rules:
 - If a field is missing, leave it empty (empty string or empty list) — never invent placeholders.
 - Prefer concise summaries and bullet lists pulled from the resume wording.
 - For experience and projects, leave ``id`` empty; the server will assign stable ids.
+- Basics / header: capture every contact field present — name, email, phone,
+  location, citizenship / work authorization, availability, spoken languages,
+  and links. Do not drop phone or citizenship when they appear in the header.
+  Phone OCR may replace '+' with a private-use or odd character; if digits look
+  like an international number, restore a leading '+'.
 - Skills: group related keywords (e.g. Languages, Backend) when the resume suggests groups;
-  otherwise use a single group named "Skills".
+  otherwise use a single group named "Skills". Spoken languages listed only in
+  the header still belong in basics.languages (you may also mirror them under
+  a Skills group named "Languages" when the resume does).
 - Dates may be years or year-month strings as written on the resume.
 """
 

@@ -37,7 +37,11 @@ class ResumeDocumentFormState extends State<ResumeDocumentForm> {
 
   final _name = TextEditingController();
   final _email = TextEditingController();
+  final _phone = TextEditingController();
   final _location = TextEditingController();
+  final _citizenship = TextEditingController();
+  final _availability = TextEditingController();
+  final _languages = TextEditingController();
   final _links = TextEditingController();
   final _summary = TextEditingController();
   final _skillItems = <TextEditingController>[];
@@ -101,7 +105,11 @@ class ResumeDocumentFormState extends State<ResumeDocumentForm> {
   void dispose() {
     _name.dispose();
     _email.dispose();
+    _phone.dispose();
     _location.dispose();
+    _citizenship.dispose();
+    _availability.dispose();
+    _languages.dispose();
     _links.dispose();
     _summary.dispose();
     _skillAdd.dispose();
@@ -269,7 +277,14 @@ class ResumeDocumentFormState extends State<ResumeDocumentForm> {
 
     _name.text = '${basics['name'] ?? ''}';
     _email.text = '${basics['email'] ?? ''}';
+    _phone.text = '${basics['phone'] ?? ''}';
     _location.text = '${basics['location'] ?? ''}';
+    _citizenship.text = '${basics['citizenship'] ?? ''}';
+    _availability.text = '${basics['availability'] ?? ''}';
+    final languages = basics['languages'];
+    _languages.text = languages is List
+        ? languages.map((e) => '$e').join(', ')
+        : '${languages ?? ''}';
     final links = basics['links'];
     _links.text = links is List ? links.join(' · ') : '${links ?? ''}';
     _summary.text = '${data['summary'] ?? ''}';
@@ -288,6 +303,11 @@ class ResumeDocumentFormState extends State<ResumeDocumentForm> {
   Map<String, dynamic> toDocument() {
     final links = _links.text
         .split('·')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    final languages = _languages.text
+        .split(RegExp(r'[,·|]'))
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();
@@ -328,7 +348,11 @@ class ResumeDocumentFormState extends State<ResumeDocumentForm> {
       'basics': {
         'name': _name.text.trim(),
         'email': _email.text.trim(),
+        'phone': _phone.text.trim(),
         'location': _location.text.trim(),
+        'citizenship': _citizenship.text.trim(),
+        'availability': _availability.text.trim(),
+        'languages': languages,
         'links': links,
       },
       'summary': _summary.text.trim(),
@@ -862,8 +886,30 @@ class ResumeDocumentFormState extends State<ResumeDocumentForm> {
               ),
               const SizedBox(height: AppSpacing.grid),
               TextField(
+                controller: _phone,
+                decoration: _fieldDecoration('Phone'),
+              ),
+              const SizedBox(height: AppSpacing.grid),
+              TextField(
                 controller: _location,
                 decoration: _fieldDecoration('Location'),
+              ),
+              const SizedBox(height: AppSpacing.grid),
+              TextField(
+                controller: _citizenship,
+                decoration: _fieldDecoration(
+                  'Citizenship / work authorization',
+                ),
+              ),
+              const SizedBox(height: AppSpacing.grid),
+              TextField(
+                controller: _availability,
+                decoration: _fieldDecoration('Availability'),
+              ),
+              const SizedBox(height: AppSpacing.grid),
+              TextField(
+                controller: _languages,
+                decoration: _fieldDecoration('Languages (comma-separated)'),
               ),
               const SizedBox(height: AppSpacing.grid),
               TextField(

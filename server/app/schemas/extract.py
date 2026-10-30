@@ -8,10 +8,52 @@ from pydantic import BaseModel, Field
 
 
 class ExtractedBasics(BaseModel):
-    name: str = ""
-    email: str = ""
-    location: str = ""
-    links: list[str] = Field(default_factory=list)
+    """Header / contact block from the resume.
+
+    Capture every contact/header fact present on the source — not just email
+    and location. Leave fields empty when absent; never invent them.
+    """
+
+    name: str = Field(default="", description="Full name as written.")
+    email: str = Field(default="", description="Email address.")
+    phone: str = Field(
+        default="",
+        description=(
+            "Phone as written (e.g. +353 83 357 6161). If a garbled prefix "
+            "character replaced '+', restore a leading '+' when a country "
+            "code is clear."
+        ),
+    )
+    location: str = Field(
+        default="",
+        description="City / region / country (e.g. Dublin, Ireland).",
+    )
+    citizenship: str = Field(
+        default="",
+        description=(
+            "Citizenship or work-authorization phrase as written "
+            "(e.g. Italian Citizen, EU work authorization). Empty if absent."
+        ),
+    )
+    availability: str = Field(
+        default="",
+        description=(
+            "Availability / notice phrase from the header when present "
+            "(e.g. Available full-time). Empty if absent."
+        ),
+    )
+    languages: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Spoken languages listed in the header/contact line "
+            "(e.g. English, Italian). Prefer basics here; a Skills "
+            "'Languages' group may still list them too."
+        ),
+    )
+    links: list[str] = Field(
+        default_factory=list,
+        description="URLs or handles (LinkedIn, GitHub, portfolio).",
+    )
 
 
 class ExtractedSkillGroup(BaseModel):
@@ -97,6 +139,7 @@ class ExtractedProfile(BaseModel):
         has_identity = bool(
             (basics.name or "").strip()
             or (basics.email or "").strip()
+            or (basics.phone or "").strip()
             or (basics.location or "").strip()
         )
         has_career = bool(self.experience or self.projects or self.education)

@@ -187,10 +187,22 @@ def chunk_remade_profile(data: dict[str, Any]) -> list[PreparedChunk]:
     basics = data.get("basics") if isinstance(data.get("basics"), dict) else {}
     name = str(basics.get("name") or "").strip()
     if name:
-        loc = str(basics.get("location") or "").strip()
         bits = [f"Candidate: {name}"]
-        if loc:
-            bits.append(f"Location: {loc}")
+        for label, key in (
+            ("Phone", "phone"),
+            ("Email", "email"),
+            ("Location", "location"),
+            ("Citizenship", "citizenship"),
+            ("Availability", "availability"),
+        ):
+            value = str(basics.get(key) or "").strip()
+            if value:
+                bits.append(f"{label}: {value}")
+        languages = basics.get("languages") or []
+        if isinstance(languages, list):
+            langs = [str(x).strip() for x in languages if str(x).strip()]
+            if langs:
+                bits.append(f"Languages: {', '.join(langs)}")
         chunks.append(
             PreparedChunk(
                 chunk_type="basics",

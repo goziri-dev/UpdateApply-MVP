@@ -12,6 +12,10 @@ from app.core.config import Settings, get_settings
 from app.core.llm_tasks import AgentTask
 from app.schemas.extract import ExtractedProfile
 from app.services.agents import AgentFactory
+from app.services.resume_basics import (
+    basics_to_profile_dict,
+    fill_missing_basics_contact,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +39,9 @@ Your job:
   experience, education, projects).
 - Preserve real employers, titles, schools, dates, and links from the parse
   unless the conversation clearly corrects them.
+- Preserve basics contact/header fields from the parse when present: phone,
+  citizenship / work authorization, availability, languages, email, location,
+  and links. Do not drop them during the rewrite.
 - Prefer concrete verbs, scope, tools, and outcomes when the conversation
   supplies them; keep resume wording when conversation is thin.
 - Honesty: do NOT invent employers, metrics, products, degrees, or tools that
@@ -119,7 +126,18 @@ class ProfileReviewService:
                 "Resume rewrite returned an empty profile. Try again.",
                 code="empty_review",
             )
-        return remade.to_profile_dict()
+        out = remade.to_profile_dict()
+        # Contact/header fields often get dropped by the rewriter; restore
+        # empties from the parse so phone/citizenship/etc. survive remake.
+        parsed_basics = (
+            parsed_profile.get("basics")
+            if isinstance(parsed_profile.get("basics"), dict)
+            else {}
+        )
+        out["basics"] = basics_to_profile_dict(
+            fill_missing_basics_contact(out.get("basics"), parsed_basics)
+        )
+        return out
 
     @staticmethod
     def _coerce(result: object) -> ExtractedProfile:
