@@ -133,10 +133,10 @@ Settings / local defaults use **test** price IDs. On Fly with `sk_test_*`, you c
 **Dashboard (Favour):**
 
 1. Customer Portal: Settings → Billing → Customer portal (activate; allow cancel/switch as desired).
-2. Webhooks → endpoint `https://api.updateapply.com/api/v1/billing/webhook` — events `checkout.session.completed`, `invoice.paid`. Copy signing secret → `STRIPE_WEBHOOK_SECRET`. Local: `stripe listen --forward-to localhost:8000/api/v1/billing/webhook`.
+2. Webhooks → endpoint `https://api.updateapply.com/api/v1/billing/webhook` — events `checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`. Copy signing secret → `STRIPE_WEBHOOK_SECRET`. Local: `stripe listen --forward-to localhost:8000/api/v1/billing/webhook`.
 3. Live go-live: swap to `sk_live_…` + live price IDs above + live webhook secret. Never mix `sk_test` with live prices.
 
-API surface: `GET /api/v1/billing/balance`, `POST /api/v1/billing/checkout` `{plan: payg|lite|plus}`, `POST /api/v1/billing/portal`, `POST /api/v1/billing/webhook`. Successful `POST /api/v1/tailor` deducts 1 credit (402 if empty). Free = 3 lifetime account grant.
+API surface: `GET /api/v1/billing/balance`, `POST /api/v1/billing/checkout` `{plan: payg|lite|plus}`, `POST /api/v1/billing/portal`, `POST /api/v1/billing/webhook`. Successful `POST /api/v1/tailor` deducts 1 credit (402 if empty). Free = 3 lifetime account grant (wallet). Lite/Plus = period allotment with no rollover; PAYG adds to wallet.
 
 ## Flutter / Supabase
 

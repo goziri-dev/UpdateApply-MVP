@@ -222,7 +222,10 @@ def upsert_user_from_auth(session: Session, auth: AuthUser) -> User:
 
     session.commit()
     session.refresh(user)
-    return user
+    # Lifetime free CV-tailoring grant (Decision: 3). Idempotent ledger key.
+    from app.services import credits as credits_svc
+
+    return credits_svc.ensure_free_grant(session, user)
 
 
 async def get_current_user(

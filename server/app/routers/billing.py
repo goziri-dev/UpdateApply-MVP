@@ -54,8 +54,17 @@ def get_balance(
     return CreditBalanceResponse(
         user_id=user.id,
         credit_balance=int(user.credit_balance),
+        wallet_credits=int(user.wallet_credits),
+        period_credits=int(user.period_credits),
+        billing_plan=str(user.billing_plan or "free"),
         stripe_customer_id=user.stripe_customer_id,
         free_grant_applied=credits_svc.free_grant_applied(session, user.id),
+        tier_matrix={
+            "free": f"{settings.stripe_free_credits} lifetime",
+            "payg": f"+{settings.stripe_credits_payg} wallet",
+            "lite": f"{settings.stripe_credits_lite}/month (no rollover)",
+            "plus": f"{settings.stripe_credits_plus}/month (no rollover)",
+        },
         plans={
             "payg": settings.stripe_price_payg,
             "lite": settings.stripe_price_lite,

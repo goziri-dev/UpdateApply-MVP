@@ -12,7 +12,12 @@ from sqlmodel import Session, select
 from app.core.config import Settings, get_settings
 from app.models.user import User
 from app.schemas.billing import CheckoutPlan
-from app.services.credits import apply_credit_delta, ensure_free_grant
+from app.services import credits as credits_svc
+from app.services.credits import (
+    apply_wallet_delta,
+    ensure_free_grant,
+    set_period_allotment,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +74,25 @@ def credits_for_plan(plan: CheckoutPlan, settings: Settings) -> int:
     if plan == "lite":
         return max(0, int(settings.stripe_credits_lite))
     return max(0, int(settings.stripe_credits_plus))
+
+
+def _price_id_from_line(line: dict[str, Any]) -> str | None:
+    """Extract price id from an invoice/checkout line (API version tolerant)."""
+    price = line.get("price")
+    if isinstance(price, dict) and price.get("id"):
+        return str(price["id"])
+    if isinstance(price, str) and price.startswith("price_"):
+        return price
+    pricing = line.get("pricing")
+    if isinstance(pricing, dict):
+        details = pricing.get("price_details")
+        if isinstance(details, dict) and details.get("price"):
+            return str(details["price"])
+    plan = line.get("plan")
+    if isinstance(plan, dict) and plan.get("id"):
+        # Legacy plan id sometimes equals price id for simple products.
+        return str(plan["id"])
+    return None
 
 
 def ensure_stripe_customer(
@@ -176,6 +200,28 @@ def _user_from_customer_id(session: Session, customer_id: str | None) -> User | 
     ).first()
 
 
+def _subscription_period_key(
+    subscription_id: str | None, period_start: int | None, fallback: str
+) -> str:
+    """Collapse Checkout + first invoice onto one period grant when possible."""
+    if subscription_id and period_start is not None:
+        return f"stripe:sub_period:{subscription_id}:{period_start}"
+    return fallback
+
+
+def _period_start_from_lines(lines: list[Any]) -> int | None:
+    for line in lines:
+        if not isinstance(line, dict):
+            continue
+        period = line.get("period")
+        if isinstance(period, dict) and period.get("start") is not None:
+            try:
+                return int(period["start"])
+            except TypeError, ValueError:
+                continue
+    return None
+
+
 def grant_from_checkout_session(
     session: Session,
     checkout_session: dict[str, Any],
@@ -191,6 +237,9 @@ def grant_from_checkout_session(
     # Subscriptions may still be unpaid on session create; wait for invoice.paid.
     if unpaid and checkout_session.get("mode") == "subscription":
         return
+    if unpaid and checkout_session.get("mode") == "payment":
+        return
+
     metadata = checkout_session.get("metadata") or {}
     plan_raw = metadata.get("plan")
     plan: CheckoutPlan | None = None
@@ -212,7 +261,6 @@ def grant_from_checkout_session(
         session.refresh(user)
 
     if plan is None:
-        # Fallback: inspect line items if metadata missing.
         logger.warning(
             "checkout.session.completed: missing plan metadata for %s",
             checkout_session.get("id"),
@@ -222,13 +270,48 @@ def grant_from_checkout_session(
     amount = credits_for_plan(plan, settings)
     if amount <= 0:
         return
-    reason = "payg" if plan == "payg" else f"{plan}_period"
-    apply_credit_delta(
+
+    session_id = str(checkout_session.get("id") or "")
+    if plan == "payg":
+        apply_wallet_delta(
+            session,
+            user_id=user.id,
+            delta=amount,
+            reason="payg",
+            idempotency_key=f"stripe:checkout:{session_id}",
+            stripe_event_id=stripe_event_id,
+        )
+        return
+
+    # Lite/Plus: set period allotment (no rollover). Share key with invoice when
+    # subscription id + period start are known.
+    subscription_id = checkout_session.get("subscription")
+    if isinstance(subscription_id, dict):
+        subscription_id = subscription_id.get("id")
+    sub_id = str(subscription_id) if subscription_id else None
+    period_start: int | None = None
+    if sub_id:
+        try:
+            sub = stripe.Subscription.retrieve(sub_id)
+            raw_start = getattr(sub, "current_period_start", None)
+            if raw_start is not None:
+                period_start = int(raw_start)
+        except Exception:
+            logger.warning(
+                "checkout.session.completed: could not load subscription %s",
+                sub_id,
+                exc_info=True,
+            )
+    key = _subscription_period_key(
+        sub_id, period_start, fallback=f"stripe:checkout:{session_id}"
+    )
+    set_period_allotment(
         session,
         user_id=user.id,
-        delta=amount,
-        reason=reason,
-        idempotency_key=f"stripe:checkout:{checkout_session.get('id')}",
+        allotment=amount,
+        plan=plan,  # type: ignore[arg-type]
+        reason=f"{plan}_period",
+        idempotency_key=key,
         stripe_event_id=stripe_event_id,
     )
 
@@ -240,13 +323,7 @@ def grant_from_invoice_paid(
     stripe_event_id: str,
     settings: Settings,
 ) -> None:
-    """Grant monthly allowance on subscription invoice payment (renewals + first)."""
-    # Skip the very first invoice if Checkout already granted for this period —
-    # idempotency keys differ; prefer invoice as source for renewals.
-    # First invoice often has billing_reason=subscription_create; Checkout also
-    # fires. Use invoice id as idempotency and skip if checkout already applied
-    # the same period by checking subscription+period start when available.
-    billing_reason = invoice.get("billing_reason")
+    """Grant / reset monthly allowance on subscription invoice payment."""
     customer_id = invoice.get("customer")
     user = _user_from_customer_id(session, customer_id)
     if user is None:
@@ -256,39 +333,89 @@ def grant_from_invoice_paid(
     lines = (invoice.get("lines") or {}).get("data") or []
     plan: CheckoutPlan | None = None
     for line in lines:
-        price = (line.get("price") or {}) if isinstance(line, dict) else {}
-        price_id = price.get("id") if isinstance(price, dict) else None
+        if not isinstance(line, dict):
+            continue
+        price_id = _price_id_from_line(line)
         if not price_id:
-            # Stripe API 2025+ may nest under pricing/price_details — best-effort.
             continue
         plan = plan_for_price_id(str(price_id), settings)
         if plan in {"lite", "plus"}:
             break
         if plan == "payg":
-            # One-time Checkout should not double-grant via invoice.
+            # One-time Checkout owns PAYG; ignore invoice noise.
             return
 
     if plan not in {"lite", "plus"}:
         return
 
-    # Avoid double-grant on subscription_create when Checkout already granted.
-    if billing_reason == "subscription_create":
-        # Still record via invoice id; if Checkout used checkout:session key,
-        # this would double. Prefer skipping create and relying on Checkout for
-        # first period; renewals use subscription_cycle.
-        return
-
     amount = credits_for_plan(plan, settings)
     if amount <= 0:
         return
-    apply_credit_delta(
+
+    subscription_id = invoice.get("subscription")
+    if isinstance(subscription_id, dict):
+        subscription_id = subscription_id.get("id")
+    sub_id = str(subscription_id) if subscription_id else None
+    period_start = _period_start_from_lines(lines)
+    invoice_id = str(invoice.get("id") or "")
+    key = _subscription_period_key(
+        sub_id, period_start, fallback=f"stripe:invoice:{invoice_id}"
+    )
+    set_period_allotment(
         session,
         user_id=user.id,
-        delta=amount,
+        allotment=amount,
+        plan=plan,  # type: ignore[arg-type]
         reason=f"{plan}_period",
-        idempotency_key=f"stripe:invoice:{invoice.get('id')}",
+        idempotency_key=key,
         stripe_event_id=stripe_event_id,
     )
+
+
+def _apply_subscription_change(
+    session: Session,
+    subscription: dict[str, Any],
+    *,
+    stripe_event_id: str,
+    settings: Settings,
+) -> None:
+    """Track plan on create/update; clear period credits when subscription ends."""
+    customer_id = subscription.get("customer")
+    user = _user_from_customer_id(session, customer_id)
+    if user is None:
+        logger.warning(
+            "subscription change: no user for customer %s",
+            customer_id,
+        )
+        return
+
+    status = str(subscription.get("status") or "")
+    sub_id = str(subscription.get("id") or "")
+    if status in {"canceled", "unpaid", "incomplete_expired"}:
+        credits_svc.clear_subscription_period(
+            session,
+            user_id=user.id,
+            idempotency_key=f"stripe:sub_ended:{sub_id}:{status}:{stripe_event_id}",
+            stripe_event_id=stripe_event_id,
+        )
+        return
+
+    items = (subscription.get("items") or {}).get("data") or []
+    plan: CheckoutPlan | None = None
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        price = item.get("price") if isinstance(item.get("price"), dict) else {}
+        price_id = price.get("id") if isinstance(price, dict) else None
+        if not price_id:
+            continue
+        plan = plan_for_price_id(str(price_id), settings)
+        if plan in {"lite", "plus"}:
+            break
+    if plan in {"lite", "plus"} and user.billing_plan != plan:
+        user.billing_plan = plan
+        session.add(user)
+        session.commit()
 
 
 def handle_stripe_event(
@@ -319,7 +446,17 @@ def handle_stripe_event(
             settings=s,
         )
         return "invoice_granted"
-    # Acknowledge other events without error (subscription updates later).
+    if event_type in {
+        "customer.subscription.updated",
+        "customer.subscription.deleted",
+    }:
+        _apply_subscription_change(
+            session,
+            data_object,
+            stripe_event_id=event_id,
+            settings=s,
+        )
+        return "subscription_synced"
     return f"ignored:{event_type}"
 
 

@@ -26,8 +26,15 @@ class PortalSessionResponse(BaseModel):
 class CreditBalanceResponse(BaseModel):
     user_id: UUID
     credit_balance: int
+    wallet_credits: int = 0
+    period_credits: int = 0
+    billing_plan: str = "free"
     stripe_customer_id: str | None = None
     free_grant_applied: bool = False
+    tier_matrix: dict[str, str] = Field(
+        default_factory=dict,
+        description="Documented freemium ceilings (Decision / TSK-65).",
+    )
     plans: dict[str, str] = Field(
         default_factory=dict,
         description="Configured Stripe price IDs by plan code (payg/lite/plus).",

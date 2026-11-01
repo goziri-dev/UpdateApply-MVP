@@ -42,17 +42,26 @@ class BillingBalance {
     required this.creditBalance,
     required this.freeGrantApplied,
     this.stripeCustomerId,
+    this.walletCredits = 0,
+    this.periodCredits = 0,
+    this.billingPlan = 'free',
   });
 
   final int creditBalance;
   final bool freeGrantApplied;
   final String? stripeCustomerId;
+  final int walletCredits;
+  final int periodCredits;
+  final String billingPlan;
 
   factory BillingBalance.fromJson(Map<String, dynamic> json) {
     return BillingBalance(
       creditBalance: (json['credit_balance'] as num?)?.toInt() ?? 0,
       freeGrantApplied: json['free_grant_applied'] == true,
       stripeCustomerId: json['stripe_customer_id'] as String?,
+      walletCredits: (json['wallet_credits'] as num?)?.toInt() ?? 0,
+      periodCredits: (json['period_credits'] as num?)?.toInt() ?? 0,
+      billingPlan: json['billing_plan'] as String? ?? 'free',
     );
   }
 }
