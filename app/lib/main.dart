@@ -11,6 +11,7 @@ import 'core/theme/app_theme.dart';
 import 'features/applications/state/applications_state.dart';
 import 'features/auth/services/supabase_bootstrap.dart';
 import 'features/auth/state/auth_state.dart';
+import 'features/billing/state/billing_state.dart';
 import 'features/jobs_for_you/state/jobs_for_you_state.dart';
 import 'features/onboarding/state/onboarding_state.dart';
 import 'features/resume/state/master_resume_state.dart';
@@ -65,6 +66,10 @@ Future<void> main() async {
       jobsForYouEpochRef,
       jobsForYouCacheRef,
       masterResumeEpochRef,
+      billingBalanceRef,
+      billingBalanceLoadingRef,
+      billingBalanceErrorRef,
+      billingNudgeDismissedRef,
     },
   );
 }

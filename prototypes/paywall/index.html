@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UpdateApply — Paywall / Credits prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="reviewer" role="toolbar" aria-label="Prototype states">
+      <span class="reviewer-label">View</span>
+      <button type="button" class="is-active" data-view="tailor">Tailor</button>
+      <button type="button" data-view="plans">Credits &amp; plans</button>
+
+      <span class="reviewer-label">Credits</span>
+      <button type="button" data-credits="1" class="is-active">1 left</button>
+      <button type="button" data-credits="0">0 / hard</button>
+      <button type="button" data-credits="12">Has credits</button>
+
+      <span class="reviewer-label">Edge</span>
+      <button type="button" data-edge="none" class="is-active">None</button>
+      <button type="button" data-edge="loading">Loading</button>
+      <button type="button" data-edge="error">Error</button>
+      <button type="button" data-edge="empty">Empty hub</button>
+      <button type="button" data-edge="success">Success</button>
+
+      <span class="reviewer-hint">Reviewer only — not product UI</span>
+    </div>
+
+    <div class="app" id="app">
+      <header class="shell-top">
+        <div class="brand" aria-hidden="true">
+          <span class="mark">
+            <span class="mark-letter">u</span><span class="mark-plus">+</span>
+          </span>
+          <span class="brand-name">UpdateApply</span>
+        </div>
+        <nav class="shell-nav" aria-label="Primary">
+          <button type="button" class="nav-link" data-view="tailor">
+            Home
+          </button>
+          <button
+            type="button"
+            class="nav-link is-active"
+            data-view="tailor"
+            id="nav-tailor"
+          >
+            Tailor
+          </button>
+          <button type="button" class="nav-link" data-view="plans" id="nav-plans">
+            Credits
+          </button>
+        </nav>
+        <button
+          type="button"
+          class="shell-account"
+          data-view="plans"
+          title="Open Credits"
+          aria-label="Open Credits"
+        >
+          F
+        </button>
+      </header>
+
+      <div
+        class="soft-banner"
+        id="soft-banner"
+        data-visible="true"
+        role="status"
+      >
+        <div class="soft-copy">
+          <p class="soft-title">1 tailoring left</p>
+          <p class="soft-body">Top up so your next role isn’t blocked.</p>
+        </div>
+        <div class="soft-actions">
+          <button type="button" class="btn btn-soft" id="soft-cta">
+            Get credits
+          </button>
+          <button type="button" class="btn-text" id="soft-dismiss">
+            Dismiss
+          </button>
+        </div>
+      </div>
+
+      <!-- TAILOR -->
+      <main class="page" id="page-tailor">
+        <div class="page-inner">
+          <p class="section-label">Tailor</p>
+          <h1 class="page-display">Match your resume to this role</h1>
+          <p class="page-sub">
+            Paste a job description. We’ll reshape your master resume — one
+            credit per tailor.
+          </p>
+
+          <div class="balance-chip" id="balance-chip" data-state="ok">
+            <span>Balance</span>
+            <span class="balance-value" id="balance-value">1 credit</span>
+          </div>
+
+          <div class="tailor-panel">
+            <label for="jd">Job description</label>
+            <textarea
+              id="jd"
+              placeholder="Paste the full job posting…"
+            >Senior Product Designer — Berlin. Own end-to-end flows for a hiring marketplace. Strong systems thinking, Figma, and shipping with engineers.</textarea>
+            <div class="tailor-actions">
+              <button type="button" class="btn btn-primary" id="btn-tailor">
+                <span class="btn-label">Tailor resume</span>
+              </button>
+              <button type="button" class="btn btn-text" data-view="plans">
+                View plans
+              </button>
+            </div>
+            <p class="helper">
+              Demo: with 0 credits, Tailor opens the hard paywall (402).
+            </p>
+          </div>
+        </div>
+      </main>
+
+      <!-- CREDITS & PLANS -->
+      <main class="page" id="page-plans" hidden>
+        <div class="page-inner page-inner-wide">
+          <div
+            class="alert alert-error"
+            id="plans-error"
+            role="alert"
+            data-visible="false"
+          >
+            <span
+              >Payment didn’t go through. Try again or pick another plan.</span
+            >
+            <button type="button" class="btn-text" id="retry-error">
+              Dismiss
+            </button>
+          </div>
+
+          <div
+            class="alert alert-success"
+            id="plans-success"
+            role="status"
+            data-visible="false"
+          >
+            <span>Credits added. Ready to tailor.</span>
+            <button type="button" class="btn-text" data-view="tailor">
+              Tailor now
+            </button>
+          </div>
+
+          <div class="empty-block" id="plans-empty" data-visible="false">
+            <h2>No credits yet</h2>
+            <p>Start with a single tailoring or a monthly plan.</p>
+            <button type="button" class="btn btn-primary" id="empty-scroll">
+              Choose a plan
+            </button>
+          </div>
+
+          <div class="skeleton-row" id="plans-loading" data-visible="false">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+
+          <div id="plans-content">
+            <div class="compare-stage">
+              <div class="compare-head">
+                <h1 class="page-display">Choose your access</h1>
+                <p class="page-sub">
+                  Free gets you started. Top up one at a time, or unlock a
+                  monthly pack when you’re applying hard.
+                </p>
+              </div>
+
+              <div class="plan-rail" id="plan-rail" tabindex="0">
+                <!-- Free -->
+                <article class="plan-card is-limited" data-plan="free">
+                  <span class="plan-badge plan-badge-limited">Limited</span>
+                  <h2 class="plan-name">Free</h2>
+                  <p class="plan-benefit">
+                    Try UpdateApply with a small lifetime grant — enough to see
+                    the fit.
+                  </p>
+                  <p class="plan-price">€0</p>
+                  <p class="plan-meta">3 tailorings · lifetime</p>
+                  <ul class="plan-features">
+                    <li>3 CV tailorings on your account</li>
+                    <li>Full tailor + applications flow</li>
+                    <li>No monthly commitment</li>
+                  </ul>
+                  <div class="plan-cta-row">
+                    <button
+                      type="button"
+                      class="btn btn-ghost"
+                      data-stay-free
+                    >
+                      <span class="btn-label">Stay free</span>
+                    </button>
+                  </div>
+                </article>
+
+                <!-- PAYG -->
+                <article class="plan-card" data-plan="payg">
+                  <span class="plan-badge plan-badge-one">One-time</span>
+                  <h2 class="plan-name">Pay as you go</h2>
+                  <p class="plan-benefit">
+                    One more tailored resume when you need it — no subscription.
+                  </p>
+                  <p class="plan-price">€2.99</p>
+                  <p class="plan-meta">1 CV tailoring</p>
+                  <ul class="plan-features">
+                    <li>1 additional tailoring</li>
+                    <li>Credits never expire</li>
+                    <li>Buy again anytime</li>
+                  </ul>
+                  <div class="plan-cta-row">
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      data-checkout="payg"
+                    >
+                      <span class="btn-label">1 for €2.99</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="plan-secondary"
+                      data-checkout="payg"
+                    >
+                      Checkout →
+                    </button>
+                  </div>
+                </article>
+
+                <!-- Lite -->
+                <article class="plan-card is-recommended" data-plan="lite">
+                  <span class="plan-badge plan-badge-rec">Recommended</span>
+                  <h2 class="plan-name">Lite</h2>
+                  <p class="plan-benefit">
+                    Steady monthly tailorings for an active search without
+                    overbuying.
+                  </p>
+                  <p class="plan-price">€9.99</p>
+                  <p class="plan-meta">10 tailorings / month</p>
+                  <ul class="plan-features">
+                    <li>10 CV tailorings every month</li>
+                    <li>Best per-tailoring value for most</li>
+                    <li>Manage or cancel in Stripe portal</li>
+                  </ul>
+                  <div class="plan-cta-row">
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      data-checkout="lite"
+                    >
+                      <span class="btn-label">Lite · 10/mo · €9.99</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="plan-secondary"
+                      data-checkout="lite"
+                    >
+                      Checkout →
+                    </button>
+                  </div>
+                </article>
+
+                <!-- Plus -->
+                <article class="plan-card" data-plan="plus">
+                  <span class="plan-badge plan-badge-rec">High volume</span>
+                  <h2 class="plan-name">Plus</h2>
+                  <p class="plan-benefit">
+                    More room when you’re applying across many roles each week.
+                  </p>
+                  <p class="plan-price">€14.99</p>
+                  <p class="plan-meta">25 tailorings / month</p>
+                  <ul class="plan-features">
+                    <li>25 CV tailorings every month</li>
+                    <li>Lowest cost per tailor</li>
+                    <li>Manage or cancel in Stripe portal</li>
+                  </ul>
+                  <div class="plan-cta-row">
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      data-checkout="plus"
+                    >
+                      <span class="btn-label">Plus · 25/mo · €14.99</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="plan-secondary"
+                      data-checkout="plus"
+                    >
+                      Checkout →
+                    </button>
+                  </div>
+                </article>
+              </div>
+
+              <div class="rail-nav" aria-label="Scroll plans">
+                <button type="button" id="rail-prev" aria-label="Previous">
+                  ‹
+                </button>
+                <button type="button" id="rail-next" aria-label="Next">
+                  ›
+                </button>
+              </div>
+            </div>
+
+            <div class="manage-row">
+              <span>Already subscribed?</span>
+              <button type="button" class="btn-text" id="btn-portal">
+                Manage billing
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- HARD PAYWALL OVERLAY -->
+    <div
+      class="overlay"
+      id="paywall"
+      data-visible="false"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="paywall-title"
+    >
+      <div class="overlay-panel">
+        <div id="paywall-main">
+          <div class="overlay-top">
+            <div>
+              <h2 class="page-display" id="paywall-title">Keep tailoring</h2>
+              <p class="page-sub" style="margin-bottom: 0">
+                You’re out of CV tailorings. Grab one now or unlock a monthly
+                pack.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="overlay-close"
+              id="paywall-close"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+
+          <div class="compare-stage">
+            <div class="plan-rail" id="paywall-rail">
+              <article class="plan-card" data-plan="payg">
+                <span class="plan-badge plan-badge-one">One-time</span>
+                <h3 class="plan-name">Pay as you go</h3>
+                <p class="plan-benefit">
+                  One more tailored resume when you need it — no subscription.
+                </p>
+                <p class="plan-price">€2.99</p>
+                <p class="plan-meta">1 CV tailoring</p>
+                <ul class="plan-features">
+                  <li>1 additional tailoring</li>
+                  <li>Credits never expire</li>
+                </ul>
+                <div class="plan-cta-row">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    data-checkout="payg"
+                  >
+                    <span class="btn-label">1 for €2.99</span>
+                  </button>
+                </div>
+              </article>
+
+              <article class="plan-card is-recommended" data-plan="lite">
+                <span class="plan-badge plan-badge-rec">Recommended</span>
+                <h3 class="plan-name">Lite</h3>
+                <p class="plan-benefit">
+                  Steady monthly tailorings for an active search.
+                </p>
+                <p class="plan-price">€9.99</p>
+                <p class="plan-meta">10 tailorings / month</p>
+                <ul class="plan-features">
+                  <li>10 CV tailorings every month</li>
+                  <li>Best value for most job seekers</li>
+                </ul>
+                <div class="plan-cta-row">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    data-checkout="lite"
+                  >
+                    <span class="btn-label">Lite · 10/mo · €9.99</span>
+                  </button>
+                </div>
+              </article>
+
+              <article class="plan-card" data-plan="plus">
+                <span class="plan-badge plan-badge-rec">High volume</span>
+                <h3 class="plan-name">Plus</h3>
+                <p class="plan-benefit">
+                  More room when you’re applying across many roles.
+                </p>
+                <p class="plan-price">€14.99</p>
+                <p class="plan-meta">25 tailorings / month</p>
+                <ul class="plan-features">
+                  <li>25 CV tailorings every month</li>
+                  <li>Lowest cost per tailor</li>
+                </ul>
+                <div class="plan-cta-row">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    data-checkout="plus"
+                  >
+                    <span class="btn-label">Plus · 25/mo · €14.99</span>
+                  </button>
+                </div>
+              </article>
+
+              <article class="plan-card is-limited" data-plan="free">
+                <span class="plan-badge plan-badge-limited">Limited</span>
+                <h3 class="plan-name">Free</h3>
+                <p class="plan-benefit">
+                  Your lifetime grant is used up — stay browsing, or top up to
+                  tailor again.
+                </p>
+                <p class="plan-price">€0</p>
+                <p class="plan-meta">3 tailorings · lifetime (used)</p>
+                <ul class="plan-features">
+                  <li>Browse jobs &amp; applications</li>
+                  <li>No new tailorings until you top up</li>
+                </ul>
+                <div class="plan-cta-row">
+                  <button
+                    type="button"
+                    class="btn btn-ghost"
+                    id="maybe-later"
+                  >
+                    <span class="btn-label">Maybe later</span>
+                  </button>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div class="checkout-fake" id="checkout-fake" data-visible="false">
+          <div class="spinner" aria-hidden="true"></div>
+          <p>Redirecting to Stripe Checkout…</p>
+          <p style="font-size: 13px">Prototype fake — no charge.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" data-visible="false"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

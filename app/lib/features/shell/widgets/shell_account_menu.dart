@@ -5,9 +5,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/state/auth_state.dart';
 
-enum _AccountMenuAction { settings, jobTargets, signOut }
+enum _AccountMenuAction { credits, settings, jobTargets, signOut }
 
-/// Compact account control for the shell header (email, Settings, Sign out).
+/// Compact account control for the shell header (Settings, Sign out; Credits also via balance CTA).
 class ShellAccountMenu extends StatelessWidget {
   const ShellAccountMenu({super.key});
 
@@ -33,6 +33,8 @@ class ShellAccountMenu extends StatelessWidget {
       color: scheme.surface,
       onSelected: (action) async {
         switch (action) {
+          case _AccountMenuAction.credits:
+            context.push('/credits');
           case _AccountMenuAction.settings:
             context.push('/settings');
           case _AccountMenuAction.jobTargets:
@@ -56,6 +58,13 @@ class ShellAccountMenu extends StatelessWidget {
           ),
         ),
         const PopupMenuDivider(height: 1),
+        PopupMenuItem<_AccountMenuAction>(
+          value: _AccountMenuAction.credits,
+          child: Text(
+            'Credits',
+            style: type.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
         PopupMenuItem<_AccountMenuAction>(
           value: _AccountMenuAction.jobTargets,
           child: Text(

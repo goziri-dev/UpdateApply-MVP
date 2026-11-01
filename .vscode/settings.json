@@ -1,4 +1,5 @@
 {
   "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python",
-  "python.pyrefly.configPath": "${workspaceFolder}/server/pyproject.toml"
+  "python.pyrefly.configPath": "${workspaceFolder}/server/pyproject.toml",
+  "dart.projectSearchDepth": 3
 }

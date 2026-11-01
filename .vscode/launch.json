@@ -6,14 +6,25 @@
       "request": "launch",
       "type": "dart",
       "cwd": "${workspaceFolder}/app",
-      "program": "${workspaceFolder}/app/lib/main.dart",
+      "program": "lib/main.dart",
       "deviceId": "chrome",
       "noDebug": true,
       "toolArgs": [
-        "--dart-define-from-file",
-        "${workspaceFolder}/app/.env",
-        "--web-port",
-        "5173"
+        "--dart-define-from-file=.env",
+        "--web-port=5173"
+      ]
+    },
+    {
+      "name": "UpdateApply web",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "${workspaceFolder}/app",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "noDebug": true,
+      "toolArgs": [
+        "--dart-define-from-file=.env",
+        "--web-port=5173"
       ]
     },
     {
@@ -21,24 +32,11 @@
       "request": "launch",
       "type": "dart",
       "cwd": "${workspaceFolder}/app",
-      "program": "${workspaceFolder}/app/lib/main.dart",
+      "program": "lib/main.dart",
       "deviceId": "chrome",
       "toolArgs": [
-        "--dart-define-from-file",
-        "${workspaceFolder}/app/.env",
-        "--web-port",
-        "5173"
-      ]
-    },
-    {
-      "name": "UpdateApply",
-      "request": "launch",
-      "type": "dart",
-      "cwd": "${workspaceFolder}/app",
-      "program": "${workspaceFolder}/app/lib/main.dart",
-      "toolArgs": [
-        "--dart-define-from-file",
-        "${workspaceFolder}/app/.env"
+        "--dart-define-from-file=.env",
+        "--web-port=5173"
       ]
     },
     {
@@ -46,15 +44,22 @@
       "request": "launch",
       "type": "dart",
       "cwd": "${workspaceFolder}/app",
-      "program": "${workspaceFolder}/app/lib/main.dart",
+      "program": "lib/main.dart",
       "deviceId": "web-server",
       "toolArgs": [
-        "--dart-define-from-file",
-        "${workspaceFolder}/app/.env",
-        "--web-hostname",
-        "localhost",
-        "--web-port",
-        "5173"
+        "--dart-define-from-file=.env",
+        "--web-hostname=localhost",
+        "--web-port=5173"
+      ]
+    },
+    {
+      "name": "UpdateApply (pick device)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "${workspaceFolder}/app",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--dart-define-from-file=.env"
       ]
     }
   ]

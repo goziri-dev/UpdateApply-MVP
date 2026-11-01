@@ -5,11 +5,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/widgets/auth_brand_mark.dart';
 import '../widgets/shell_account_menu.dart';
+import '../widgets/shell_credits_cta.dart';
 
 /// Post-onboarding chrome: brand + Home | Jobs For You | Applications.
 ///
 /// Tailor is intentionally not a shell tab — reached via CTAs only.
-/// Account menu: Settings + Sign out. Job preferences lives under Settings.
+/// Floating credits CTA + account menu (Settings, Sign out). Full plans UI is `/credits`.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -20,75 +21,87 @@ class AppShell extends StatelessWidget {
     final type = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     final colors = context.appColors;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Stack(
         children: [
-          Material(
-            color: scheme.surface.withValues(alpha: 0.92),
-            child: SafeArea(
-              bottom: false,
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 56),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.grid * 3,
-                  vertical: AppSpacing.grid * 1.5,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: scheme.onSurface, width: 1.5),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Material(
+                color: scheme.surface.withValues(alpha: 0.92),
+                child: SafeArea(
+                  bottom: false,
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 56),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.grid * 3,
+                      vertical: AppSpacing.grid * 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: scheme.onSurface, width: 1.5),
+                      ),
+                    ),
+                    // Equal side slots keep Home | Applications truly centered
+                    // once the account menu sits on the right.
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Transform.scale(
+                                  scale: 32 / 44,
+                                  child: const AuthBrandMark(),
+                                ),
+                                const SizedBox(width: AppSpacing.grid),
+                                Text(
+                                  'UpdateApply',
+                                  style: type.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.02 * 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        _ShellTabs(
+                          index: navigationShell.currentIndex,
+                          onSelect: (i) => navigationShell.goBranch(
+                            i,
+                            initialLocation: i == navigationShell.currentIndex,
+                          ),
+                          muted: colors.muted,
+                          ink: scheme.onSurface,
+                          accent: scheme.primary,
+                        ),
+                        const Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: ShellAccountMenu(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                // Equal side slots keep Home | Applications truly centered
-                // once the account menu sits on the right.
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Transform.scale(
-                              scale: 32 / 44,
-                              child: const AuthBrandMark(),
-                            ),
-                            const SizedBox(width: AppSpacing.grid),
-                            Text(
-                              'UpdateApply',
-                              style: type.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.02 * 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    _ShellTabs(
-                      index: navigationShell.currentIndex,
-                      onSelect: (i) => navigationShell.goBranch(
-                        i,
-                        initialLocation: i == navigationShell.currentIndex,
-                      ),
-                      muted: colors.muted,
-                      ink: scheme.onSurface,
-                      accent: scheme.primary,
-                    ),
-                    const Expanded(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: ShellAccountMenu(),
-                      ),
-                    ),
-                  ],
-                ),
               ),
-            ),
+              Expanded(child: navigationShell),
+            ],
           ),
-          Expanded(child: navigationShell),
+          // Floating credits pill — visible on every shell tab; `/credits`
+          // is outside this shell so the CTA naturally disappears there.
+          Positioned(
+            right: AppSpacing.grid * 2,
+            bottom: safeBottom + AppSpacing.grid * 2,
+            child: const ShellCreditsCta(),
+          ),
         ],
       ),
     );

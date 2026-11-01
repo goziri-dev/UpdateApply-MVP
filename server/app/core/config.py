@@ -112,9 +112,98 @@ class Settings(BaseSettings):
     # Temporary ZeroDivisionError route for Sentry smoke tests. Keep false in prod.
     sentry_enable_debug_route: bool = False
 
+    # --- Stripe (direct Checkout + webhooks; not RevenueCat) ---
+    # Empty secret key → billing routes return 503 (safe local default).
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    # Publishable key is for Flutter / client; documented in .env.example only.
+    stripe_publishable_key: str = ""
+    # Price IDs must match the secret key mode (sk_test ↔ test prices).
+    # Defaults = test-mode mirrors (acct_1Tj0MGLpMjkUpLaG, livemode=false).
+    # Live (go-live only): PAYG price_1UX0EFLpMjkUpLaGaa4QK4rn,
+    # Lite price_1UX0EGLpMjkUpLaG8LO0kTOT, Plus price_1UX0EHLpMjkUpLaGo7LWuG7I.
+    stripe_price_payg: str = "price_1UX0R9LpMjkUpLaGnh0P5Tht"
+    stripe_price_lite: str = "price_1UX0R8LpMjkUpLaGeg1iKmwd"
+    stripe_price_plus: str = "price_1UX0R9LpMjkUpLaGFcSGRgAv"
+    # Credits granted per product (must match Stripe product metadata / Decision).
+    stripe_credits_payg: int = 1
+    stripe_credits_lite: int = 10
+    stripe_credits_plus: int = 25
+    # Lifetime free account grant (not a Stripe Product).
+    stripe_free_credits: int = 3
+    # Checkout return URLs (Flutter web). Empty → derived from APP_PUBLIC_URL.
+    # {CHECKOUT_SESSION_ID} is a Stripe placeholder — leave it literal.
+    stripe_checkout_success_url: str = ""
+    stripe_checkout_cancel_url: str = ""
+    stripe_portal_return_url: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def stripe_secret_is_live(self) -> bool:
+        return self.stripe_secret_key.strip().startswith("sk_live_")
+
+    @property
+    def stripe_secret_is_test(self) -> bool:
+        return self.stripe_secret_key.strip().startswith("sk_test_")
+
+    @property
+    def stripe_prices_look_test_default(self) -> bool:
+        """True when all three prices match the baked-in test-mode IDs."""
+        return (
+            self.stripe_price_payg.strip() == "price_1UX0R9LpMjkUpLaGnh0P5Tht"
+            and self.stripe_price_lite.strip() == "price_1UX0R8LpMjkUpLaGeg1iKmwd"
+            and self.stripe_price_plus.strip() == "price_1UX0R9LpMjkUpLaGFcSGRgAv"
+        )
+
+    @property
+    def stripe_mode_mismatch(self) -> str | None:
+        """Human warning when sk_live is paired with test price defaults (or reverse)."""
+        if not self.stripe_configured:
+            return None
+        if self.stripe_secret_is_live and self.stripe_prices_look_test_default:
+            return (
+                "STRIPE_SECRET_KEY is sk_live_* but price IDs are the test-mode "
+                "defaults. Switch to sk_test_* for local smoke, or set "
+                "STRIPE_PRICE_* to the live price IDs."
+            )
+        if self.stripe_secret_is_test and not self.stripe_prices_look_test_default:
+            # Not necessarily wrong (custom test prices), so soft note only when
+            # prices match the known live IDs.
+            live = {
+                "price_1UX0EFLpMjkUpLaGaa4QK4rn",
+                "price_1UX0EGLpMjkUpLaG8LO0kTOT",
+                "price_1UX0EHLpMjkUpLaGo7LWuG7I",
+            }
+            configured = {
+                self.stripe_price_payg.strip(),
+                self.stripe_price_lite.strip(),
+                self.stripe_price_plus.strip(),
+            }
+            if configured <= live:
+                return (
+                    "STRIPE_SECRET_KEY is sk_test_* but STRIPE_PRICE_* look like "
+                    "live IDs. Use the test price IDs from .env.example."
+                )
+        return None
+
+    def resolved_checkout_success_url(self) -> str:
+        if self.stripe_checkout_success_url.strip():
+            return self.stripe_checkout_success_url.strip()
+        base = self.app_public_url.rstrip("/")
+        return f"{base}/credits?billing=success&session_id={{CHECKOUT_SESSION_ID}}"
+
+    def resolved_checkout_cancel_url(self) -> str:
+        if self.stripe_checkout_cancel_url.strip():
+            return self.stripe_checkout_cancel_url.strip()
+        return f"{self.app_public_url.rstrip('/')}/credits?billing=cancel"
+
+    def resolved_portal_return_url(self) -> str:
+        if self.stripe_portal_return_url.strip():
+            return self.stripe_portal_return_url.strip()
+        return f"{self.app_public_url.rstrip('/')}/credits"
 
     @property
     def supabase_configured(self) -> bool:
@@ -132,6 +221,10 @@ class Settings(BaseSettings):
     @property
     def resend_configured(self) -> bool:
         return bool(self.resend_api_key.strip() and self.admin_notify_email.strip())
+
+    @property
+    def stripe_configured(self) -> bool:
+        return bool(self.stripe_secret_key.strip())
 
 
 @lru_cache

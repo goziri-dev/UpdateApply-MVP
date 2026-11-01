@@ -20,6 +20,7 @@ import '../../features/onboarding/ui/upload_screen.dart';
 import '../../features/resume/ui/resume_deepen_screen.dart';
 import '../../features/resume/ui/resume_edit_screen.dart';
 import '../../features/resume/ui/resume_reveal_screen.dart';
+import '../../features/billing/ui/credits_screen.dart';
 import '../../features/settings/ui/settings_screen.dart';
 import '../../features/shell/ui/app_shell.dart';
 import '../../features/tailor/ui/tailor_screen.dart';
@@ -203,8 +204,14 @@ GoRouter createAppRouter(AuthRouterRefresh refresh) {
         },
       ),
       GoRoute(
+        path: '/credits',
+        builder: (context, state) =>
+            CreditsScreen(billingQuery: state.uri.queryParameters['billing']),
+      ),
+      GoRoute(
         path: '/settings',
-        builder: (context, state) => const SettingsScreen(),
+        builder: (context, state) =>
+            SettingsScreen(billingQuery: state.uri.queryParameters['billing']),
         routes: [
           GoRoute(
             path: 'match-preferences',

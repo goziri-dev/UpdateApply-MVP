@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -31,6 +32,36 @@ class AuthRouterRefresh extends ChangeNotifier {
   static const _unreachableMessage = "Can't reach the server.";
 
   Future<void> retryGateSync() => _syncGateAndNotify();
+
+  /// Map `/auth/me` failures to a gate message (avoid treating 503/CORS as silence).
+  static String _gateSyncFailureMessage(Object error) {
+    if (error is DioException) {
+      final status = error.response?.statusCode;
+      final data = error.response?.data;
+      if (data is Map && data['detail'] is String) {
+        final detail = (data['detail'] as String).trim();
+        if (detail.isNotEmpty) {
+          if (status == 503) {
+            return 'API auth is not configured locally. $detail';
+          }
+          return detail;
+        }
+      }
+      switch (error.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.connectionError:
+          return _unreachableMessage;
+        default:
+          break;
+      }
+      if (status != null) {
+        return "Can't reach the server (HTTP $status).";
+      }
+    }
+    return _unreachableMessage;
+  }
 
   Future<void> _syncGateAndNotify() async {
     final generation = ++_syncGeneration;
@@ -82,12 +113,12 @@ class AuthRouterRefresh extends ChangeNotifier {
           // Keep /auth/me status; step stays previous/null until next sync.
         }
       }
-    } on Object {
+    } on Object catch (error) {
       // Onboarding status API is allowlist-gated; do not use it as a
       // fallback for /auth/me (would 403 for denied users).
       if (generation != _syncGeneration) return;
       if (allowlistGate.value == AllowlistGate.unknown) {
-        onboardingGateSyncError.value = _unreachableMessage;
+        onboardingGateSyncError.value = _gateSyncFailureMessage(error);
       }
     } finally {
       if (generation == _syncGeneration) {

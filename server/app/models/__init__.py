@@ -2,6 +2,7 @@
 
 from app.models.app_allowlist import AppAllowlist
 from app.models.application import Application
+from app.models.billing_credit_ledger import BillingCreditLedger
 from app.models.company_board import CompanyBoard
 from app.models.job_posting import JobPosting
 from app.models.match_ledger import MatchLedger
@@ -15,6 +16,7 @@ from app.models.waitlist_signup import WaitlistSignup
 __all__ = [
     "AppAllowlist",
     "Application",
+    "BillingCreditLedger",
     "CompanyBoard",
     "JobPosting",
     "MatchLedger",

@@ -1,11 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/analytics/analytics.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../applications/state/applications_state.dart';
+import '../../billing/services/billing_service.dart';
+import '../../billing/state/billing_state.dart';
+import '../../billing/widgets/credits_nudge_banner.dart';
+import '../../billing/widgets/paywall_sheet.dart';
 import '../../resume/widgets/resume_preview.dart';
 import '../services/tailor_service.dart';
 
@@ -56,6 +61,7 @@ class _TailorScreenState extends State<TailorScreen> {
     _jdController = TextEditingController(text: args?.jobDescription ?? '');
     _roleController = TextEditingController(text: args?.targetRole ?? '');
     _companyController = TextEditingController(text: args?.company ?? '');
+    refreshBillingBalance(service: BillingService());
   }
 
   @override
@@ -128,6 +134,8 @@ class _TailorScreenState extends State<TailorScreen> {
 
       if (appId != null && appId.isNotEmpty) {
         bumpApplicationsEpoch();
+        // Balance drops by 1 after a successful tailor.
+        await refreshBillingBalance(service: BillingService());
         await _showDraftSavedSheet(
           company: _companyController.text.trim(),
           role: _roleController.text.trim(),
@@ -137,6 +145,19 @@ class _TailorScreenState extends State<TailorScreen> {
       }
     } on DioException catch (error) {
       if (!mounted) return;
+      if (isInsufficientCreditsError(error)) {
+        setState(() {
+          _error = null;
+          _busy = false;
+        });
+        billingBalance.value = BillingBalance(
+          creditBalance: 0,
+          freeGrantApplied: billingBalance.value?.freeGrantApplied ?? true,
+          stripeCustomerId: billingBalance.value?.stripeCustomerId,
+        );
+        await showPaywallSheet(context);
+        return;
+      }
       setState(() {
         _error = _dioMessage(error);
         _busy = false;
@@ -248,11 +269,7 @@ class _TailorScreenState extends State<TailorScreen> {
   }
 
   String _dioMessage(DioException error) {
-    final detail = error.response?.data;
-    if (detail is Map && detail['detail'] != null) {
-      return detail['detail'].toString();
-    }
-    return error.message ?? 'Tailor request failed';
+    return messageFromBillingDio(error);
   }
 
   InputDecoration _boxDecoration(String label, {bool alignHint = false}) {
@@ -334,12 +351,52 @@ class _TailorScreenState extends State<TailorScreen> {
                     child: const Text('← Back'),
                   ),
                   const Spacer(),
-                  Text(
-                    'Tailor',
-                    style: type.bodySmall?.copyWith(color: colors.muted),
+                  SignalBuilder(
+                    builder: (context) {
+                      final bal = billingBalance.value;
+                      if (bal == null) {
+                        return Text(
+                          'Tailor',
+                          style: type.bodySmall?.copyWith(color: colors.muted),
+                        );
+                      }
+                      final empty = bal.creditBalance <= 0;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: empty ? colors.dangerBg : colors.accentSoft,
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.pillRadius,
+                          ),
+                        ),
+                        child: Text(
+                          empty
+                              ? '0 credits'
+                              : '${bal.creditBalance} credit${bal.creditBalance == 1 ? '' : 's'}',
+                          style: type.bodySmall?.copyWith(
+                            color: empty ? scheme.error : scheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
+            ),
+            SignalBuilder(
+              builder: (context) {
+                final showNudge =
+                    hasOneCreditLeft && !billingNudgeDismissed.value;
+                if (!showNudge) return const SizedBox.shrink();
+                return CreditsNudgeBanner(
+                  onGetCredits: () => context.push('/credits'),
+                  onDismiss: dismissBillingNudge,
+                );
+              },
             ),
             Expanded(
               child: wide
@@ -503,7 +560,15 @@ class _TailorForm extends StatelessWidget {
                     color: Colors.white,
                   ),
                 )
-              : const Text('Generate tailored resume'),
+              : const Text('Tailor resume'),
+        ),
+        const SizedBox(height: AppSpacing.grid),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: busy ? null : () => context.push('/credits'),
+            child: const Text('View plans'),
+          ),
         ),
         if (busy) ...[
           const SizedBox(height: AppSpacing.grid * 2),

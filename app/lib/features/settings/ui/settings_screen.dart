@@ -7,9 +7,29 @@ import '../../../core/theme/app_theme.dart';
 import '../../onboarding/state/onboarding_state.dart';
 import '../../onboarding/widgets/reset_onboarding.dart';
 
-/// Account / profile settings — reset lives here (not on Home).
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+/// Account / profile settings — job prefs + reset (Credits live only at `/credits`).
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key, this.billingQuery});
+
+  /// Legacy `/settings?billing=success|cancel` — redirected to `/credits`.
+  final String? billingQuery;
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final q = widget.billingQuery;
+    if (q == 'success' || q == 'cancel') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.go('/credits?billing=$q');
+      });
+    }
+  }
 
   void _goBack(BuildContext context) {
     if (context.canPop()) {
@@ -59,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
                     Text('Settings', style: type.headlineMedium),
                     const SizedBox(height: AppSpacing.grid),
                     Text(
-                      'Account, resume, and how UpdateApply finds roles for you.',
+                      'Resume, job preferences, and how UpdateApply finds roles.',
                       style: type.bodyMedium?.copyWith(
                         color: colors.muted,
                         height: 1.45,
@@ -161,9 +181,9 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: AppSpacing.grid * 2),
                     SignalBuilder(
                       builder: (context) {
-                        final busy = onboardingBusy.value;
+                        final resetBusy = onboardingBusy.value;
                         return OutlinedButton(
-                          onPressed: busy
+                          onPressed: resetBusy
                               ? null
                               : () => confirmAndResetOnboarding(context),
                           style: OutlinedButton.styleFrom(
@@ -173,7 +193,9 @@ class SettingsScreen extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            busy ? 'Resetting…' : 'Reset profile & re-onboard',
+                            resetBusy
+                                ? 'Resetting…'
+                                : 'Reset profile & re-onboard',
                           ),
                         );
                       },

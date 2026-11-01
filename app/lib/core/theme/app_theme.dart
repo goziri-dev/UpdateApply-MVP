@@ -3,12 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// 8px spacing grid (matches `prototypes/auth/`).
+/// 8px spacing grid (matches `prototypes/auth/` + paywall).
 abstract final class AppSpacing {
   static const double grid = 8;
   static const double authColumn = 340;
   static const double pillRadius = 999;
   static const double markRadius = 12;
+  static const double cardRadius = 20;
+  static const double stageRadius = 28;
   static const double controlHeight = 48;
 }
 
@@ -55,12 +57,44 @@ class AppTheme {
       );
     }
 
+    TextStyle serif({
+      double? fontSize,
+      FontWeight? fontWeight,
+      double? height,
+      double? letterSpacing,
+      Color? color,
+    }) {
+      return GoogleFonts.sourceSerif4(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        height: height,
+        letterSpacing: letterSpacing,
+        color: color,
+      );
+    }
+
     final textTheme = TextTheme(
+      // Paywall / credits display titles (Source Serif 4).
+      displaySmall: serif(
+        fontSize: 32,
+        fontWeight: FontWeight.w700,
+        height: 1.15,
+        letterSpacing: -0.02 * 32,
+        color: _ink,
+      ),
       headlineMedium: sans(
         fontSize: 28,
         fontWeight: FontWeight.w700,
         height: 1.15,
         letterSpacing: -0.03 * 28,
+        color: _ink,
+      ),
+      // Plan names on comparison cards.
+      headlineSmall: serif(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        height: 1.2,
+        letterSpacing: -0.02 * 22,
         color: _ink,
       ),
       titleMedium: sans(fontSize: 16, fontWeight: FontWeight.w500, color: _ink),

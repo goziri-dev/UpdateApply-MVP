@@ -102,6 +102,42 @@ suggestions) use process-local sliding windows (`LLM_RATE_LIMIT_*` in
 `fly secrets set` if needed. Before scaling to multiple Machines/workers, swap
 the in-memory limiter for Redis (or similar) — counters are per-process today.
 
+## Stripe billing (TSK-64)
+
+Direct Stripe Checkout + webhooks (not RevenueCat). Secrets only — never bake keys into the image.
+
+```bash
+# Prefer test-mode secrets until go-live. Mirror live Products/Prices in test mode first.
+fly secrets set \
+  STRIPE_SECRET_KEY='sk_test_…' \
+  STRIPE_WEBHOOK_SECRET='whsec_…' \
+  STRIPE_PUBLISHABLE_KEY='pk_test_…' \
+  STRIPE_PRICE_PAYG='price_…' \
+  STRIPE_PRICE_LITE='price_…' \
+  STRIPE_PRICE_PLUS='price_…' \
+  STRIPE_CHECKOUT_SUCCESS_URL='https://app.updateapply.com/credits?billing=success&session_id={CHECKOUT_SESSION_ID}' \
+  STRIPE_CHECKOUT_CANCEL_URL='https://app.updateapply.com/credits?billing=cancel' \
+  STRIPE_PORTAL_RETURN_URL='https://app.updateapply.com/credits'
+```
+
+**Catalog (acct_1Tj0MGLpMjkUpLaG):**
+
+| Plan | Test price | Live price |
+|------|------------|------------|
+| PAYG €2.99 | `price_1UX0R9LpMjkUpLaGnh0P5Tht` | `price_1UX0EFLpMjkUpLaGaa4QK4rn` |
+| Lite €9.99/mo | `price_1UX0R8LpMjkUpLaGeg1iKmwd` | `price_1UX0EGLpMjkUpLaG8LO0kTOT` |
+| Plus €14.99/mo | `price_1UX0R9LpMjkUpLaGFcSGRgAv` | `price_1UX0EHLpMjkUpLaGo7LWuG7I` |
+
+Settings / local defaults use **test** price IDs. On Fly with `sk_test_*`, you can omit price secrets (defaults work) or set them explicitly.
+
+**Dashboard (Favour):**
+
+1. Customer Portal: Settings → Billing → Customer portal (activate; allow cancel/switch as desired).
+2. Webhooks → endpoint `https://api.updateapply.com/api/v1/billing/webhook` — events `checkout.session.completed`, `invoice.paid`. Copy signing secret → `STRIPE_WEBHOOK_SECRET`. Local: `stripe listen --forward-to localhost:8000/api/v1/billing/webhook`.
+3. Live go-live: swap to `sk_live_…` + live price IDs above + live webhook secret. Never mix `sk_test` with live prices.
+
+API surface: `GET /api/v1/billing/balance`, `POST /api/v1/billing/checkout` `{plan: payg|lite|plus}`, `POST /api/v1/billing/portal`, `POST /api/v1/billing/webhook`. Successful `POST /api/v1/tailor` deducts 1 credit (402 if empty). Free = 3 lifetime account grant.
+
 ## Flutter / Supabase
 
 - Set the app’s API base URL to `https://api.updateapply.com` (Fly custom domain; `https://updateapply-mvp.fly.dev` still works).

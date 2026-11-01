@@ -11,6 +11,7 @@ from app.routers import (
     admin_signed,
     applications,
     auth,
+    billing,
     health,
     job_discovery,
     onboarding,
@@ -55,6 +56,7 @@ if settings.sentry_enable_debug_route:
 
 
 app.include_router(auth.router)
+app.include_router(billing.router)
 app.include_router(waitlist.router)
 # Signed email links (GET) before keyed admin routes (POST) on the same paths.
 app.include_router(admin_signed.router)

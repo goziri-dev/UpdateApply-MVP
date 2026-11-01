@@ -16,6 +16,10 @@ class User(SQLModel, table=True):
     oauth_subject: str = Field(index=True, unique=True)
     # Hard gate: not_started | in_progress | complete
     onboarding_status: str = Field(default="not_started", index=True)
+    # Stripe Customer id (cus_…); linked via metadata.user_id = str(id).
+    stripe_customer_id: str | None = Field(default=None, index=True, unique=True)
+    # Denormalized CV-tailoring credit balance (ledger is source of truth for history).
+    credit_balance: int = Field(default=0)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
     )
