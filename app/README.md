@@ -9,7 +9,7 @@ cd app
 flutter run -d chrome --dart-define-from-file=.env
 ```
 
-Required `--dart-define` keys (see `.env.example` if present): `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Optional: `SUPABASE_AUTH_REDIRECT_URL`.
+Required `--dart-define` keys (see `.env.example` if present): `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Optional: `SUPABASE_AUTH_REDIRECT_URL`, `APTABASE_APP_KEY` (Aptabase EU product analytics; empty = disabled).
 
 ### Vercel (Flutter web)
 
@@ -26,6 +26,7 @@ In the Vercel project → **Settings → Environment Variables**, set for Produc
 | `API_BASE_URL` | `https://api.updateapply.com` (script remaps empty/localhost to this) |
 | `SUPABASE_URL` | (same as local / Fly) |
 | `SUPABASE_ANON_KEY` | (anon / publishable key) |
+| `APTABASE_APP_KEY` | Aptabase App Key (`A-EU-…` for EU). Optional; omit to disable analytics. |
 
 Production web host: **`https://app.updateapply.com`** (Vercel project `updateapply-mvp-app`). Keep `www` / apex on the project only until the SEO landing cutover; do not treat them as the long-term app origin.
 

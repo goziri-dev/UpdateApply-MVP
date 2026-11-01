@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics/analytics.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../applications/state/applications_state.dart';
@@ -110,14 +111,20 @@ class _TailorScreenState extends State<TailorScreen> {
           ? versionRaw
           : int.tryParse('$versionRaw');
 
+      final isStub = data['stub'] == true;
       setState(() {
         _resume = resume;
-        _stub = data['stub'] == true;
+        _stub = isStub;
         _detail = data['detail'] as String?;
         _applicationId = appId;
         _applicationVersion = version;
         _busy = false;
       });
+
+      Analytics.trackTailorSucceeded(
+        stub: isStub,
+        hasPosting: (widget.launchArgs?.postingId ?? '').trim().isNotEmpty,
+      );
 
       if (appId != null && appId.isNotEmpty) {
         bumpApplicationsEpoch();

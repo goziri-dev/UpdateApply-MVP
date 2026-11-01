@@ -145,8 +145,8 @@ export default function Home() {
               The app isn’t open yet. The waitlist is.
             </h2>
             <p className="section-lede">
-              Leave your email. We’ll write when a spot opens — this still
-              doesn’t create an account or grant access.
+              Tell us where you are in your job search. We’ll write when a spot
+              opens — this still doesn’t create an account or grant access.
             </p>
             <a className="btn btn-close" href="#waitlist">
               Join the waitlist
@@ -159,8 +159,8 @@ export default function Home() {
         <div className="footer-inner">
           <p className="footer-brand">UpdateApply</p>
           <p>
-            We’ll store your email so we can tell you when a spot opens. We
-            don’t sell it.
+            We’ll store the waitlist details you share so we can tell you when
+            a spot opens. We don’t sell them.
           </p>
           <p>
             Already invited? <a href={appUrl}>Open the app</a>. Access is

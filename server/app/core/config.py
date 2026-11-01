@@ -70,6 +70,15 @@ class Settings(BaseSettings):
     notify_webhook_url: str = ""
     notify_webhook_timeout_seconds: float = 10.0
 
+    # LLM route rate limits (process-local sliding window; see app.core.rate_limit).
+    # Heavy: parse, tailor, review generate, deepen propose.
+    # Standard: edit, deepen turns, interview/STT, title suggestions.
+    # Set a limit to 0 to disable that tier (tests / emergency).
+    llm_rate_limit_heavy: int = 10
+    llm_rate_window_seconds_heavy: int = 600
+    llm_rate_limit_standard: int = 40
+    llm_rate_window_seconds_standard: int = 600
+
     # Admin API (waitlist list/approve/reject + allowlist CRUD). Header: X-Admin-Key.
     admin_api_key: str = ""
 
@@ -90,6 +99,18 @@ class Settings(BaseSettings):
     composio_api_key: str = ""
     composio_google_sheets_account_id: str = ""
     composio_user_id: str = ""
+
+    # Sentry error + performance monitoring (empty DSN → SDK not initialized).
+    sentry_dsn: str = ""
+    sentry_environment: str = "development"
+    # Prefer Fly image/release tag or git SHA in production.
+    sentry_release: str = ""
+    # Traces: 1.0 locally; 0.1 on Fly. /health is always dropped by traces_sampler.
+    sentry_traces_sample_rate: float = 1.0
+    # Profiles attach to sampled traces (profile_lifecycle=trace in init).
+    sentry_profile_session_sample_rate: float = 1.0
+    # Temporary ZeroDivisionError route for Sentry smoke tests. Keep false in prod.
+    sentry_enable_debug_route: bool = False
 
     @property
     def cors_origin_list(self) -> list[str]:

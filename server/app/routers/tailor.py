@@ -1,11 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
+import sentry_sdk
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 
 from app.core.auth import DbUser
 from app.core.database import get_session
+from app.core.rate_limit import LlmHeavyLimit
 from app.models.job_posting import JobPosting
 from app.schemas.resume import TailorRequest, TailorResponse
 from app.services.applications import ApplicationService
@@ -22,6 +24,7 @@ def tailor_resume(
     body: TailorRequest,
     user: DbUser,
     session: SessionDep,
+    _rl: LlmHeavyLimit,
 ) -> TailorResponse:
     apply_url: str | None = None
     posting_uuid: UUID | None = None
@@ -43,7 +46,8 @@ def tailor_resume(
         apply_url = posting.apply_url
 
     try:
-        result = TailorService().tailor(body, session=session, user_id=user.id)
+        with sentry_sdk.start_span(op="ai.tailor", name="tailor_resume"):
+            result = TailorService().tailor(body, session=session, user_id=user.id)
     except TailorError as exc:
         code = status.HTTP_503_SERVICE_UNAVAILABLE
         if exc.code in {"empty_jd", "missing_profile"}:

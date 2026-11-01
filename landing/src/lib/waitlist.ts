@@ -30,6 +30,7 @@ export type WaitlistErrorBody = {
     | "invalid_email"
     | "invalid_name"
     | "invalid_career_stage"
+    | "invalid_challenges"
     | "rate_limited"
     | "save_failed";
   message: string;

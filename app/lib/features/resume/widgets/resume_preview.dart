@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:signals/signals_flutter.dart';
 
+import '../../../core/analytics/analytics.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../services/resume_download.dart';
@@ -319,6 +320,7 @@ Future<void> downloadResumePdf(
       filename = '$filename.pdf';
     }
     downloadPdfBytes(bytes, filename: filename);
+    Analytics.trackPdfDownloaded(kind: resume != null ? 'tailored' : 'master');
     messenger.showSnackBar(const SnackBar(content: Text('Download started')));
   } on DioException catch (e) {
     final detail = e.response?.data;

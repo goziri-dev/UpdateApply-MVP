@@ -25,6 +25,13 @@ class AppEnv {
     'SUPABASE_AUTH_REDIRECT_URL',
   );
 
+  /// Aptabase App Key (`A-EU-*` / `A-US-*` / `A-SH-*`). Empty → analytics no-op.
+  static const String aptabaseAppKey = String.fromEnvironment(
+    'APTABASE_APP_KEY',
+  );
+
   static bool get supabaseConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+
+  static bool get aptabaseConfigured => aptabaseAppKey.trim().isNotEmpty;
 }

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+from app.core.sentry import init_sentry
 from app.routers import (
     admin,
     admin_signed,
@@ -21,6 +22,7 @@ from app.routers import (
 from app.services.daily_scheduler import start_daily_scheduler, stop_daily_scheduler
 
 settings = get_settings()
+init_sentry(settings)
 
 
 @asynccontextmanager
@@ -44,6 +46,14 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+if settings.sentry_enable_debug_route:
+
+    @app.get("/sentry-debug")
+    async def sentry_debug() -> None:
+        """Intentional crash for Sentry smoke tests. Gated by SENTRY_ENABLE_DEBUG_ROUTE."""
+        _ = 1 / 0
+
+
 app.include_router(auth.router)
 app.include_router(waitlist.router)
 # Signed email links (GET) before keyed admin routes (POST) on the same paths.

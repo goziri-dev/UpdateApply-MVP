@@ -8,6 +8,7 @@ from sqlmodel import Session
 
 from app.core.auth import DbUser
 from app.core.database import get_session
+from app.core.rate_limit import LlmStandardLimit
 from app.schemas.job_discovery import (
     CareersUrlRequest,
     CareersUrlResponse,
@@ -44,7 +45,11 @@ def _prefs_read(row: object) -> MatchPreferencesRead:
     "/match-preferences/suggestions",
     response_model=TitleSuggestionsResponse,
 )
-def suggest_titles(user: DbUser, session: SessionDep) -> TitleSuggestionsResponse:
+def suggest_titles(
+    user: DbUser,
+    session: SessionDep,
+    _rl: LlmStandardLimit,
+) -> TitleSuggestionsResponse:
     try:
         items = TitleSuggestionService().suggest_for_user(session, user.id)
     except TitleSuggestionError as exc:

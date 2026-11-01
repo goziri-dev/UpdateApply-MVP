@@ -4,6 +4,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:scoped_deps/scoped_deps.dart';
 
+import 'core/analytics/analytics.dart';
 import 'core/routing/app_router.dart';
 import 'core/routing/auth_router_refresh.dart';
 import 'core/theme/app_theme.dart';
@@ -35,6 +36,8 @@ Future<void> main() async {
           // show the error app / auth UI rather than hang on /boot.
           markAuthHydrated();
         }
+        // Product analytics — no-op when APTABASE_APP_KEY is unset.
+        await Analytics.init();
         final refresh = AuthRouterRefresh();
         final router = createAppRouter(refresh);
         runApp(UpdateApplyApp(routerConfig: router, authRefresh: refresh));

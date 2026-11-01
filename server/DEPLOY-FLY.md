@@ -27,6 +27,23 @@ fly secrets set \
 # Optional
 # fly secrets set TAVILY_API_KEY='…' NOTIFY_WEBHOOK_URL='…'
 
+# Sentry (project updateapply-api — Client Keys DSN; do not bake into the image)
+# fly secrets set \
+#   SENTRY_DSN='…' \
+#   SENTRY_ENVIRONMENT=production \
+#   SENTRY_RELEASE="$(git rev-parse --short HEAD)" \
+#   SENTRY_TRACES_SAMPLE_RATE=0.1 \
+#   SENTRY_PROFILE_SESSION_SAMPLE_RATE=0.1
+# Keep SENTRY_ENABLE_DEBUG_ROUTE unset/false on Fly (no public /sentry-debug).
+#
+# Verify Performance (latency) in Sentry UI:
+# 1. Open https://goziri.sentry.io/insights/projects/updateapply-api/?project=updateapply-api
+#    → Performance / Traces (or Explore → Traces).
+# 2. Filter environment=production (or development for local).
+# 3. Transaction names use URL path templates (e.g. POST /api/v1/tailor,
+#    POST /api/v1/onboarding/parse). Child spans: ai.tailor / ai.parse.
+# 4. Hit a real route (health is intentionally not sampled); wait ~1–2 min.
+
 # Waitlist → Google Sheets (all five are required for sheet sync).
 # Create the API key and Google Sheets connection in the same Composio
 # Platform project; a Connect MCP account ID is not interchangeable.
@@ -76,6 +93,14 @@ uv run updateapply-catalog daily
 In-process runner: `fly secrets set ENABLE_DAILY_JOB_RUNNER=true` (and optional `DAILY_JOB_RUNNER_HOUR_UTC`). File lock lives under `data/locks/` (ephemeral unless you mount a volume).
 
 After deploy, seed/ingest once if the shared catalog is empty (`seed-boards`, `ingest`, etc. — see README).
+
+## LLM rate limits (cost abuse)
+
+Authenticated AI routes (parse / tailor / edit / deepen / interview / STT / title
+suggestions) use process-local sliding windows (`LLM_RATE_LIMIT_*` in
+`.env.example`). Defaults are fine on a single Machine; override via
+`fly secrets set` if needed. Before scaling to multiple Machines/workers, swap
+the in-memory limiter for Redis (or similar) — counters are per-process today.
 
 ## Flutter / Supabase
 

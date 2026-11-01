@@ -8,6 +8,7 @@ import '../../features/auth/state/allowlist_state.dart';
 import '../../features/auth/state/auth_state.dart';
 import '../../features/onboarding/state/onboarding_state.dart';
 import '../../services/api_client.dart';
+import '../analytics/analytics.dart';
 
 /// Notifies [GoRouter] when Supabase auth session (or onboarding gate) changes.
 class AuthRouterRefresh extends ChangeNotifier {
@@ -59,6 +60,10 @@ class AuthRouterRefresh extends ChangeNotifier {
       final me = await apiClient.authMe();
       if (generation != _syncGeneration) return;
       allowlistGate.value = allowlistFromMe(me);
+      if (allowlistGate.value == AllowlistGate.allowed) {
+        // Funnel entry for private beta (covers email + OAuth once allowlisted).
+        Analytics.trackSignupCompleted(method: 'allowlist');
+      }
       if (allowlistGate.value == AllowlistGate.denied) {
         onboardingGate.value = OnboardingGate.unknown;
         applyOnboardingStep(null);

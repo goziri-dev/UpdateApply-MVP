@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
+import '../../../core/analytics/analytics.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../state/onboarding_state.dart';
@@ -79,6 +80,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
     clearOnboardingFeedback();
     try {
       await onboardingService.uploadPdf(filename: name, bytes: bytes);
+      Analytics.trackResumeUploaded(sizeBytes: bytes.length);
       await refreshOnboardingGate(statusHint: 'in_progress');
       if (!mounted) return;
       context.go('/onboarding/parsing');

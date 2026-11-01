@@ -3,7 +3,8 @@
 # Expected Vercel Root Directory: app
 # Preferred Build Command: bash vercel-build.sh  (works even if +x is lost)
 # Env (Vercel project): SUPABASE_URL, SUPABASE_ANON_KEY
-# Optional: API_BASE_URL (defaults to Fly prod if missing/localhost), SUPABASE_AUTH_REDIRECT_URL
+# Optional: API_BASE_URL (defaults to Fly prod if missing/localhost),
+#           SUPABASE_AUTH_REDIRECT_URL, APTABASE_APP_KEY (product analytics)
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -86,6 +87,14 @@ DEFINES=(
 )
 if [[ -n "${SUPABASE_AUTH_REDIRECT_URL:-}" ]]; then
   DEFINES+=("--dart-define=SUPABASE_AUTH_REDIRECT_URL=${SUPABASE_AUTH_REDIRECT_URL}")
+fi
+if [[ -n "${APTABASE_APP_KEY:-}" ]]; then
+  APTABASE_APP_KEY="$(trim_env "${APTABASE_APP_KEY}")"
+  DEFINES+=("--dart-define=APTABASE_APP_KEY=${APTABASE_APP_KEY}")
+  # Log presence only — never echo the key (appears in Vercel build logs).
+  echo "APTABASE_APP_KEY: set (len=${#APTABASE_APP_KEY}, prefix=${APTABASE_APP_KEY:0:5}…)"
+else
+  echo "APTABASE_APP_KEY: unset — product analytics will be disabled in this build"
 fi
 
 flutter build web --release "${DEFINES[@]}"

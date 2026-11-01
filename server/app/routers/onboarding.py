@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from typing import Annotated, Any, cast
 
+import sentry_sdk
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlmodel import Session
 
 from app.core.auth import DbUser
 from app.core.database import get_session
+from app.core.rate_limit import LlmHeavyLimit, LlmStandardLimit
 from app.schemas.onboarding import (
     InterviewItemKind,
     InterviewStateResponse,
@@ -179,7 +181,11 @@ def _http_for_extract_error(exc: ExtractError) -> HTTPException:
 
 
 @router.post("/parse", response_model=OnboardingParseResponse)
-def parse_resume(user: DbUser, session: SessionDep) -> OnboardingParseResponse:
+def parse_resume(
+    user: DbUser,
+    session: SessionDep,
+    _rl: LlmHeavyLimit,
+) -> OnboardingParseResponse:
     """PDF → markdown → OpenRouter structured Profile (stub only if explicitly allowed)."""
     profile = svc.get_or_create_profile(session, user.id)
     meta = _meta(profile.data or {})
@@ -191,11 +197,12 @@ def parse_resume(user: DbUser, session: SessionDep) -> OnboardingParseResponse:
         )
 
     try:
-        extracted, is_stub = svc.parse_resume_to_profile(
-            user_id=user.id,
-            email=user.email,
-            filename=filename,
-        )
+        with sentry_sdk.start_span(op="ai.parse", name="parse_resume_to_profile"):
+            extracted, is_stub = svc.parse_resume_to_profile(
+                user_id=user.id,
+                email=user.email,
+                filename=filename,
+            )
     except ExtractError as exc:
         raise _http_for_extract_error(exc) from exc
 
@@ -231,7 +238,11 @@ def parse_resume(user: DbUser, session: SessionDep) -> OnboardingParseResponse:
 
 
 @router.get("/interview", response_model=InterviewStateResponse)
-def interview_state(user: DbUser, session: SessionDep) -> InterviewStateResponse:
+def interview_state(
+    user: DbUser,
+    session: SessionDep,
+    _rl: LlmStandardLimit,
+) -> InterviewStateResponse:
     profile = svc.get_or_create_profile(session, user.id)
     data = dict(profile.data or {})
     meta = _meta(data)
@@ -297,6 +308,7 @@ def _http_for_transcribe_error(exc: TranscribeError) -> HTTPException:
 async def interview_transcribe(
     user: DbUser,
     file: Annotated[UploadFile, File()],
+    _rl: LlmStandardLimit,
 ) -> InterviewTranscribeResponse:
     """Mic clip → Whisper transcript. Audio is not persisted."""
     _ = user  # auth gate only; no storage keyed by user
@@ -331,6 +343,7 @@ def interview_turn(
     body: InterviewTurnRequest,
     user: DbUser,
     session: SessionDep,
+    _rl: LlmStandardLimit,
 ) -> InterviewTurnResponse:
     profile = svc.get_or_create_profile(session, user.id)
     data = dict(profile.data or {})
@@ -497,6 +510,7 @@ def interview_turn(
 def generate_review_profile(
     user: DbUser,
     session: SessionDep,
+    _rl: LlmHeavyLimit,
 ) -> ReviewGenerateResponse:
     """Rewrite evergreen master resume from parse + interview transcripts."""
     profile = svc.get_or_create_profile(session, user.id)

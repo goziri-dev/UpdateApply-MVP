@@ -23,6 +23,7 @@ dependencies = [
     "pymupdf>=2.0",
     "pymupdf4llm>=2.0",
     "python-multipart>=0.0.32",
+    "sentry-sdk[fastapi]>=2.70.0",
     "sqlmodel>=0.0.48",
     "supabase>=2.33.0",
 ]

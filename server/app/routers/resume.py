@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 
 from app.core.auth import DbUser
 from app.core.database import get_session
+from app.core.rate_limit import LlmHeavyLimit, LlmStandardLimit
 from app.models.profile import Profile
 from app.schemas.resume import (
     ResumeDeepenJournalRequest,
@@ -110,7 +111,11 @@ def put_document(
 
 
 @router.post("/edit", response_model=ResumeEditResponse)
-def edit_resume(body: ResumeEditRequest, user: DbUser) -> ResumeEditResponse:
+def edit_resume(
+    body: ResumeEditRequest,
+    user: DbUser,
+    _rl: LlmStandardLimit,
+) -> ResumeEditResponse:
     """Agentic harness turn: edit / ask (does not persist).
 
     Pass ``session_id`` from a prior response to continue multi-turn memory.
@@ -174,6 +179,7 @@ def deepen_start(
     body: ResumeDeepenStartRequest,
     user: DbUser,
     session: SessionDep,
+    _rl: LlmStandardLimit,
 ) -> ResumeDeepenStateResponse:
     """Start guided or journal deepen for one experience/project (no onboarding gate).
 
@@ -192,6 +198,7 @@ def deepen_journal(
     body: ResumeDeepenJournalRequest,
     user: DbUser,
     session: SessionDep,
+    _rl: LlmStandardLimit,
 ) -> ResumeDeepenJournalResponse:
     """Freeform journal dump → optional one clarify, else enriched proposal.
 
@@ -217,6 +224,7 @@ def deepen_turn(
     body: ResumeDeepenTurnRequest,
     user: DbUser,
     session: SessionDep,
+    _rl: LlmStandardLimit,
 ) -> ResumeDeepenTurnResponse:
     try:
         return get_item_deepen_service().turn(user_id=user.id, body=body, db=session)
@@ -229,6 +237,7 @@ def deepen_propose(
     body: ResumeDeepenProposeRequest,
     user: DbUser,
     session: SessionDep,
+    _rl: LlmHeavyLimit,
 ) -> ResumeDeepenProposeResponse:
     """Item-level rewrite from deepen transcripts — does not persist the resume.
 

@@ -96,7 +96,7 @@ function parseBody(body: unknown): SignupFields | WaitlistErrorBody {
   if (stageErr) return { error: "invalid_career_stage", message: stageErr };
   const challengesErr = validateChallenges(challengesRaw);
   if (challengesErr) {
-    return { error: "invalid_name", message: challengesErr };
+    return { error: "invalid_challenges", message: challengesErr };
   }
 
   return {
@@ -214,7 +214,11 @@ async function proxyToFastApi(
       typeof parsed?.message === "string"
         ? parsed.message
         : "That doesn’t look like we can save.";
-    if (err === "invalid_name" || err === "invalid_career_stage") {
+    if (
+      err === "invalid_name" ||
+      err === "invalid_career_stage" ||
+      err === "invalid_challenges"
+    ) {
       return errorJson(400, { error: err, message });
     }
     return errorJson(400, {

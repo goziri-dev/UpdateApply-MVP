@@ -73,6 +73,11 @@ class ProfileIndexService:
         if not self.configured():
             logger.info("Skip profile reindex: OpenRouter not configured")
             return 0
+        if profile.user_id != user_id:
+            raise ProfileIndexError(
+                "Profile does not belong to the requesting user.",
+                code="forbidden_owner",
+            )
 
         public = profile_public(dict(profile.data or {}))
         prepared = chunk_remade_profile(public)

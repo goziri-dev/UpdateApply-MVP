@@ -49,7 +49,7 @@ class WaitingScreen extends StatelessWidget {
                   Text(
                     "You're signed in, but this account isn't approved yet. "
                     'Join the waitlist on the website — waitlist signup does '
-                    'not grant access by itself. Favour will email you when '
+                    'not grant access by itself. We will mail you when '
                     "you're in.",
                     textAlign: TextAlign.center,
                     style: type.bodyMedium?.copyWith(

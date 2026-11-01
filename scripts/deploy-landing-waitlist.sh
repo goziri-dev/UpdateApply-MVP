@@ -21,11 +21,11 @@ fly deploy -a updateapply-mvp --ha=false
 echo "==> 2) Smoke waitlist API"
 curl -sS -m 20 -X POST 'https://api.updateapply.com/api/v1/waitlist' \
   -H 'content-type: application/json' \
-  -d '{"email":"waitlist-api-smoke-20261026@updateapply.com","source":"landing"}'
+  -d '{"name":"API Smoke Test","email":"waitlist-api-smoke-20261026@updateapply.com","career_stage":"other","job_search_challenges":"Deployment smoke test","source":"landing"}'
 echo
 curl -sS -m 20 -X POST 'https://api.updateapply.com/api/v1/waitlist' \
   -H 'content-type: application/json' \
-  -d '{"email":"Waitlist-Api-Smoke-20261026@UpdateApply.com","source":"landing"}'
+  -d '{"name":"API Smoke Test","email":"Waitlist-Api-Smoke-20261026@UpdateApply.com","career_stage":"other","job_search_challenges":"Duplicate normalization smoke test","source":"landing"}'
 echo
 
 echo "==> 3) Link / create Vercel project for landing/"

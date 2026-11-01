@@ -314,21 +314,39 @@ h1 em {
   animation: swap 200ms var(--ease-out) both;
 }
 
-.fields-stack {
-  flex-direction: column;
-  flex-wrap: nowrap;
-  align-items: stretch;
-  max-width: 420px;
-  margin-left: auto;
-  margin-right: auto;
-  gap: calc(var(--space) * 2);
-  text-align: left;
-}
-
 .fields[hidden],
 .confirm[hidden],
 .alert[hidden] {
   display: none !important;
+}
+
+.fields input {
+  flex: 0 1 280px;
+  width: 100%;
+  max-width: 320px;
+  min-height: 48px;
+  height: 48px;
+  padding: 0 calc(var(--space) * 2.5);
+  border-radius: var(--pill);
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+}
+
+.fields input::placeholder {
+  color: var(--hint);
+  font-weight: 400;
+}
+
+.fields input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.fields input[aria-invalid="true"] {
+  border-color: var(--danger);
 }
 
 .field {
@@ -345,71 +363,6 @@ h1 em {
 .field-label .optional {
   font-weight: 400;
   color: var(--muted);
-}
-
-.fields input,
-.fields select,
-.fields textarea {
-  width: 100%;
-  padding: 0 calc(var(--space) * 2.5);
-  border-radius: 14px;
-  border: 1.5px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-  font-weight: 500;
-}
-
-.fields input,
-.fields select {
-  min-height: 48px;
-  height: 48px;
-}
-
-.fields select {
-  appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
-    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position:
-    calc(100% - 18px) calc(50% - 3px),
-    calc(100% - 12px) calc(50% - 3px);
-  background-size:
-    6px 6px,
-    6px 6px;
-  background-repeat: no-repeat;
-  padding-right: calc(var(--space) * 5);
-}
-
-.fields textarea {
-  min-height: 96px;
-  padding-top: calc(var(--space) * 1.75);
-  padding-bottom: calc(var(--space) * 1.75);
-  resize: vertical;
-  line-height: 1.45;
-}
-
-.fields input::placeholder,
-.fields textarea::placeholder {
-  color: var(--hint);
-  font-weight: 400;
-}
-
-.fields input:focus,
-.fields select:focus,
-.fields textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.fields input[aria-invalid="true"],
-.fields select[aria-invalid="true"],
-.fields textarea[aria-invalid="true"] {
-  border-color: var(--danger);
-}
-
-.fields .btn-submit {
-  width: 100%;
-  margin-top: calc(var(--space) * 0.5);
 }
 
 .btn {
@@ -534,6 +487,161 @@ h1 em {
   max-width: 28rem;
   margin-left: auto;
   margin-right: auto;
+}
+
+.waitlist-dialog {
+  width: min(440px, calc(100% - var(--space) * 4));
+  max-height: calc(100dvh - var(--space) * 4);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 0;
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 28px 80px -28px rgba(18, 21, 18, 0.55);
+}
+
+.waitlist-dialog::backdrop {
+  background: rgba(18, 21, 18, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.details-form {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  padding: calc(var(--space) * 3);
+  text-align: left;
+}
+
+.dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(var(--space) * 2);
+}
+
+.dialog-eyebrow {
+  color: var(--accent);
+  font-size: var(--caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dialog-heading h2 {
+  margin-top: calc(var(--space) * 0.5);
+  font-family: var(--font-display);
+  font-size: var(--title);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.dialog-close {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dialog-close:hover:not(:disabled) {
+  background: var(--line-soft);
+}
+
+.dialog-description {
+  color: var(--muted);
+  font-size: var(--label-size);
+  line-height: 1.45;
+}
+
+.dialog-email {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: var(--label-size);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dialog-email button {
+  margin-left: calc(var(--space) * 0.5);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--link);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.details-form input,
+.details-form select,
+.details-form textarea {
+  width: 100%;
+  padding: 0 calc(var(--space) * 2);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.details-form input,
+.details-form select {
+  min-height: 46px;
+}
+
+.details-form select {
+  appearance: none;
+  padding-right: calc(var(--space) * 5);
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-repeat: no-repeat;
+  background-size:
+    6px 6px,
+    6px 6px;
+}
+
+.details-form textarea {
+  min-height: 84px;
+  padding-top: calc(var(--space) * 1.5);
+  padding-bottom: calc(var(--space) * 1.5);
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.details-form input:focus,
+.details-form select:focus,
+.details-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.details-form input[aria-invalid="true"],
+.details-form select[aria-invalid="true"],
+.details-form textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.dialog-alert {
+  width: 100%;
+  margin: 0;
+}
+
+.details-form .btn-submit {
+  width: 100%;
+  margin-top: calc(var(--space) * 0.5);
 }
 
 /* Hero product visual — full-bleed plane */
@@ -780,6 +888,10 @@ h1 em {
     max-width: none;
     width: 100%;
     flex: none;
+  }
+
+  .details-form {
+    padding: calc(var(--space) * 3);
   }
 
   .points-grid {

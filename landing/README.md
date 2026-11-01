@@ -41,7 +41,7 @@ Priority: `WAITLIST_API_URL` → Supabase service role → stub.
 
 Contract:
 
-- Body: `{ "email": string, "source"?: "landing" }`
+- Body: `{ "name": string, "email": string, "career_stage": string, "job_search_challenges"?: string, "source"?: "landing" }`
 - `201` `{ status: "ok", email, duplicate: false }`
 - `200` `{ status: "ok", email, duplicate: true }`
 - `400` / `429` / `5xx` with `{ error, message }`

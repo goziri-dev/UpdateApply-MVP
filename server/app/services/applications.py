@@ -14,6 +14,7 @@ from app.schemas.application import (
     ApplicationSummary,
 )
 from app.schemas.resume import ResumeDocument
+from app.services.ownership import OwnershipError, get_owned
 
 _SNIPPET_LEN = 160
 _ALLOWED_STATUS = frozenset({"draft", "applied"})
@@ -149,10 +150,16 @@ class ApplicationService:
         user_id: UUID,
         application_id: UUID,
     ) -> Application:
-        row = session.get(Application, application_id)
-        if row is None or row.user_id != user_id:
-            raise ApplicationError("Application not found.", code="not_found")
-        return row
+        try:
+            return get_owned(
+                session,
+                Application,
+                row_id=application_id,
+                user_id=user_id,
+                not_found_message="Application not found.",
+            )
+        except OwnershipError as exc:
+            raise ApplicationError(exc.message, code=exc.code) from exc
 
     def get_detail(
         self,
