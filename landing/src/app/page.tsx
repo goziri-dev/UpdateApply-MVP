@@ -1,10 +1,36 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 import { WaitlistForm } from "@/components/WaitlistForm";
+import { ogImage } from "@/lib/site";
 
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-  "https://app.updateapply.com";
+const title = "UpdateApply — Tailor your resume to each job";
+const description =
+  "Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist. Signing up does not open the app.";
+const ogDescription =
+  "Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist.";
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "UpdateApply",
+    url: "/",
+    title,
+    description: ogDescription,
+    images: [ogImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description: ogDescription,
+    images: [ogImage.url],
+  },
+};
 
 export default function Home() {
   return (
@@ -13,25 +39,7 @@ export default function Home() {
         Skip to the waitlist
       </a>
 
-      <header className="nav">
-        <div className="nav-inner">
-          <a className="brand" href="#top">
-            <span className="mark" aria-hidden="true">
-              <span className="mark-letter">u</span>
-              <span className="mark-plus">+</span>
-            </span>
-            <span className="brand-name">UpdateApply</span>
-          </a>
-          <nav className="nav-links" aria-label="Page">
-            <a className="nav-text" href="#how">
-              How it works
-            </a>
-            <a className="nav-cta" href="#waitlist">
-              Join the waitlist
-            </a>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader active="home" />
 
       <main id="top">
         <section className="hero" aria-labelledby="headline">
@@ -155,19 +163,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="footer">
-        <div className="footer-inner">
-          <p className="footer-brand">UpdateApply</p>
-          <p>
-            We’ll store the waitlist details you share so we can tell you when
-            a spot opens. We don’t sell them.
-          </p>
-          <p>
-            Already invited? <a href={appUrl}>Open the app</a>. Access is
-            checked after you sign in. A waitlist email is not enough.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

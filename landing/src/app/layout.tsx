@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Newsreader, Source_Sans_3 } from "next/font/google";
 
+import { ogImage, siteUrl } from "@/lib/site";
+
 import "./globals.css";
 
 const sourceSans = Source_Sans_3({
@@ -18,42 +20,25 @@ const newsreader = Newsreader({
   display: "swap",
 });
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-  "https://updateapply.com";
-
-const title = "UpdateApply — Tailor your resume to each job";
-const description =
-  "Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist. Signing up does not open the app.";
-
-const ogDescription =
+const defaultTitle = "UpdateApply — Tailor your resume to each job";
+const defaultDescription =
   "Keep one honest work profile. Paste a job description, edit the draft, and download a tailored PDF. Private beta — join the waitlist.";
-
-const ogImage = {
-  url: "/assets/hero-tailor.jpg",
-  width: 2400,
-  height: 1439,
-  alt: "UpdateApply tailor screen — resume draft beside a job posting",
-};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title,
-  description,
+  title: {
+    default: defaultTitle,
+    template: "%s",
+  },
+  description: defaultDescription,
   robots: { index: true, follow: true },
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "UpdateApply",
-    url: "/",
-    title,
-    description: ogDescription,
     images: [ogImage],
   },
   twitter: {
     card: "summary_large_image",
-    title,
-    description: ogDescription,
     images: [ogImage.url],
   },
 };
@@ -67,16 +52,37 @@ const jsonLd = {
       name: "UpdateApply",
       url: siteUrl,
       logo: `${siteUrl}/icon.png`,
-      description: ogDescription,
+      description: defaultDescription,
+      founder: {
+        "@type": "Person",
+        name: "Favour Akubuo",
+      },
     },
     {
       "@type": "WebSite",
       "@id": `${siteUrl}/#website`,
       name: "UpdateApply",
       url: siteUrl,
-      description: ogDescription,
+      description: defaultDescription,
       publisher: { "@id": `${siteUrl}/#organization` },
       inLanguage: "en",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${siteUrl}/#software`,
+      name: "UpdateApply",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: siteUrl,
+      description: defaultDescription,
+      offers: {
+        "@type": "AggregateOffer",
+        priceCurrency: "EUR",
+        lowPrice: "0",
+        highPrice: "14.99",
+        offerCount: 4,
+      },
+      publisher: { "@id": `${siteUrl}/#organization` },
     },
   ],
 };

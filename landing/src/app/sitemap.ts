@@ -11,9 +11,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       // Match layout canonical (no trailing slash).
       url: site,
-      lastModified: "2026-10-26",
+      lastModified: "2026-11-01",
       changeFrequency: "weekly",
       priority: 1,
+    },
+    {
+      url: `${site}/pricing`,
+      lastModified: "2026-11-01",
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${site}/about`,
+      lastModified: "2026-11-01",
+      changeFrequency: "monthly",
+      priority: 0.8,
     },
   ];
 }
