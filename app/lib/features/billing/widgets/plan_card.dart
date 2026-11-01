@@ -13,6 +13,7 @@ class PlanCard extends StatelessWidget {
     this.busy = false,
     this.showSecondaryCheckout = false,
     this.compactFeatures = false,
+    this.pinFooter = false,
   });
 
   final PlanCatalogEntry entry;
@@ -20,6 +21,10 @@ class PlanCard extends StatelessWidget {
   final bool busy;
   final bool showSecondaryCheckout;
   final bool compactFeatures;
+
+  /// When true (wide equal-height rail), push CTA to the card bottom.
+  /// Must stay false in unbounded vertical stacks.
+  final bool pinFooter;
 
   @override
   Widget build(BuildContext context) {
@@ -87,17 +92,17 @@ class PlanCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.grid * 1.5),
           Text(entry.name, style: type.headlineSmall),
           const SizedBox(height: AppSpacing.grid),
-          SizedBox(
-            height: compactFeatures ? 40 : 44,
-            child: Text(
-              entry.benefit,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: type.bodyMedium?.copyWith(
-                color: colors.muted,
-                height: 1.4,
-                fontWeight: FontWeight.w500,
-              ),
+          Text(
+            entry.benefit,
+            // Compact rail may clip; stacked / full cards show the whole line.
+            maxLines: compactFeatures && pinFooter ? 2 : null,
+            overflow: compactFeatures && pinFooter
+                ? TextOverflow.ellipsis
+                : TextOverflow.visible,
+            style: type.bodyMedium?.copyWith(
+              color: colors.muted,
+              height: 1.4,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: AppSpacing.grid * 2),
@@ -149,7 +154,7 @@ class PlanCard extends StatelessWidget {
               ),
             ),
           ),
-          const Spacer(),
+          if (pinFooter) const Spacer(),
           const SizedBox(height: AppSpacing.grid),
           if (isPaid)
             FilledButton(

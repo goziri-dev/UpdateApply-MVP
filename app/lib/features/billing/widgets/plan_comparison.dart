@@ -5,7 +5,8 @@ import '../../../core/theme/app_theme.dart';
 import '../models/billing_plans.dart';
 import 'plan_card.dart';
 
-/// Horizontal plan rail inside the cool stage wash.
+/// Plan rail: 4-up on wide viewports; vertical stack everywhere else
+/// (matches landing pricing discoverability — no hidden swipe-only cards).
 class PlanComparison extends StatelessWidget {
   const PlanComparison({
     super.key,
@@ -26,13 +27,17 @@ class PlanComparison extends StatelessWidget {
   final String? subtitle;
   final bool showSecondaryCheckout;
   final bool compactFeatures;
+
+  /// Kept for call-site compatibility; unused now that mobile stacks vertically.
   final double minCardWidth;
+
+  static const double _wideBreakpoint = 1100;
 
   @override
   Widget build(BuildContext context) {
     final type = Theme.of(context).textTheme;
     final colors = context.appColors;
-    final wide = MediaQuery.sizeOf(context).width >= 1100;
+    final wide = MediaQuery.sizeOf(context).width >= _wideBreakpoint;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -53,7 +58,7 @@ class PlanComparison extends StatelessWidget {
               Text(
                 title!,
                 textAlign: TextAlign.center,
-                style: type.displaySmall,
+                style: type.displaySmall?.copyWith(fontSize: wide ? null : 28),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: AppSpacing.grid),
@@ -81,26 +86,20 @@ class PlanComparison extends StatelessWidget {
                   children: [
                     for (var i = 0; i < plans.length; i++) ...[
                       if (i > 0) const SizedBox(width: AppSpacing.grid * 2),
-                      Expanded(child: _card(plans[i])),
+                      Expanded(child: _card(plans[i], pinFooter: true)),
                     ],
                   ],
                 ),
               )
             else
-              SizedBox(
-                height: compactFeatures ? 420 : 480,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: plans.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(width: AppSpacing.grid * 2),
-                  itemBuilder: (context, i) {
-                    return SizedBox(
-                      width: minCardWidth,
-                      child: _card(plans[i]),
-                    );
-                  },
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < plans.length; i++) ...[
+                    if (i > 0) const SizedBox(height: AppSpacing.grid * 2),
+                    _card(plans[i], pinFooter: false),
+                  ],
+                ],
               ),
           ],
         ),
@@ -108,12 +107,13 @@ class PlanComparison extends StatelessWidget {
     );
   }
 
-  Widget _card(PlanCatalogEntry entry) {
+  Widget _card(PlanCatalogEntry entry, {required bool pinFooter}) {
     return PlanCard(
       entry: entry,
       busy: busyPlan != null && busyPlan == entry.checkoutPlan,
       showSecondaryCheckout: showSecondaryCheckout,
       compactFeatures: compactFeatures,
+      pinFooter: pinFooter,
       onPrimary: () => onSelect(entry),
     );
   }
