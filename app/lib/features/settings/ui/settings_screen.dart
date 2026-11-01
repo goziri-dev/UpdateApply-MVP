@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../onboarding/state/onboarding_state.dart';
 import '../../onboarding/widgets/reset_onboarding.dart';
+import '../../shell/widgets/shell_account_menu.dart';
 
 /// Account / profile settings — job prefs + reset (Credits live only at `/credits`).
 class SettingsScreen extends StatefulWidget {
@@ -84,6 +85,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: colors.muted,
                         height: 1.45,
                         fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.grid * 4),
+                    Text(
+                      'ACCOUNT',
+                      style: type.bodySmall?.copyWith(
+                        color: colors.label,
+                        letterSpacing: 0.02 * 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.grid * 1.5),
+                    Text(
+                      'Signed in as',
+                      style: type.bodySmall?.copyWith(
+                        color: colors.muted,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      shellAccountLabel(),
+                      style: type.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.grid * 4),

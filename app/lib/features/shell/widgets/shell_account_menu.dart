@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/state/auth_state.dart';
 
@@ -34,28 +33,15 @@ Future<void> handleShellAccountAction(
 /// Account destinations for [MenuAnchor] (mobile hamburger).
 ///
 /// Caller should place a [Divider] before this section when mixed with nav.
+/// Email lives on Settings — not in this menu.
 List<Widget> shellAccountMenuChildren(BuildContext context) {
   final type = Theme.of(context).textTheme;
-  final colors = context.appColors;
-  final label = shellAccountLabel();
 
   TextStyle itemStyle() =>
       type.bodyMedium?.copyWith(fontWeight: FontWeight.w600) ??
       const TextStyle(fontWeight: FontWeight.w600);
 
   return [
-    MenuItemButton(
-      onPressed: null,
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: type.bodySmall?.copyWith(
-          color: colors.muted,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    ),
     MenuItemButton(
       onPressed: () =>
           handleShellAccountAction(context, ShellAccountAction.credits),
@@ -89,7 +75,6 @@ class ShellAccountMenu extends StatelessWidget {
     final initial = _initialFor(label);
     final type = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
-    final colors = context.appColors;
 
     return PopupMenuButton<ShellAccountAction>(
       tooltip: 'Account',
@@ -101,20 +86,6 @@ class ShellAccountMenu extends StatelessWidget {
       color: scheme.surface,
       onSelected: (action) => handleShellAccountAction(context, action),
       itemBuilder: (context) => [
-        PopupMenuItem<ShellAccountAction>(
-          enabled: false,
-          height: 40,
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: type.bodySmall?.copyWith(
-              color: colors.muted,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        const PopupMenuDivider(height: 1),
         PopupMenuItem<ShellAccountAction>(
           value: ShellAccountAction.credits,
           child: Text(
