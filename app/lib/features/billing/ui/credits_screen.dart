@@ -173,7 +173,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text('← Back'),
+                            child: const Text('← Home'),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.grid * 2),

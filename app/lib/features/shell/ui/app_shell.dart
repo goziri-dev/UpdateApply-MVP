@@ -7,8 +7,12 @@ import '../../auth/widgets/auth_brand_mark.dart';
 import '../widgets/shell_account_menu.dart';
 import '../widgets/shell_credits_cta.dart';
 
-/// Narrow phones / small tablets: bottom nav; brand text stays off the chrome.
-const double _kShellBottomNavBreakpoint = 840;
+/// Below this width, primary nav collapses into a hamburger [MenuAnchor]
+/// (mobile web chrome — not a native bottom tab bar).
+const double _kShellCompactBreakpoint = 840;
+
+/// Show brand wordmark beside the mark when the top tab row has room.
+const double _kShellWordmarkBreakpoint = 980;
 
 /// Post-onboarding chrome: brand + Home | Jobs For You | Applications.
 ///
@@ -19,50 +23,24 @@ class AppShell extends StatelessWidget {
 
   final StatefulNavigationShell navigationShell;
 
+  void _goBranch(int i) {
+    navigationShell.goBranch(
+      i,
+      initialLocation: i == navigationShell.currentIndex,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final type = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     final colors = context.appColors;
     final media = MediaQuery.of(context);
-    final useBottomNav = media.size.width < _kShellBottomNavBreakpoint;
-    // Body sits above [bottomNavigationBar]; only pad for home-indicator when
-    // tabs live in the top bar (no bottom chrome eating the safe inset).
-    final creditsBottom = useBottomNav
-        ? AppSpacing.grid * 2
-        : media.padding.bottom + AppSpacing.grid * 2;
+    final compact = media.size.width < _kShellCompactBreakpoint;
+    final creditsBottom = media.padding.bottom + AppSpacing.grid * 2;
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      bottomNavigationBar: useBottomNav
-          ? NavigationBar(
-              selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: (i) => navigationShell.goBranch(
-                i,
-                initialLocation: i == navigationShell.currentIndex,
-              ),
-              backgroundColor: scheme.surface,
-              indicatorColor: colors.accentSoft,
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home),
-                  label: 'Home',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.work_outline),
-                  selectedIcon: Icon(Icons.work),
-                  label: 'Jobs',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.folder_outlined),
-                  selectedIcon: Icon(Icons.folder),
-                  label: 'Applications',
-                ),
-              ],
-            )
-          : null,
       body: Stack(
         children: [
           Column(
@@ -83,7 +61,7 @@ class AppShell extends StatelessWidget {
                         bottom: BorderSide(color: scheme.onSurface, width: 1.5),
                       ),
                     ),
-                    child: useBottomNav
+                    child: compact
                         ? Row(
                             children: [
                               Transform.scale(
@@ -91,6 +69,13 @@ class AppShell extends StatelessWidget {
                                 child: const AuthBrandMark(),
                               ),
                               const Spacer(),
+                              _ShellNavMenu(
+                                index: navigationShell.currentIndex,
+                                onSelect: _goBranch,
+                                muted: colors.muted,
+                                ink: scheme.onSurface,
+                              ),
+                              const SizedBox(width: AppSpacing.grid),
                               const ShellAccountMenu(),
                             ],
                           )
@@ -106,9 +91,8 @@ class AppShell extends StatelessWidget {
                                         scale: 32 / 44,
                                         child: const AuthBrandMark(),
                                       ),
-                                      // Brand wordmark only when the top tab row
-                                      // has room — avoids painting over labels.
-                                      if (media.size.width >= 980) ...[
+                                      if (media.size.width >=
+                                          _kShellWordmarkBreakpoint) ...[
                                         const SizedBox(width: AppSpacing.grid),
                                         Text(
                                           'UpdateApply',
@@ -126,11 +110,7 @@ class AppShell extends StatelessWidget {
                               ),
                               _ShellTabs(
                                 index: navigationShell.currentIndex,
-                                onSelect: (i) => navigationShell.goBranch(
-                                  i,
-                                  initialLocation:
-                                      i == navigationShell.currentIndex,
-                                ),
+                                onSelect: _goBranch,
                                 muted: colors.muted,
                                 ink: scheme.onSurface,
                                 accent: scheme.primary,
@@ -149,8 +129,8 @@ class AppShell extends StatelessWidget {
               Expanded(child: navigationShell),
             ],
           ),
-          // Floating credits pill — above bottom nav on compact; `/credits`
-          // is outside this shell so the CTA naturally disappears there.
+          // Floating credits pill — `/credits` is outside this shell so the
+          // CTA naturally disappears there.
           Positioned(
             right: AppSpacing.grid * 2,
             bottom: creditsBottom,
@@ -158,6 +138,76 @@ class AppShell extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Compact overflow menu for primary shell destinations (mobile web).
+class _ShellNavMenu extends StatelessWidget {
+  const _ShellNavMenu({
+    required this.index,
+    required this.onSelect,
+    required this.muted,
+    required this.ink,
+  });
+
+  final int index;
+  final ValueChanged<int> onSelect;
+  final Color muted;
+  final Color ink;
+
+  static const _labels = ['Home', 'Jobs For You', 'Applications'];
+
+  @override
+  Widget build(BuildContext context) {
+    final type = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+
+    return MenuAnchor(
+      alignmentOffset: const Offset(0, AppSpacing.grid),
+      style: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(scheme.surface),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.markRadius),
+            side: BorderSide(color: scheme.outlineVariant),
+          ),
+        ),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: AppSpacing.grid),
+        ),
+      ),
+      menuChildren: [
+        for (var i = 0; i < _labels.length; i++)
+          MenuItemButton(
+            onPressed: () => onSelect(i),
+            child: Text(
+              _labels[i],
+              style: type.bodyMedium?.copyWith(
+                fontWeight: i == index ? FontWeight.w700 : FontWeight.w600,
+                color: i == index ? ink : muted,
+              ),
+            ),
+          ),
+      ],
+      builder: (context, controller, child) {
+        return IconButton(
+          tooltip: 'Menu',
+          onPressed: () {
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
+          style: IconButton.styleFrom(
+            foregroundColor: ink,
+            minimumSize: const Size(40, 40),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          icon: const Icon(Icons.menu),
+        );
+      },
     );
   }
 }

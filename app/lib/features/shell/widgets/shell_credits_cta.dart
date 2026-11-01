@@ -9,7 +9,7 @@ import '../../billing/state/billing_state.dart';
 
 /// Floating shell credits pill: remaining balance → `/credits`.
 ///
-/// Mounted as an [AppShell] overlay (bottom-right), not in the app bar.
+/// Mounted as an [AppShell] overlay (bottom-right), clear of the top app bar.
 class ShellCreditsCta extends StatefulWidget {
   const ShellCreditsCta({super.key});
 
