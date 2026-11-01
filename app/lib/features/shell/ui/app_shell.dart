@@ -17,7 +17,8 @@ const double _kShellWordmarkBreakpoint = 980;
 /// Post-onboarding chrome: brand + Home | Jobs For You | Applications.
 ///
 /// Tailor is intentionally not a shell tab — reached via CTAs only.
-/// Floating credits CTA + account menu (Settings, Sign out). Full plans UI is `/credits`.
+/// Floating credits CTA; account actions live in the desktop avatar menu or
+/// the compact hamburger (nav + Divider + account). Full plans UI is `/credits`.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -75,8 +76,6 @@ class AppShell extends StatelessWidget {
                                 muted: colors.muted,
                                 ink: scheme.onSurface,
                               ),
-                              const SizedBox(width: AppSpacing.grid),
-                              const ShellAccountMenu(),
                             ],
                           )
                         : Row(
@@ -142,7 +141,7 @@ class AppShell extends StatelessWidget {
   }
 }
 
-/// Compact overflow menu for primary shell destinations (mobile web).
+/// Compact overflow menu: primary nav + account (mobile web).
 class _ShellNavMenu extends StatelessWidget {
   const _ShellNavMenu({
     required this.index,
@@ -189,6 +188,8 @@ class _ShellNavMenu extends StatelessWidget {
               ),
             ),
           ),
+        const Divider(),
+        ...shellAccountMenuChildren(context),
       ],
       builder: (context, controller, child) {
         return IconButton(
