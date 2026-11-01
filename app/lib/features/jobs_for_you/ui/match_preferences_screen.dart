@@ -21,7 +21,7 @@ const _remoteOptions = <(String, String)>[
   ('onsite_only', 'On-site only'),
 ];
 
-/// Settings → Job preferences (Phase 0 confirm-targets; API path unchanged).
+/// Job preferences (account menu / Jobs For You; API path unchanged).
 class MatchPreferencesScreen extends StatefulWidget {
   const MatchPreferencesScreen({super.key});
 
@@ -310,7 +310,7 @@ class _MatchPreferencesScreenState extends State<MatchPreferencesScreen> {
       context.pop();
       return;
     }
-    context.go('/settings');
+    context.go('/');
   }
 
   @override
@@ -348,18 +348,10 @@ class _MatchPreferencesScreenState extends State<MatchPreferencesScreen> {
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              child: const Text('← Settings'),
+                              child: const Text('← Back'),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.grid * 2),
-                          Text(
-                            'Jobs For You',
-                            style: type.bodySmall?.copyWith(
-                              color: scheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.grid),
                           Text('Job preferences', style: type.headlineMedium),
                           const SizedBox(height: AppSpacing.grid),
                           Text(

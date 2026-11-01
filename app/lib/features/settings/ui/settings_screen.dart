@@ -8,7 +8,8 @@ import '../../onboarding/state/onboarding_state.dart';
 import '../../onboarding/widgets/reset_onboarding.dart';
 import '../../shell/widgets/shell_account_menu.dart';
 
-/// Account / profile settings — job prefs + reset (Credits live only at `/credits`).
+/// Account / profile settings — reset only (Credits at `/credits`; Job preferences
+/// via account menu → `/settings/match-preferences`).
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, this.billingQuery});
 
@@ -80,7 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text('Settings', style: type.headlineMedium),
                     const SizedBox(height: AppSpacing.grid),
                     Text(
-                      'Resume, job preferences, and how UpdateApply finds roles.',
+                      'Account and profile controls for UpdateApply.',
                       style: type.bodyMedium?.copyWith(
                         color: colors.muted,
                         height: 1.45,
@@ -109,73 +110,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       shellAccountLabel(),
                       style: type.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.grid * 4),
-                    Text(
-                      'JOBS FOR YOU',
-                      style: type.bodySmall?.copyWith(
-                        color: colors.label,
-                        letterSpacing: 0.02 * 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.grid),
-                    Text(
-                      'Change what roles we look for — even after you’ve saved.',
-                      style: type.bodySmall?.copyWith(
-                        color: colors.muted,
-                        height: 1.4,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.grid * 1.5),
-                    Material(
-                      color: scheme.surfaceContainerHighest,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.markRadius,
-                        ),
-                        side: BorderSide(color: scheme.outlineVariant),
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.markRadius,
-                        ),
-                        onTap: () =>
-                            context.push('/settings/match-preferences'),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.grid * 2.5,
-                            vertical: AppSpacing.grid * 2.5,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Job preferences',
-                                      style: type.bodyLarge?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Edit titles, place, and seniority anytime',
-                                      style: type.bodySmall?.copyWith(
-                                        color: colors.muted,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(Icons.chevron_right, color: colors.muted),
-                            ],
-                          ),
-                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.grid * 4),

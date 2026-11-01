@@ -48,18 +48,18 @@ After onboarding, authenticated routes use a `StatefulShellRoute` with three tab
 
 **Tailor** (`/tailor`) is **not** a shell tab — opened from Home CTA, a Jobs For You card, Applications empty CTA, or detail “Tailor again” (optional `TailorLaunchArgs` via `GoRouter` extra).
 
-Shell header **account menu**: email → **Settings** → Sign out. Home stays mini preview + Tailor only (no reset chrome).
+Shell header **account menu**: Credits → **Job preferences** → **Settings** → Sign out. Home stays mini preview + Tailor only (no reset chrome).
 
 | Route | Role |
 |-------|------|
 | `/settings` | Account settings; **Start over** (reset / re-onboard) |
-| `/settings/match-preferences` | Job preferences (titles, place, seniority) — also linked from Jobs For You |
+| `/settings/match-preferences` | Job preferences (titles, place, seniority) — account menu + Jobs For You; not listed under Settings |
 | `/resume/edit` | Hybrid edit (master or tailored via `extra`) |
 | `/resume/deepen` | Optional guided / journal deepen for one role or project |
 
 ### Jobs For You
 
-1. Set **Job preferences** under Settings (suggested titles from the profile; you confirm).
+1. Set **Job preferences** from the account menu (or empty-state CTAs on the Jobs For You tab).
 2. Open the **Jobs For You** tab — ranked cards from `GET /api/v1/jobs-for-you` (empty reasons `no_preferences` / `no_matches`). Cap is a labeled default.
 3. Open a card → tailor screen prefills with the stored description; tailor sends `posting_id` so the draft gets `apply_url` from the server (never a client-supplied URL).
 4. Paste a Greenhouse / Lever / Ashby careers URL on the shortlist to add a board **for everyone**. Jobs appear after the next shared ingest — not instantly. Unrecognized hosts show the server 400 in the form.
